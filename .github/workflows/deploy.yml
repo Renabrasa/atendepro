@@ -30,7 +30,8 @@ jobs:
         key: ${{ secrets.EC2_SSH_KEY }}
         script: |
           cd /home/ubuntu/atendepro
-          source ../venv/bin/activate
+          source /home/ubuntu/venv/bin/activate
           pip install -r requirements.txt
           sudo systemctl restart flaskapp.service
           sudo systemctl restart bot.service
+

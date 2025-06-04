@@ -1,0 +1,69 @@
+{% extends 'base.html' %}
+{% block title %}Supervisores{% endblock %}
+{% block content %}
+<h2>Supervisores</h2>
+
+<form method="post" style="max-width: 600px; margin-bottom: 30px; padding: 20px; border: 1px solid #ddd; border-radius: 8px;">
+    <h3>Novo Supervisor</h3>
+    
+    <label for="nome" style="font-weight: 600; margin-top: 10px; display: block;">Nome</label>
+    <input type="text" id="nome" name="nome" required style="width: 100%; padding: 8px; margin-top: 4px; border: 1px solid #ccc; border-radius: 4px;">
+
+    <label for="email" style="font-weight: 600; margin-top: 15px; display: block;">Email</label>
+    <input type="email" id="email" name="email" required style="width: 100%; padding: 8px; margin-top: 4px; border: 1px solid #ccc; border-radius: 4px;">
+
+    <label for="discord_id" style="font-weight: 600; margin-top: 15px; display: block;">Discord ID (pessoal)</label>
+    <input type="text" id="discord_id" name="discord_id" placeholder="123456789012345678" style="width: 100%; padding: 8px; margin-top: 4px; border: 1px solid #ccc; border-radius: 4px;">
+    <small style="color: #666;">ID do Discord pessoal do supervisor para receber notificações</small>
+
+    <label for="servidor_discord_id" style="font-weight: 600; margin-top: 15px; display: block;">Servidor(es) Discord</label>
+    <input type="text" id="servidor_discord_id" name="servidor_discord_id" placeholder="123456789012345678, 987654321098765432" style="width: 100%; padding: 8px; margin-top: 4px; border: 1px solid #ccc; border-radius: 4px;">
+    <small style="color: #666;">ID(s) do(s) servidor(es) que este supervisor atende. Separe múltiplos IDs com vírgula</small>
+
+    <label for="senha" style="font-weight: 600; margin-top: 15px; display: block;">Senha</label>
+    <input type="password" id="senha" name="senha" required style="width: 100%; padding: 8px; margin-top: 4px; border: 1px solid #ccc; border-radius: 4px;">
+
+    <button type="submit" style="margin-top: 20px; background-color: #003366; color: white; padding: 10px 20px; border: none; border-radius: 5px; cursor: pointer;">Criar Supervisor</button>
+</form>
+
+<table style="width:100%; border-collapse: collapse;">
+    <thead style="background-color:#f0f0f0; color:#333;">
+        <tr>
+            <th style="padding:10px; border: 1px solid #ccc;">ID</th>
+            <th style="padding:10px; border: 1px solid #ccc;">Nome</th>
+            <th style="padding:10px; border: 1px solid #ccc;">Email</th>
+            <th style="padding:10px; border: 1px solid #ccc;">Discord ID</th>
+            <th style="padding:10px; border: 1px solid #ccc;">Servidores</th>
+            <th style="padding:10px; border: 1px solid #ccc;">Ações</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for supervisor in supervisores %}
+        <tr>
+            <td style="padding:8px; border: 1px solid #ccc; text-align:center;">{{ supervisor.id }}</td>
+            <td style="padding:8px; border: 1px solid #ccc;">{{ supervisor.nome }}</td>
+            <td style="padding:8px; border: 1px solid #ccc;">{{ supervisor.email }}</td>
+            <td style="padding:8px; border: 1px solid #ccc;">{{ supervisor.discord_id or '-' }}</td>
+            <td style="padding:8px; border: 1px solid #ccc;">
+                {% if supervisor.servidor_discord_id %}
+                    {% if supervisor.servidor_discord_id.startswith('[') %}
+                        <span style="font-size: 0.9em; color: #666;">Múltiplos servidores</span>
+                    {% else %}
+                        {{ supervisor.servidor_discord_id }}
+                    {% endif %}
+                {% else %}
+                    <span style="color: #999;">Não configurado</span>
+                {% endif %}
+            </td>
+            <td style="padding:8px; border: 1px solid #ccc; text-align:center;">
+                <a href="{{ url_for('editar_supervisor', supervisor_id=supervisor.id) }}" style="color:#003366; text-decoration:none;">Editar</a>
+            </td>
+        </tr>
+        {% else %}
+        <tr>
+            <td colspan="6" style="padding:20px; text-align:center; color:#666;">Nenhum supervisor encontrado.</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% endblock %}

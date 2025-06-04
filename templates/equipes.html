@@ -1,0 +1,217 @@
+{% extends "base.html" %}
+
+{% block title %}Gerenciar Equipes - Sistema de Atendimentos{% endblock %}
+
+{% block head %}
+<style>
+    .card {
+        background: #fff;
+        border-radius: 8px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        margin-bottom: 20px;
+        border: 1px solid #e0e6ed;
+    }
+    .card-header {
+        background: linear-gradient(135deg, #003366, #004080);
+        color: white;
+        padding: 15px 20px;
+        border-radius: 8px 8px 0 0;
+        border-bottom: none;
+    }
+    .card-header h5 {
+        margin: 0;
+        font-weight: 600;
+    }
+    .card-body {
+        padding: 20px;
+    }
+    .form-group {
+        margin-bottom: 20px;
+    }
+    .form-label {
+        font-weight: 600;
+        color: #003366;
+        margin-bottom: 8px;
+        display: block;
+    }
+    .form-control, .form-select {
+        width: 100%;
+        padding: 10px 12px;
+        border: 2px solid #e0e6ed;
+        border-radius: 6px;
+        font-size: 14px;
+        transition: border-color 0.3s ease;
+    }
+    .form-control:focus, .form-select:focus {
+        outline: none;
+        border-color: #003366;
+        box-shadow: 0 0 0 3px rgba(0,51,102,0.1);
+    }
+    .row {
+        display: flex;
+        flex-wrap: wrap;
+        margin: -10px;
+    }
+    .col-md-6 {
+        flex: 0 0 50%;
+        padding: 10px;
+    }
+    .btn {
+        display: inline-block;
+        padding: 10px 20px;
+        border: none;
+        border-radius: 6px;
+        font-weight: 600;
+        text-decoration: none;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        font-size: 14px;
+        margin-right: 10px;
+    }
+    .btn-primary {
+        background: linear-gradient(135deg, #003366, #004080);
+        color: white;
+    }
+    .btn-primary:hover {
+        background: linear-gradient(135deg, #002244, #003366);
+        transform: translateY(-1px);
+    }
+    .btn-secondary {
+        background: #6c757d;
+        color: white;
+    }
+    .btn-secondary:hover {
+        background: #5a6268;
+    }
+    .btn-warning {
+        background: #ffc107;
+        color: #212529;
+    }
+    .btn-warning:hover {
+        background: #e0a800;
+    }
+    .btn-sm {
+        padding: 6px 12px;
+        font-size: 12px;
+    }
+    .table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 10px;
+    }
+    .table th {
+        background-color: #f8f9fa;
+        color: #003366;
+        font-weight: 600;
+        padding: 12px;
+        text-align: left;
+        border-bottom: 2px solid #dee2e6;
+    }
+    .table td {
+        padding: 12px;
+        border-bottom: 1px solid #dee2e6;
+    }
+    .table tbody tr:hover {
+        background-color: #f8f9fa;
+    }
+    .table-responsive {
+        overflow-x: auto;
+    }
+    .text-muted {
+        color: #6c757d;
+        font-style: italic;
+    }
+    @media (max-width: 768px) {
+        .col-md-6 {
+            flex: 0 0 100%;
+        }
+        .table-responsive {
+            font-size: 14px;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<h2>Gerenciar Equipes</h2>
+
+<!-- Formulário para criar nova equipe -->
+<div class="card">
+    <div class="card-header">
+        <h5>Nova Equipe</h5>
+    </div>
+    <div class="card-body">
+        <form method="POST">
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="form-group">
+                        <label for="nome" class="form-label">Nome da Equipe:</label>
+                        <input type="text" class="form-control" id="nome" name="nome" required>
+                    </div>
+                </div>
+                
+                <!-- Campo supervisor apenas para admin -->
+                {% if current_user.tipo == 'admin' %}
+                <div class="col-md-6">
+                    <div class="form-group">
+                        <label for="supervisor_id" class="form-label">Supervisor:</label>
+                        <select class="form-select" id="supervisor_id" name="supervisor_id" required>
+                            <option value="">Selecione um supervisor</option>
+                            {% for supervisor in supervisores %}
+                            <option value="{{ supervisor.id }}">{{ supervisor.nome }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+            
+            <div style="margin-top: 20px;">
+                <button type="submit" class="btn btn-primary">Criar Equipe</button>
+                <a href="{{ url_for('dashboard') }}" class="btn btn-secondary">Voltar</a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Lista de equipes existentes -->
+<div class="card">
+    <div class="card-header">
+        <h5>Equipes Cadastradas</h5>
+    </div>
+    <div class="card-body">
+        {% if equipes %}
+        <div class="table-responsive">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Nome da Equipe</th>
+                        <th>Supervisor</th>
+                        <th>Qtd. Agentes</th>
+                        <th>Ações</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for equipe in equipes %}
+                    <tr>
+                        <td>{{ equipe.id }}</td>
+                        <td>{{ equipe.nome }}</td>
+                        <td>{{ equipe.supervisor.nome }}</td>
+                        <td>{{ equipe.agentes|length }}</td>
+                        <td>
+                            {% if current_user.tipo == 'admin' %}
+                            <a href="{{ url_for('editar_equipe', equipe_id=equipe.id) }}" class="btn btn-sm btn-warning">Editar</a>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <p class="text-muted">Nenhuma equipe cadastrada.</p>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

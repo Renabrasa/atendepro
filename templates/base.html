@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{% block title %}Sistema de Atendimentos{% endblock %}</title>
+    <style>
+        /* Reset básico */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #f5f7fa;
+            color: #333;
+            line-height: 1.6;
+        }
+        a {
+            color: #b9c8d8;
+            text-decoration: none;
+        }
+        a:hover {
+            text-decoration: underline;
+        }
+
+        /* Layout principal */
+        .container {
+            display: flex;
+            min-height: 100vh;
+        }
+
+        /* Barra lateral */
+        nav.sidebar {
+            width: 220px;
+            background-color: #003366;
+            color: #fff;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+        
+        .sidebar-content {
+            flex-grow: 1;
+        }
+        
+        nav.sidebar h1 {
+            font-size: 1.3em;
+            margin-bottom: 30px;
+            font-weight: bold;
+            letter-spacing: 1.2px;
+            text-align: center;
+            user-select: none;
+        }
+        nav.sidebar a {
+            padding: 12px 15px;
+            margin-bottom: 10px;
+            border-radius: 6px;
+            background-color: #004080;
+            transition: background-color 0.3s ease;
+            display: block;
+        }
+        nav.sidebar a:hover,
+        nav.sidebar a.active {
+            background-color: #0059b3;
+        }
+
+        /* Informações do usuário */
+        .user-info {
+            margin-top: 20px;
+            padding: 15px;
+            background-color: rgba(0, 89, 179, 0.2);
+            border-radius: 8px;
+            border-top: 2px solid #0059b3;
+            font-size: 0.85em;
+        }
+        
+        .user-info .user-avatar {
+            display: flex;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+        
+        .user-info .avatar-circle {
+            width: 32px;
+            height: 32px;
+            background: linear-gradient(135deg, #0059b3, #007acc);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 14px;
+            margin-right: 10px;
+            color: white;
+            text-transform: uppercase;
+        }
+        
+        .user-info .user-details {
+            flex: 1;
+        }
+        
+        .user-info .user-name {
+            font-weight: 600;
+            color: #fff;
+            margin-bottom: 2px;
+        }
+        
+        .user-info .user-type {
+            color: #b9c8d8;
+            font-size: 0.9em;
+            text-transform: capitalize;
+        }
+        
+        .user-info .user-type.admin {
+            color: #ffd700;
+            font-weight: 500;
+        }
+        
+        .user-info .user-type.supervisor {
+            color: #90ee90;
+            font-weight: 500;
+        }
+
+        /* Área principal */
+        main.content {
+            flex-grow: 1;
+            padding: 30px 40px;
+            background-color: #fff;
+            box-shadow: inset 0 0 10px #e0e0e0;
+            overflow-y: auto;
+        }
+        main.content h2 {
+            margin-bottom: 20px;
+            font-weight: 700;
+            color: #003366;
+            border-bottom: 2px solid #003366;
+            padding-bottom: 10px;
+        }
+
+        /* Rodapé simples */
+        footer.footer {
+            text-align: center;
+            padding: 15px;
+            font-size: 0.9em;
+            color: #777;
+            background: #f0f0f0;
+            border-top: 1px solid #ddd;
+            user-select: none;
+        }
+
+        /* Scrollbar customizada para content */
+        main.content::-webkit-scrollbar {
+            width: 10px;
+        }
+        main.content::-webkit-scrollbar-track {
+            background: #f1f1f1;
+        }
+        main.content::-webkit-scrollbar-thumb {
+            background-color: #003366;
+            border-radius: 10px;
+            border: 2px solid #f1f1f1;
+        }
+
+        /* Responsividade */
+        @media (max-width: 768px) {
+            .container {
+                flex-direction: column;
+            }
+            nav.sidebar {
+                width: 100%;
+                flex-direction: row;
+                overflow-x: auto;
+                padding: 10px;
+                justify-content: flex-start;
+            }
+            .sidebar-content {
+                display: flex;
+                flex-direction: row;
+                align-items: center;
+                flex-grow: 1;
+            }
+            nav.sidebar h1 {
+                margin-right: 20px;
+                margin-bottom: 0;
+                font-size: 1.1em;
+            }
+            nav.sidebar a {
+                flex: 1 0 auto;
+                margin: 0 5px;
+                text-align: center;
+                margin-bottom: 0;
+            }
+            .user-info {
+                margin-top: 0;
+                margin-left: 15px;
+                padding: 10px;
+                min-width: 180px;
+            }
+            .user-info .user-avatar {
+                margin-bottom: 5px;
+            }
+            .user-info .avatar-circle {
+                width: 28px;
+                height: 28px;
+                font-size: 12px;
+            }
+            main.content {
+                padding: 20px 15px;
+            }
+        }
+    </style>
+    {% block head %}{% endblock %}
+</head>
+<body>
+    <div class="container">
+        <nav class="sidebar">
+            <div class="sidebar-content">
+                <div>
+                    <h1>AtendePro</h1>
+                    <a href="{{ url_for('dashboard') }}" class="{% if request.path.startswith('/dashboard') %}active{% endif %}">Dashboard</a>
+                    <a href="{{ url_for('atendimentos') }}" class="{% if request.path.startswith('/atendimentos') %}active{% endif %}">Atendimentos</a>
+                    <a href="{{ url_for('supervisores') }}" class="{% if request.path.startswith('/cadastros/supervisores') %}active{% endif %}">Supervisores</a>
+                    <a href="{{ url_for('equipes') }}" class="{% if request.path.startswith('/cadastros/equipes') %}active{% endif %}">Equipes</a>
+                    <a href="{{ url_for('agentes') }}" class="{% if request.path.startswith('/cadastros/agentes') %}active{% endif %}">Agentes</a>
+                    <a href="{{ url_for('logout') }}">Sair</a>
+                </div>
+            </div>
+            
+            <!-- Informações do usuário logado -->
+            {% if current_user.is_authenticated %}
+            <div class="user-info">
+                <div class="user-avatar">
+                    <div class="avatar-circle">
+                        {{ current_user.nome[0] }}{{ current_user.nome.split(' ')[1][0] if current_user.nome.split(' ')|length > 1 else '' }}
+                    </div>
+                    <div class="user-details">
+                        <div class="user-name">{{ current_user.nome }}</div>
+                        <div class="user-type {{ current_user.tipo }}">{{ current_user.tipo }}</div>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+        </nav>
+        <main class="content">
+            {% with messages = get_flashed_messages(with_categories=true) %}
+              {% if messages %}
+                {% for category, message in messages %}
+                  <div class="flash-message {{ category }}" style="margin-bottom: 20px; padding: 12px; border-radius: 6px; background-color: {% if category == 'success' %}#d4edda{% elif category == 'danger' %}#f8d7da{% else %}#cce5ff{% endif %}; color: {% if category == 'success' %}#155724{% elif category == 'danger' %}#721c24{% else %}#004085{% endif %}; border: 1px solid {% if category == 'success' %}#c3e6cb{% elif category == 'danger' %}#f5c6cb{% else %}#b8daff{% endif %};">
+                    {{ message }}
+                  </div>
+                {% endfor %}
+              {% endif %}
+            {% endwith %}
+            {% block content %}{% endblock %}
+        </main>
+    </div>
+    <footer class="footer">
+        &copy; Feito com carinho 😍
+    </footer>
+    {% block scripts %}{% endblock %}
+</body>
+</html>

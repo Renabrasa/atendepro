@@ -1,0 +1,180 @@
+{% extends "base.html" %}
+
+{% block title %}Editar Equipe - Sistema de Atendimentos{% endblock %}
+
+{% block head %}
+<style>
+    .card {
+        background: #fff;
+        border-radius: 8px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        margin-bottom: 20px;
+        border: 1px solid #e0e6ed;
+    }
+    .card-header {
+        background: linear-gradient(135deg, #003366, #004080);
+        color: white;
+        padding: 15px 20px;
+        border-radius: 8px 8px 0 0;
+        border-bottom: none;
+    }
+    .card-header h5 {
+        margin: 0;
+        font-weight: 600;
+    }
+    .card-body {
+        padding: 20px;
+    }
+    .form-group {
+        margin-bottom: 20px;
+    }
+    .form-label {
+        font-weight: 600;
+        color: #003366;
+        margin-bottom: 8px;
+        display: block;
+    }
+    .form-control, .form-select {
+        width: 100%;
+        padding: 10px 12px;
+        border: 2px solid #e0e6ed;
+        border-radius: 6px;
+        font-size: 14px;
+        transition: border-color 0.3s ease;
+    }
+    .form-control:focus, .form-select:focus {
+        outline: none;
+        border-color: #003366;
+        box-shadow: 0 0 0 3px rgba(0,51,102,0.1);
+    }
+    .row {
+        display: flex;
+        flex-wrap: wrap;
+        margin: -10px;
+    }
+    .col-md-6 {
+        flex: 0 0 50%;
+        padding: 10px;
+    }
+    .btn {
+        display: inline-block;
+        padding: 10px 20px;
+        border: none;
+        border-radius: 6px;
+        font-weight: 600;
+        text-decoration: none;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        font-size: 14px;
+        margin-right: 10px;
+    }
+    .btn-primary {
+        background: linear-gradient(135deg, #003366, #004080);
+        color: white;
+    }
+    .btn-primary:hover {
+        background: linear-gradient(135deg, #002244, #003366);
+        transform: translateY(-1px);
+    }
+    .btn-secondary {
+        background: #6c757d;
+        color: white;
+    }
+    .btn-secondary:hover {
+        background: #5a6268;
+    }
+    .info-section {
+        background-color: #f8f9fa;
+        padding: 15px;
+        border-radius: 6px;
+        margin-top: 20px;
+        border-left: 4px solid #003366;
+    }
+    .info-section h6 {
+        color: #003366;
+        font-weight: 600;
+        margin-bottom: 10px;
+    }
+    .info-section p {
+        margin-bottom: 8px;
+    }
+    .info-section ul {
+        margin-left: 20px;
+        margin-top: 10px;
+    }
+    .info-section li {
+        margin-bottom: 5px;
+    }
+    .inactive-agent {
+        color: #6c757d;
+        font-style: italic;
+    }
+    @media (max-width: 768px) {
+        .col-md-6 {
+            flex: 0 0 100%;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<h2>Editar Equipe</h2>
+
+<div class="card">
+    <div class="card-header">
+        <h5>Dados da Equipe</h5>
+    </div>
+    <div class="card-body">
+        <form method="POST" action="{{ url_for('editar_equipe', equipe_id=equipe.id) }}">
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="form-group">
+                        <label for="nome" class="form-label">Nome da Equipe:</label>
+                        <input type="text" class="form-control" id="nome" name="nome" 
+                               value="{{ equipe.nome }}" required>
+                    </div>
+                </div>
+                
+                <div class="col-md-6">
+                    <div class="form-group">
+                        <label for="supervisor_id" class="form-label">Supervisor:</label>
+                        <select class="form-select" id="supervisor_id" name="supervisor_id" required>
+                            <option value="">Selecione um supervisor</option>
+                            {% for supervisor in supervisores %}
+                            <option value="{{ supervisor.id }}" 
+                                    {% if supervisor.id == equipe.supervisor_id %}selected{% endif %}>
+                                {{ supervisor.nome }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="info-section">
+                <h6>Informações Adicionais:</h6>
+                <p><strong>Agentes na equipe:</strong> {{ equipe.agentes|length }}</p>
+                {% if equipe.agentes %}
+                <ul>
+                    {% for agente in equipe.agentes %}
+                    <li>
+                        {{ agente.nome }}
+                        {% if not agente.ativo %}
+                        <span class="inactive-agent">(Inativo)</span>
+                        {% endif %}
+                    </li>
+                    {% endfor %}
+                </ul>
+                {% else %}
+                <p class="text-muted">Nenhum agente vinculado a esta equipe.</p>
+                {% endif %}
+            </div>
+            
+            <div style="margin-top: 30px;">
+                <button type="submit" class="btn btn-primary">Salvar Alterações</button>
+                <a href="{{ url_for('equipes') }}" class="btn btn-secondary">Cancelar</a>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

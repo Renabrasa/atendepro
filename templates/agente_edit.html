@@ -1,0 +1,69 @@
+{% extends 'base.html' %}
+{% block title %}Editar Agente{% endblock %}
+{% block content %}
+<h2>Editar Agente</h2>
+
+<form method="post" style="max-width: 600px;">
+  <label for="nome" class="form-label">Nome</label>
+  <input type="text" id="nome" name="nome" required class="form-input" value="{{ agente.nome }}" />
+
+  <label for="discord_id" class="form-label">Discord ID (Opcional)</label>
+  <input type="text" id="discord_id" name="discord_id" class="form-input" value="{{ agente.discord_id or '' }}" placeholder="123456789012345678" />
+
+  <label for="equipes" class="form-label">Equipes</label>
+  <select id="equipes" name="equipes" multiple size="5" class="form-input" required>
+    {% for equipe in equipes %}
+      <option value="{{ equipe.id }}" {% if equipe in agente.equipes %}selected{% endif %}>{{ equipe.nome }} (Supervisor: {{ equipe.supervisor.nome }})</option>
+    {% endfor %}
+  </select>
+
+  <div class="form-buttons">
+    <button type="submit" class="btn-primary">Salvar Alterações</button>
+    <a href="{{ url_for('agentes') }}" class="btn-link" style="margin-left: 15px;">Cancelar</a>
+  </div>
+</form>
+
+<style>
+  /* Mesmos estilos usados no cadastro */
+  .form-label {
+    display: block;
+    margin-top: 15px;
+    font-weight: 600;
+    color: #003366;
+  }
+  .form-input {
+    width: 100%;
+    padding: 8px 10px;
+    margin-top: 6px;
+    border: 1px solid #ccc;
+    border-radius: 6px;
+    font-size: 1em;
+  }
+  select[multiple] {
+    height: auto;
+  }
+  .form-buttons {
+    margin-top: 25px;
+  }
+  .btn-primary {
+    background-color: #003366;
+    color: white;
+    border: none;
+    padding: 12px 20px;
+    border-radius: 6px;
+    font-size: 1em;
+    cursor: pointer;
+  }
+  .btn-primary:hover {
+    background-color: #002244;
+  }
+  .btn-link {
+    color: #003366;
+    text-decoration: none;
+    font-weight: 600;
+  }
+  .btn-link:hover {
+    text-decoration: underline;
+  }
+</style>
+{% endblock %}

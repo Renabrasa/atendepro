@@ -1,0 +1,118 @@
+{% extends 'base.html' %}
+{% block title %}Cadastro de Agentes{% endblock %}
+{% block content %}
+<h2>Cadastro de Agentes</h2>
+
+<form method="post" style="max-width: 600px;">
+  <label for="nome" class="form-label">Nome</label>
+  <input type="text" id="nome" name="nome" required class="form-input" />
+
+  <label for="discord_id" class="form-label">Discord ID (Opcional)</label>
+  <input type="text" id="discord_id" name="discord_id" class="form-input" placeholder="123456789012345678" />
+
+  <label for="equipes" class="form-label">Equipes</label>
+  <select id="equipes" name="equipes" multiple size="5" class="form-input" required>
+    {% for equipe in equipes %}
+      <option value="{{ equipe.id }}">{{ equipe.nome }} (Supervisor: {{ equipe.supervisor.nome }})</option>
+    {% endfor %}
+  </select>
+
+  <div class="form-buttons">
+    <button type="submit" class="btn-primary">Criar Agente</button>
+  </div>
+</form>
+
+<!-- Substitua a seção de listagem no seu agentes.html por esta versão melhorada -->
+
+<h3>Lista de Agentes</h3>
+<ul class="list-simple">
+  {% for agente in agentes %}
+    <li>
+      <strong>{{ agente.nome }}</strong>
+      {% if agente.discord_id %} - Discord ID: {{ agente.discord_id }}{% endif %}
+      <br />
+      
+      <span style="color: #0066cc; font-weight: 600;">Supervisor Principal:</span> 
+      {{ agente.supervisor.nome }}
+      <br />
+      
+      <span style="color: #0066cc; font-weight: 600;">Equipes:</span>
+      {% if agente.equipes %}
+        {% for eq in agente.equipes %}
+          <span style="background-color: #e8f4f8; padding: 2px 6px; border-radius: 3px; margin-right: 5px; font-size: 0.9em;">
+            {{ eq.nome }} ({{ eq.supervisor.nome }})
+          </span>
+        {% endfor %}
+      {% else %}
+        <span style="font-style: italic; color: #666;">Sem equipes</span>
+      {% endif %}
+      <br />
+      
+      <span style="color: #888; font-size: 0.9em;">
+        Status: {% if agente.ativo %}Ativo{% else %}Inativo{% endif %}
+      </span>
+      <br />
+      
+      <a href="{{ url_for('editar_agente', agente_id=agente.id) }}" class="btn-link">Editar</a>
+    </li>
+  {% else %}
+    <li class="empty-list">Nenhum agente cadastrado.</li>
+  {% endfor %}
+</ul>
+
+<style>
+  .form-label {
+    display: block;
+    margin-top: 15px;
+    font-weight: 600;
+    color: #003366;
+  }
+  .form-input {
+    width: 100%;
+    padding: 8px 10px;
+    margin-top: 6px;
+    border: 1px solid #ccc;
+    border-radius: 6px;
+    font-size: 1em;
+  }
+  select[multiple] {
+    height: auto;
+  }
+  .form-buttons {
+    margin-top: 25px;
+  }
+  .btn-primary {
+    background-color: #003366;
+    color: white;
+    border: none;
+    padding: 12px 20px;
+    border-radius: 6px;
+    font-size: 1em;
+    cursor: pointer;
+  }
+  .btn-primary:hover {
+    background-color: #002244;
+  }
+  .list-simple {
+    list-style: none;
+    padding-left: 0;
+    margin-top: 20px;
+  }
+  .list-simple li {
+    padding: 12px 8px;
+    border-bottom: 1px solid #ccc;
+  }
+  .btn-link {
+    color: #003366;
+    text-decoration: none;
+    font-weight: 600;
+  }
+  .btn-link:hover {
+    text-decoration: underline;
+  }
+  .empty-list {
+    font-style: italic;
+    color: #666;
+  }
+</style>
+{% endblock %}

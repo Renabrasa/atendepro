@@ -1,0 +1,25 @@
+{% extends 'base.html' %}
+{% block title %}Editar Supervisor{% endblock %}
+{% block content %}
+<h2>Editar Supervisor</h2>
+
+<form method="post" style="max-width: 600px;">
+    <label for="nome" style="font-weight: 600; margin-top: 10px; display: block;">Nome</label>
+    <input type="text" id="nome" name="nome" value="{{ supervisor.nome }}" required style="width: 100%; padding: 8px; margin-top: 4px; border: 1px solid #ccc; border-radius: 4px;">
+
+    <label for="email" style="font-weight: 600; margin-top: 15px; display: block;">Email</label>
+    <input type="email" id="email" name="email" value="{{ supervisor.email }}" required style="width: 100%; padding: 8px; margin-top: 4px; border: 1px solid #ccc; border-radius: 4px;">
+
+    <label for="discord_id" style="font-weight: 600; margin-top: 15px; display: block;">Discord ID (pessoal)</label>
+    <input type="text" id="discord_id" name="discord_id" value="{{ supervisor.discord_id or '' }}" placeholder="123456789012345678" style="width: 100%; padding: 8px; margin-top: 4px; border: 1px solid #ccc; border-radius: 4px;">
+    <small style="color: #666;">ID do Discord pessoal do supervisor para receber notificações</small>
+
+    <label for="servidor_discord_id" style="font-weight: 600; margin-top: 15px; display: block;">Servidor(es) Discord</label>
+    <input type="text" id="servidor_discord_id" name="servidor_discord_id" 
+           value="{% if supervisor.servidor_discord_id %}{% if supervisor.servidor_discord_id.startswith('[') %}{{ supervisor.servidor_discord_id[1:-1].replace('\"', '').replace(' ', '') }}{% else %}{{ supervisor.servidor_discord_id }}{% endif %}{% endif %}" 
+           placeholder="123456789012345678, 987654321098765432" 
+           style="width: 100%; padding: 8px; margin-top: 4px; border: 1px solid #ccc; border-radius: 4px;">
+    <small style="color: #666;">ID(s) do(s) servidor(es) que este supervisor atende. Separe múltiplos IDs com vírgula</small>
+
+    <label for="senha" style="font-weight: 600; margin-top: 15px; display: block;">Nova Senha (deixe em branco para manter atual)</label>
+    <input type="password" id="senha" name="senha

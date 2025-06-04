@@ -1,0 +1,220 @@
+{% extends 'base.html' %}
+{% block title %}Dashboard Executivo{% endblock %}
+{% block content %}
+<style>
+  /* Estilos semelhantes aos que enviei para base e formulários */
+  .stats-container {
+    display: flex;
+    gap: 20px;
+    margin-bottom: 30px;
+  }
+  .stat-card {
+    flex: 1;
+    background-color: #003366;
+    color: white;
+    padding: 20px;
+    border-radius: 10px;
+    text-align: center;
+    font-weight: 700;
+    font-size: 1.8em;
+    box-shadow: 0 0 10px rgba(0,0,0,0.2);
+  }
+  .stat-label {
+    font-weight: 400;
+    font-size: 1em;
+    margin-top: 8px;
+  }
+  .trello-board {
+    display: flex;
+    gap: 25px;
+    overflow-x: auto;
+    min-height: 400px;
+  }
+  .column {
+    background: #f9fafb;
+    border-radius: 10px;
+    padding: 20px;
+    min-width: 320px;
+    max-height: 70vh;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+    display: flex;
+    flex-direction: column;
+  }
+  .column-header {
+    font-size: 1.3em;
+    font-weight: 700;
+    color: #003366;
+    margin-bottom: 15px;
+    border-bottom: 2px solid #e2e8f0;
+    padding-bottom: 10px;
+  }
+  .card {
+    background: white;
+    border-radius: 8px;
+    padding: 14px;
+    margin-bottom: 15px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    cursor: pointer;
+  }
+  .card:hover {
+    box-shadow: 0 4px 16px rgba(0,0,0,0.15);
+  }
+  .card-header {
+    font-weight: 600;
+    color: #2d3748;
+    margin-bottom: 8px;
+    display: flex;
+    justify-content: space-between;
+  }
+  .card-badge {
+    background: #667eea;
+    color: white;
+    font-size: 0.75em;
+    padding: 4px 8px;
+    border-radius: 12px;
+    font-weight: 700;
+  }
+  .atendimentos-list {
+    font-size: 0.85em;
+    margin-top: 10px;
+    max-height: 180px;
+    overflow-y: auto;
+  }
+  .atendimento-item {
+    border-bottom: 1px solid #e2e8f0;
+    padding: 8px 0;
+  }
+  .atendimento-item:last-child {
+    border-bottom: none;
+  }
+  .atendimento-id {
+    font-weight: 700;
+    color: #667eea;
+  }
+  .atendimento-date {
+    color: #a0aec0;
+    font-size: 0.75em;
+  }
+
+  /* Filtro de data */
+  #filtro-data {
+    margin-bottom: 30px;
+    display: flex;
+    gap: 15px;
+    align-items: flex-end;
+    flex-wrap: wrap;
+    max-width: 600px;
+  }
+  #filtro-data > div {
+    display: flex;
+    flex-direction: column;
+  }
+  #filtro-data label {
+    font-weight: 600;
+    color: #003366;
+  }
+  #filtro-data input[type="date"] {
+    padding: 8px;
+    border-radius: 6px;
+    border: 1px solid #ccc;
+  }
+  #filtro-data button {
+    background-color: #003366;
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 6px;
+    cursor: pointer;
+    height: 40px;
+  }
+  #filtro-data button:hover {
+    background-color: #002244;
+  }
+</style>
+
+<h1>Dashboard Executivo</h1>
+
+<form id="filtro-data" method="GET">
+  <div>
+    <label for="data_inicio">Data Inicial</label>
+    <input type="date" id="data_inicio" name="data_inicio" value="{{ data_inicio }}" />
+  </div>
+  <div>
+    <label for="data_fim">Data Final</label>
+    <input type="date" id="data_fim" name="data_fim" value="{{ data_fim }}" />
+  </div>
+  <button type="submit">Aplicar filtro</button>
+</form>
+
+<div class="stats-container">
+  <div class="stat-card">
+    {{ total_supervisores }}
+    <div class="stat-label">Supervisores</div>
+  </div>
+  <div class="stat-card">
+    {{ total_agentes }}
+    <div class="stat-label">Agentes</div>
+  </div>
+  <div class="stat-card">
+    {{ total_atendimentos }}
+    <div class="stat-label">Atendimentos</div>
+  </div>
+</div>
+
+<div class="trello-board">
+  {% for bloco in data %}
+    <div class="column">
+      <div class="column-header">{{ bloco.supervisor.nome }}</div>
+      <div><strong>Total Atendimentos:</strong> {{ bloco.total_chamados }}</div>
+      <div><strong>Melhor Agente:</strong> {{ bloco.agente_top or '-' }} ({{ bloco.qtd_top }})</div>
+
+      {% for agente in bloco.agentes %}
+        <div class="card" onclick="toggleAtendimentos('atendimentos-{{ agente.nome|replace(' ', '-') }}')">
+          <div class="card-header">
+            <span>{{ agente.nome }}</span>
+            <span class="card-badge">{{ agente.qtd_chamados }}</span>
+          </div>
+          <div id="atendimentos-{{ agente.nome|replace(' ', '-') }}" class="atendimentos-list" style="display:none;">
+            {% for a in agente.chamados %}
+              <div class="atendimento-item">
+                <div><span class="atendimento-id">#{{ a.id }}</span> <span class="atendimento-date">{{ a.data_hora.strftime('%d/%m/%Y %H:%M') }}</span></div>
+                <div><strong>{{ a.classificacao or 'Sem classificação' }}</strong> — {{ a.status }}</div>
+                <div>{{ a.conteudo[:80] }}{% if a.conteudo|length > 80 %}...{% endif %}</div>
+              </div>
+            {% else %}
+              <div style="font-style: italic; color: #a0aec0;">Sem atendimentos registrados</div>
+            {% endfor %}
+          </div>
+        </div>
+      {% else %}
+        <div style="font-style: italic; color: #a0aec0;">Nenhum agente cadastrado</div>
+      {% endfor %}
+    </div>
+  {% else %}
+    <div style="text-align:center; color:#718096; margin-top:50px;">
+      Nenhum supervisor encontrado.
+    </div>
+  {% endfor %}
+</div>
+
+<script>
+  document.getElementById('filtro-data').addEventListener('submit', function(e) {
+    const inicio = document.getElementById('data_inicio').value;
+    const fim = document.getElementById('data_fim').value;
+    if (inicio && fim && inicio > fim) {
+      e.preventDefault();
+      alert('A data inicial não pode ser maior que a data final.');
+    }
+  });
+
+  function toggleAtendimentos(id) {
+    const el = document.getElementById(id);
+    if (el.style.display === 'none' || el.style.display === '') {
+      el.style.display = 'block';
+    } else {
+      el.style.display = 'none';
+    }
+  }
+</script>
+
+{% endblock %}

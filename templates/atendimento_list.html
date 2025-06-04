@@ -1,0 +1,45 @@
+{% extends 'base.html' %}
+{% block title %}Lista de Atendimentos{% endblock %}
+{% block content %}
+<h2>Atendimentos</h2>
+
+<a href="{{ url_for('novo_atendimento') }}" style="display:inline-block; margin-bottom: 20px; background-color:#003366; color:#fff; padding: 10px 18px; border-radius:5px; text-decoration:none;">
+    Novo Atendimento
+</a>
+
+<table style="width:100%; border-collapse: collapse;">
+    <thead style="background-color:#f0f0f0; color:#333;">
+        <tr>
+            <th style="padding:10px; border: 1px solid #ccc;">ID</th>
+            <th style="padding:10px; border: 1px solid #ccc;">Data/Hora</th>
+            <th style="padding:10px; border: 1px solid #ccc;">Agente</th>
+            <th style="padding:10px; border: 1px solid #ccc;">Supervisor</th>
+            <th style="padding:10px; border: 1px solid #ccc;">Conteúdo</th>
+            <th style="padding:10px; border: 1px solid #ccc;">Classificação</th>
+            <th style="padding:10px; border: 1px solid #ccc;">Status</th>
+            <th style="padding:10px; border: 1px solid #ccc;">Ações</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for atendimento in atendimentos %}
+        <tr>
+            <td style="padding:8px; border: 1px solid #ccc; text-align:center;">{{ atendimento.id }}</td>
+            <td style="padding:8px; border: 1px solid #ccc;">{{ atendimento.data_hora.strftime('%d/%m/%Y %H:%M') }}</td>
+            <td style="padding:8px; border: 1px solid #ccc;">{{ atendimento.agente_rel.nome }}</td>
+            <td style="padding:8px; border: 1px solid #ccc;">{{ atendimento.supervisor.nome }}</td>
+            <td style="padding:8px; border: 1px solid #ccc;">{{ atendimento.conteudo[:50] }}{% if atendimento.conteudo|length > 50 %}...{% endif %}</td>
+            <td style="padding:8px; border: 1px solid #ccc;">{{ atendimento.classificacao or 'Não classificado' }}</td>
+            <td style="padding:8px; border: 1px solid #ccc;">{{ atendimento.status }}</td>
+            <td style="padding:8px; border: 1px solid #ccc; text-align:center;">
+                <a href="{{ url_for('editar_atendimento', atendimento_id=atendimento.id) }}" style="color:#003366; text-decoration:none; margin-right:8px;">Editar</a>
+                <a href="{{ url_for('excluir_atendimento', atendimento_id=atendimento.id) }}" onclick="return confirm('Confirma exclusão?');" style="color:#cc0000; text-decoration:none;">Excluir</a>
+            </td>
+        </tr>
+        {% else %}
+        <tr>
+            <td colspan="8" style="padding:20px; text-align:center; color:#666;">Nenhum atendimento encontrado.</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% endblock %}

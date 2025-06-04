@@ -19,8 +19,8 @@ jobs:
         host: ${{ secrets.EC2_HOST }}        # IP público da EC2
         username: ubuntu
         key: ${{ secrets.EC2_SSH_KEY }}
-        source: "."
-        target: "/home/ubuntu/atendepro/"
+        source: "atendepro/"
+        target: "/home/ubuntu/atendepro/atendepro/"
 
     - name: Run deploy commands on EC2
       uses: appleboy/ssh-action@v0.1.6

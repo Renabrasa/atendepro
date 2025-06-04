@@ -634,7 +634,6 @@ logger.debug("Aplicação Flask iniciada.")
 
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    app.run(debug=False)
 
-app.config['TEMPLATES_AUTO_RELOAD'] = True
-app.debug = True
+

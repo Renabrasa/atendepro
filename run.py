@@ -28,7 +28,7 @@ def run_flask():
     """Executa o servidor Flask"""
     try:
         logger.info("Iniciando servidor Flask...")
-        app.run(host='0.0.0.0', port=5000, debug=False, use_reloader=False)
+        app.run(host='0.0.0.0', port=5000, debug=True, use_reloader=False)
     except Exception as e:
         logger.error(f"Erro no servidor Flask: {e}")
         shutdown_event.set()

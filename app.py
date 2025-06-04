@@ -620,6 +620,16 @@ def logout():
     return redirect(url_for('login'))
 
 
+import logging
+
+logging.basicConfig(level=logging.DEBUG,
+                    format='%(asctime)s %(levelname)s %(message)s',
+                    handlers=[logging.FileHandler("app_debug.log"),
+                              logging.StreamHandler()])
+
+logger = logging.getLogger(__name__)
+
+logger.debug("Aplicação Flask iniciada.")
 
 
 

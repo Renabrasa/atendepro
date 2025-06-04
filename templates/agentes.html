@@ -9,14 +9,14 @@
 
   <label for="discord_id" class="form-label">Discord ID (Opcional)</label>
   <input type="text" id="discord_id" name="discord_id" class="form-input" placeholder="123456789012345678" />
-
+  
   <label for="equipes" class="form-label">Equipes</label>
   <select id="equipes" name="equipes" multiple size="5" class="form-input" required>
     {% for equipe in equipes %}
       <option value="{{ equipe.id }}">{{ equipe.nome }} (Supervisor: {{ equipe.supervisor.nome }})</option>
     {% endfor %}
   </select>
-
+  <small class="form-help">Mantenha Ctrl pressionado para selecionar múltiplas equipes</small> 
   <div class="form-buttons">
     <button type="submit" class="btn-primary">Criar Agente</button>
   </div>
@@ -114,5 +114,162 @@
     font-style: italic;
     color: #666;
   }
+
+  .form-help {
+    display: block;
+    margin-top: 4px;
+    font-size: 0.85em;
+    color: #666;
+    font-style: italic;
+  }
+  
+
+  .info-box {
+    background-color: #e3f2fd;
+    border: 1px solid #2196f3;
+    border-radius: 6px;
+    padding: 12px;
+    margin-bottom: 20px;
+    color: #1565c0;
+  }
+
+  .form-label {
+    display: block;
+    margin-top: 15px;
+    font-weight: 600;
+    color: #003366;
+  }
+  
+  .form-input {
+    width: 100%;
+    padding: 8px 10px;
+    margin-top: 6px;
+    border: 1px solid #ccc;
+    border-radius: 6px;
+    font-size: 1em;
+  }
+  
+  .form-help {
+    display: block;
+    margin-top: 4px;
+    font-size: 0.85em;
+    color: #666;
+    font-style: italic;
+  }
+  
+  select[multiple] {
+    height: auto;
+  }
+  
+  .form-buttons {
+    margin-top: 25px;
+  }
+  
+  .btn-primary {
+    background-color: #003366;
+    color: white;
+    border: none;
+    padding: 12px 20px;
+    border-radius: 6px;
+    font-size: 1em;
+    cursor: pointer;
+  }
+  
+  .btn-primary:hover {
+    background-color: #002244;
+  }
+
+  .search-box {
+    margin-bottom: 15px;
+  }
+
+  .search-box input {
+    width: 100%;
+    max-width: 400px;
+    padding: 8px 12px;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    font-size: 1em;
+  }
+  
+  .list-simple {
+    list-style: none;
+    padding-left: 0;
+    margin-top: 20px;
+  }
+  
+  .agent-item {
+    padding: 15px;
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    margin-bottom: 10px;
+    background-color: #fafafa;
+  }
+  
+  .agent-header {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    margin-bottom: 8px;
+  }
+  
+  .discord-id {
+    background-color: #7289da;
+    color: white;
+    padding: 2px 8px;
+    border-radius: 12px;
+    font-size: 0.8em;
+  }
+  
+  .status-inactive {
+    background-color: #f44336;
+    color: white;
+    padding: 2px 8px;
+    border-radius: 12px;
+    font-size: 0.8em;
+  }
+  
+  .agent-teams {
+    margin-bottom: 10px;
+  }
+  
+  .team-badge {
+    background-color: #e8f5e8;
+    color: #2e7d32;
+    padding: 4px 8px;
+    border-radius: 12px;
+    font-size: 0.85em;
+    margin-right: 6px;
+    display: inline-block;
+  }
+  
+  .no-teams {
+    font-style: italic;
+    color: #666;
+  }
+  
+  .btn-link {
+    color: #003366;
+    text-decoration: none;
+    font-weight: 600;
+    padding: 6px 12px;
+    border: 1px solid #003366;
+    border-radius: 4px;
+    background-color: transparent;
+  }
+  
+  .btn-link:hover {
+    background-color: #003366;
+    color: white;
+  }
+  
+  .empty-list {
+    font-style: italic;
+    color: #666;
+    text-align: center;
+    padding: 20px;
+  }
+
+
 </style>
 {% endblock %}

@@ -424,7 +424,7 @@
                 <div class="nav-separator"></div>
                 {% endif %}
                 
-                {% if current_user.tipo == 'coordenador' %}
+                {% if current_user.tipo in ['admin', 'coordenador'] %}
                 <a href="{{ url_for('painel_coordenacao') }}" class="{% if request.path.startswith('/coordenacao') %}active{% endif %}">
                     👑 Painel Coordenação
                 </a>

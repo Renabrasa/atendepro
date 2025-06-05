@@ -7,10 +7,11 @@
     .card {
         background: #fff;
         border-radius: 8px;
-        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
         margin-bottom: 20px;
         border: 1px solid #e0e6ed;
     }
+
     .card-header {
         background: linear-gradient(135deg, #003366, #004080);
         color: white;
@@ -18,23 +19,29 @@
         border-radius: 8px 8px 0 0;
         border-bottom: none;
     }
+
     .card-header h5 {
         margin: 0;
         font-weight: 600;
     }
+
     .card-body {
         padding: 20px;
     }
+
     .form-group {
         margin-bottom: 20px;
     }
+
     .form-label {
         font-weight: 600;
         color: #003366;
         margin-bottom: 8px;
         display: block;
     }
-    .form-control, .form-select {
+
+    .form-control,
+    .form-select {
         width: 100%;
         padding: 10px 12px;
         border: 2px solid #e0e6ed;
@@ -42,20 +49,25 @@
         font-size: 14px;
         transition: border-color 0.3s ease;
     }
-    .form-control:focus, .form-select:focus {
+
+    .form-control:focus,
+    .form-select:focus {
         outline: none;
         border-color: #003366;
-        box-shadow: 0 0 0 3px rgba(0,51,102,0.1);
+        box-shadow: 0 0 0 3px rgba(0, 51, 102, 0.1);
     }
+
     .row {
         display: flex;
         flex-wrap: wrap;
         margin: -10px;
     }
+
     .col-md-6 {
         flex: 0 0 50%;
         padding: 10px;
     }
+
     .btn {
         display: inline-block;
         padding: 10px 20px;
@@ -68,37 +80,46 @@
         font-size: 14px;
         margin-right: 10px;
     }
+
     .btn-primary {
         background: linear-gradient(135deg, #003366, #004080);
         color: white;
     }
+
     .btn-primary:hover {
         background: linear-gradient(135deg, #002244, #003366);
         transform: translateY(-1px);
     }
+
     .btn-secondary {
         background: #6c757d;
         color: white;
     }
+
     .btn-secondary:hover {
         background: #5a6268;
     }
+
     .btn-warning {
         background: #ffc107;
         color: #212529;
     }
+
     .btn-warning:hover {
         background: #e0a800;
     }
+
     .btn-sm {
         padding: 6px 12px;
         font-size: 12px;
     }
+
     .table {
         width: 100%;
         border-collapse: collapse;
         margin-top: 10px;
     }
+
     .table th {
         background-color: #f8f9fa;
         color: #003366;
@@ -107,24 +128,30 @@
         text-align: left;
         border-bottom: 2px solid #dee2e6;
     }
+
     .table td {
         padding: 12px;
         border-bottom: 1px solid #dee2e6;
     }
+
     .table tbody tr:hover {
         background-color: #f8f9fa;
     }
+
     .table-responsive {
         overflow-x: auto;
     }
+
     .text-muted {
         color: #6c757d;
         font-style: italic;
     }
+
     @media (max-width: 768px) {
         .col-md-6 {
             flex: 0 0 100%;
         }
+
         .table-responsive {
             font-size: 14px;
         }
@@ -149,7 +176,7 @@
                         <input type="text" class="form-control" id="nome" name="nome" required>
                     </div>
                 </div>
-                
+
                 <!-- Campo supervisor apenas para admin -->
                 {% if current_user.tipo == 'admin' %}
                 <div class="col-md-6">
@@ -165,7 +192,7 @@
                 </div>
                 {% endif %}
             </div>
-            
+
             <div style="margin-top: 20px;">
                 <button type="submit" class="btn btn-primary">Criar Equipe</button>
                 <a href="{{ url_for('dashboard') }}" class="btn btn-secondary">Voltar</a>
@@ -200,8 +227,11 @@
                         <td>{{ equipe.supervisor.nome }}</td>
                         <td>{{ equipe.agentes|length }}</td>
                         <td>
-                            {% if current_user.tipo == 'admin' %}
-                            <a href="{{ url_for('editar_equipe', equipe_id=equipe.id) }}" class="btn btn-sm btn-warning">Editar</a>
+                            {% if current_user.tipo in ['admin', 'coordenadora'] %}
+                            <a href="{{ url_for('editar_equipe', equipe_id=equipe.id) }}"
+                                class="btn btn-sm btn-primary">
+                                Editar
+                            </a>
                             {% endif %}
                         </td>
                     </tr>

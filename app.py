@@ -92,6 +92,9 @@ def dashboard():
     if current_user.tipo in ['admin', 'coordenadora']:
         # Admin e Coordenadora veem todos os supervisores
         supervisores = User.query.filter_by(tipo='supervisor').all()
+        
+        if current_user.tipo == 'coordenadora':
+           supervisores.append(current_user)
     else:
         # Supervisor vê apenas a si mesmo
         supervisores = [current_user]
@@ -783,7 +786,8 @@ def painel_coordenacao():
     
     # Estatísticas gerais que coordenador pode ver
     stats = {
-        'total_supervisores': User.query.filter_by(tipo='supervisor').count(),
+        # ALTERAÇÃO AQUI - incluir coordenadores na contagem:
+        'total_supervisores': User.query.filter(User.tipo.in_(['supervisor', 'coordenadora'])).count(),
         'total_agentes': Agente.query.count(),
         'total_atendimentos': Atendimento.query.count(),
         'atendimentos_mes': Atendimento.query.filter(
@@ -794,9 +798,10 @@ def painel_coordenacao():
         ).count()
     }
     
+    
     # Relatório por supervisor
     supervisores_stats = []
-    supervisores = User.query.filter_by(tipo='supervisor').all()
+    supervisores = User.query.filter(User.tipo.in_(['supervisor', 'coordenadora'])).all()
     
     for supervisor in supervisores:
         atendimentos_supervisor = Atendimento.query.filter_by(supervisor_id=supervisor.id).count()
@@ -808,7 +813,8 @@ def painel_coordenacao():
             'atendimentos': atendimentos_supervisor,
             'agentes': agentes_supervisor,
             'equipes': equipes_supervisor,
-            'status_discord': '✅' if supervisor.discord_id else '❌'
+            'status_discord': '✅' if supervisor.discord_id else '❌',
+            'tipo': supervisor.tipo
         })
     
     # Ordena por atendimentos

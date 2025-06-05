@@ -2,193 +2,259 @@
 {% block title %}Dashboard Executivo{% endblock %}
 {% block content %}
 <style>
-  /* Mantém compatibilidade com estrutura original */
-  .stats-container {
-    display: flex;
-    gap: 20px;
-    margin-bottom: 30px;
-    flex-wrap: wrap;
-  }
-  
-  .stat-card {
-    flex: 1;
-    min-width: 200px;
-    background: linear-gradient(135deg, #003366, #0056b3);
-    color: white;
-    padding: 25px;
-    border-radius: 12px;
-    text-align: center;
-    font-weight: 700;
-    font-size: 1.8em;
-    box-shadow: 0 4px 15px rgba(0,0,0,0.2);
-    transition: transform 0.3s ease;
-  }
-  
-  .stat-card:hover {
-    transform: translateY(-3px);
-  }
-  
-  .stat-label {
-    font-weight: 400;
-    font-size: 0.6em;
-    margin-top: 8px;
-    opacity: 0.9;
-  }
-  
-  .stat-detail {
-    font-size: 0.5em;
-    margin-top: 5px;
-    opacity: 0.8;
+  /* Variáveis CSS para consistência */
+  :root {
+    --primary-color: #003366;
+    --primary-light: #0056b3;
+    --secondary-color: #667eea;
+    --accent-color: #764ba2;
+    --success-color: #28a745;
+    --warning-color: #ffc107;
+    --danger-color: #dc3545;
+    --light-bg: #f8f9fa;
+    --border-color: #e2e8f0;
+    --text-primary: #2d3748;
+    --text-secondary: #718096;
+    --shadow-light: 0 2px 8px rgba(0,0,0,0.1);
+    --shadow-medium: 0 4px 12px rgba(0,0,0,0.15);
+    --border-radius: 12px;
   }
 
-  /* Header melhorado */
+  /* Layout principal */
+  .dashboard-container {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 20px;
+  }
+
+  /* Header com filtros */
   .dashboard-header {
-    background: linear-gradient(135deg, #003366, #0056b3);
+    background: linear-gradient(135deg, var(--primary-color), var(--primary-light));
     color: white;
     padding: 25px;
-    border-radius: 12px;
+    border-radius: var(--border-radius);
     margin-bottom: 30px;
-    box-shadow: 0 4px 15px rgba(0,0,0,0.15);
+    box-shadow: var(--shadow-medium);
   }
-  
+
   .dashboard-title {
-    font-size: 2em;
+    font-size: 2.2em;
     font-weight: 700;
     margin: 0 0 20px 0;
+    display: flex;
+    align-items: center;
+    gap: 15px;
   }
 
-  /* Filtro melhorado */
-  #filtro-data {
-    margin-bottom: 30px;
+  .filter-section {
     display: flex;
-    gap: 15px;
+    gap: 20px;
     align-items: flex-end;
     flex-wrap: wrap;
-    background: white;
-    padding: 20px;
-    border-radius: 12px;
-    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
   }
-  
-  #filtro-data > div {
+
+  .filter-group {
     display: flex;
     flex-direction: column;
+    gap: 5px;
   }
-  
-  #filtro-data label {
+
+  .filter-group label {
     font-weight: 600;
-    color: #003366;
-    margin-bottom: 5px;
+    font-size: 0.9em;
+    opacity: 0.9;
   }
-  
-  #filtro-data input[type="date"] {
+
+  .filter-group input {
     padding: 10px;
-    border-radius: 8px;
-    border: 2px solid #e2e8f0;
-    font-size: 1em;
-    transition: border-color 0.3s ease;
-  }
-  
-  #filtro-data input[type="date"]:focus {
-    border-color: #003366;
-    outline: none;
-  }
-  
-  #filtro-data button {
-    background: linear-gradient(135deg, #003366, #0056b3);
-    color: white;
     border: none;
-    padding: 12px 24px;
+    border-radius: 8px;
+    font-size: 1em;
+    min-width: 140px;
+  }
+
+  .filter-btn {
+    background: rgba(255,255,255,0.2);
+    color: white;
+    border: 2px solid rgba(255,255,255,0.3);
+    padding: 10px 20px;
     border-radius: 8px;
     cursor: pointer;
-    height: 44px;
     font-weight: 600;
     transition: all 0.3s ease;
-  }
-  
-  #filtro-data button:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(0,51,102,0.3);
+    height: 42px;
   }
 
-  /* Grid de supervisores melhorado */
-  .supervisors-grid {
+  .filter-btn:hover {
+    background: rgba(255,255,255,0.3);
+    border-color: rgba(255,255,255,0.5);
+  }
+
+  /* Cards de estatísticas principais */
+  .stats-overview {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(400px, 1fr));
-    gap: 25px;
-    margin-bottom: 30px;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 20px;
+    margin-bottom: 40px;
   }
 
-  .supervisor-card {
+  .stat-card {
     background: white;
-    border-radius: 12px;
-    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
-    overflow: hidden;
-    transition: all 0.3s ease;
-  }
-  
-  .supervisor-card:hover {
-    transform: translateY(-3px);
-    box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+    border-radius: var(--border-radius);
+    padding: 25px;
+    text-align: center;
+    box-shadow: var(--shadow-light);
+    border-left: 5px solid var(--secondary-color);
+    transition: transform 0.3s ease;
   }
 
-  .supervisor-header {
-    background: linear-gradient(135deg, #667eea, #764ba2);
+  .stat-card:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-medium);
+  }
+
+  .stat-number {
+    font-size: 2.5em;
+    font-weight: 700;
+    color: var(--primary-color);
+    margin-bottom: 8px;
+  }
+
+  .stat-label {
+    font-size: 1em;
+    font-weight: 600;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  .stat-trend {
+    font-size: 0.8em;
+    margin-top: 5px;
+    font-weight: 500;
+  }
+
+  .trend-up { color: var(--success-color); }
+  .trend-down { color: var(--danger-color); }
+
+  /* Seção de supervisores */
+  .supervisors-section {
+    background: white;
+    border-radius: var(--border-radius);
+    box-shadow: var(--shadow-light);
+    margin-bottom: 30px;
+    overflow: hidden;
+  }
+
+  .section-header {
+    background: linear-gradient(135deg, #f093fb, #f5576c);
     color: white;
-    padding: 20px;
+    padding: 20px 25px;
+    font-size: 1.4em;
+    font-weight: 600;
     display: flex;
     justify-content: space-between;
     align-items: center;
   }
-  
+
+  .section-tools {
+    display: flex;
+    gap: 10px;
+  }
+
+  .tool-btn {
+    background: rgba(255,255,255,0.2);
+    color: white;
+    border: none;
+    padding: 8px 12px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 0.85em;
+    transition: all 0.3s ease;
+  }
+
+  .tool-btn:hover {
+    background: rgba(255,255,255,0.3);
+  }
+
+  /* Grid de supervisores */
+  .supervisors-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(400px, 1fr));
+    gap: 25px;
+    padding: 25px;
+  }
+
+  .supervisor-card {
+    background: var(--light-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    overflow: hidden;
+    transition: all 0.3s ease;
+  }
+
+  .supervisor-card:hover {
+    transform: translateY(-3px);
+    box-shadow: var(--shadow-medium);
+  }
+
+  .supervisor-header {
+    background: linear-gradient(135deg, var(--primary-color), var(--primary-light));
+    color: white;
+    padding: 15px 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
   .supervisor-name {
-    font-size: 1.3em;
+    font-size: 1.2em;
     font-weight: 600;
     margin: 0;
   }
-  
+
   .supervisor-stats {
     display: flex;
-    gap: 20px;
+    gap: 15px;
     font-size: 0.9em;
   }
-  
+
   .supervisor-stat {
     text-align: center;
   }
-  
+
   .supervisor-stat-number {
     font-weight: 700;
-    font-size: 1.3em;
+    font-size: 1.2em;
   }
-  
+
   .supervisor-stat-label {
     font-size: 0.8em;
     opacity: 0.9;
   }
 
-  /* Agentes melhorados */
+  /* Lista de agentes dentro do card do supervisor */
   .agents-section {
     padding: 20px;
   }
-  
+
   .agents-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
     margin-bottom: 15px;
     padding-bottom: 10px;
-    border-bottom: 2px solid #e2e8f0;
+    border-bottom: 2px solid var(--border-color);
   }
-  
+
   .agents-title {
     font-weight: 600;
-    color: #2d3748;
+    color: var(--text-primary);
     font-size: 1.1em;
   }
-  
+
   .top-agent-badge {
-    background: linear-gradient(135deg, #28a745, #20c997);
+    background: linear-gradient(135deg, var(--success-color), #20c997);
     color: white;
     padding: 5px 12px;
     border-radius: 20px;
@@ -196,422 +262,484 @@
     font-weight: 600;
   }
 
-  .agent-card {
-    background: #f8f9fa;
-    border: 2px solid #e9ecef;
-    border-radius: 10px;
+  .agents-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .agent-item {
+    background: white;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
     padding: 15px;
-    margin-bottom: 12px;
     cursor: pointer;
     transition: all 0.3s ease;
     position: relative;
   }
-  
-  .agent-card:hover {
-    border-color: #667eea;
-    box-shadow: 0 3px 12px rgba(102, 126, 234, 0.15);
+
+  .agent-item:hover {
+    border-color: var(--secondary-color);
+    box-shadow: 0 2px 8px rgba(102, 126, 234, 0.1);
   }
-  
-  .agent-card.expanded {
-    border-color: #667eea;
-    box-shadow: 0 4px 15px rgba(102, 126, 234, 0.2);
+
+  .agent-item.expanded {
+    border-color: var(--secondary-color);
+    box-shadow: var(--shadow-light);
   }
-  
+
   .agent-summary {
     display: flex;
     justify-content: space-between;
     align-items: center;
   }
-  
-  .agent-info h4 {
-    margin: 0 0 5px 0;
-    font-size: 1.1em;
-    color: #2d3748;
+
+  .agent-info {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
   }
-  
+
+  .agent-name {
+    font-weight: 600;
+    color: var(--text-primary);
+    font-size: 1em;
+  }
+
   .agent-performance {
     font-size: 0.85em;
-    color: #718096;
+    color: var(--text-secondary);
   }
-  
+
   .agent-metrics {
     display: flex;
     gap: 20px;
     align-items: center;
   }
-  
+
   .metric {
     text-align: center;
   }
-  
+
   .metric-number {
-    font-size: 1.5em;
+    font-size: 1.4em;
     font-weight: 700;
-    color: #667eea;
-  }
-  
-  .metric-label {
-    font-size: 0.75em;
-    color: #718096;
-    text-transform: uppercase;
-  }
-  
-  .expand-icon {
-    color: #718096;
-    transition: transform 0.3s ease;
-    font-size: 1.2em;
-  }
-  
-  .agent-card.expanded .expand-icon {
-    transform: rotate(180deg);
+    color: var(--secondary-color);
   }
 
-  /* Detalhes dos atendimentos */
-  .atendimentos-details {
+  .metric-label {
+    font-size: 0.75em;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  /* Detalhes dos atendimentos (expansível) */
+  .agent-details {
     margin-top: 15px;
     padding-top: 15px;
-    border-top: 2px solid #e2e8f0;
+    border-top: 1px solid var(--border-color);
     display: none;
   }
-  
-  .atendimentos-details.show {
+
+  .agent-details.show {
     display: block;
   }
-  
-  .atendimentos-list {
-    max-height: 250px;
-    overflow-y: auto;
-  }
-  
-  .atendimento-item {
-    background: white;
-    border: 1px solid #e2e8f0;
-    border-radius: 8px;
-    padding: 12px;
+
+  .details-header {
+    font-weight: 600;
+    color: var(--text-primary);
     margin-bottom: 10px;
-    font-size: 0.9em;
+    font-size: 0.95em;
   }
-  
+
+  .atendimentos-list {
+    max-height: 200px;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .atendimento-item {
+    background: var(--light-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    padding: 10px;
+    font-size: 0.85em;
+  }
+
   .atendimento-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 8px;
+    margin-bottom: 5px;
   }
-  
+
   .atendimento-id {
     font-weight: 700;
-    color: #667eea;
+    color: var(--secondary-color);
   }
-  
+
   .atendimento-date {
-    color: #718096;
-    font-size: 0.85em;
+    color: var(--text-secondary);
+    font-size: 0.8em;
   }
-  
+
   .atendimento-status {
-    display: inline-block;
-    padding: 3px 8px;
+    padding: 2px 8px;
     border-radius: 12px;
     font-size: 0.75em;
     font-weight: 600;
     text-transform: uppercase;
-    margin-bottom: 5px;
   }
-  
+
   .status-pendente {
     background: #fff3cd;
     color: #856404;
   }
-  
+
   .status-classificado {
     background: #d4edda;
     color: #155724;
   }
-  
+
   .atendimento-content {
-    color: #2d3748;
+    color: var(--text-primary);
     line-height: 1.4;
   }
 
+  .expand-icon {
+    transition: transform 0.3s ease;
+    color: var(--text-secondary);
+  }
+
+  .agent-item.expanded .expand-icon {
+    transform: rotate(180deg);
+  }
+
   /* Performance indicators */
-  .performance-dot {
-    width: 10px;
-    height: 10px;
+  .performance-indicator {
+    width: 8px;
+    height: 8px;
     border-radius: 50%;
-    display: inline-block;
     margin-left: 8px;
   }
-  
-  .performance-high { background: #28a745; }
-  .performance-medium { background: #ffc107; }
-  .performance-low { background: #dc3545; }
 
-  /* Top 5 section */
-  .top-section {
-    background: white;
-    border-radius: 12px;
-    padding: 25px;
-    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
-    margin-bottom: 30px;
+  .performance-high {
+    background: var(--success-color);
   }
-  
-  .top-header {
-    background: linear-gradient(135deg, #f093fb, #f5576c);
-    color: white;
-    padding: 15px 20px;
-    border-radius: 8px;
-    margin: -25px -25px 20px -25px;
-    font-size: 1.2em;
-    font-weight: 600;
+
+  .performance-medium {
+    background: var(--warning-color);
   }
-  
-  .top-agents-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
-    gap: 15px;
-  }
-  
-  .top-agent-card {
-    background: #f8f9fa;
-    border: 2px solid #e9ecef;
-    border-radius: 10px;
-    padding: 15px;
-    text-align: center;
-    transition: all 0.3s ease;
-  }
-  
-  .top-agent-card:hover {
-    border-color: #667eea;
-    transform: translateY(-2px);
-  }
-  
-  .top-agent-rank {
-    font-size: 1.5em;
-    margin-bottom: 8px;
-  }
-  
-  .top-agent-name {
-    font-weight: 600;
-    color: #2d3748;
-    margin-bottom: 5px;
-  }
-  
-  .top-agent-score {
-    font-size: 1.3em;
-    font-weight: 700;
-    color: #667eea;
-  }
-  
-  .top-agent-supervisor {
-    font-size: 0.8em;
-    color: #718096;
-    margin-top: 5px;
+
+  .performance-low {
+    background: var(--danger-color);
   }
 
   /* Responsividade */
   @media (max-width: 768px) {
-    .stats-container {
-      flex-direction: column;
+    .dashboard-container {
+      padding: 15px;
     }
-    
-    .supervisors-grid {
-      grid-template-columns: 1fr;
-    }
-    
-    #filtro-data {
+
+    .filter-section {
       flex-direction: column;
       align-items: stretch;
     }
-    
+
+    .supervisors-grid {
+      grid-template-columns: 1fr;
+      padding: 15px;
+    }
+
     .agent-metrics {
       gap: 10px;
     }
-    
-    .top-agents-grid {
-      grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+
+    .metric-number {
+      font-size: 1.2em;
     }
+  }
+
+  /* Animações suaves */
+  .fade-in {
+    animation: fadeIn 0.5s ease-in;
+  }
+
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
   }
 
   /* Estados vazios */
   .empty-state {
     text-align: center;
-    padding: 30px;
-    color: #718096;
+    padding: 40px;
+    color: var(--text-secondary);
     font-style: italic;
+  }
+
+  .empty-state-icon {
+    font-size: 3em;
+    margin-bottom: 15px;
+    opacity: 0.5;
   }
 </style>
 
-<div class="dashboard-header">
-  <h1 class="dashboard-title">📊 Dashboard Executivo</h1>
-</div>
-
-<form id="filtro-data" method="GET">
-  <div>
-    <label for="data_inicio">📅 Data Inicial</label>
-    <input type="date" id="data_inicio" name="data_inicio" value="{{ data_inicio }}" />
-  </div>
-  <div>
-    <label for="data_fim">📅 Data Final</label>
-    <input type="date" id="data_fim" name="data_fim" value="{{ data_fim }}" />
-  </div>
-  <button type="submit">🔍 Aplicar Filtro</button>
-</form>
-
-<div class="stats-container">
-  <div class="stat-card">
-    {{ total_supervisores }}
-    <div class="stat-label">Supervisores</div>
-    <div class="stat-detail">Ativos no sistema</div>
-  </div>
-  <div class="stat-card">
-    {{ total_agentes }}
-    <div class="stat-label">Agentes</div>
-    <div class="stat-detail">Distribuídos em equipes</div>
-  </div>
-  <div class="stat-card">
-    {{ total_atendimentos }}
-    <div class="stat-label">Atendimentos</div>
-    <div class="stat-detail">No período selecionado</div>
-  </div>
-  <div class="stat-card">
-    {{ media_por_agente }}
-    <div class="stat-label">Média por Agente</div>
-    <div class="stat-detail">Produtividade média</div>
-  </div>
-</div>
-
-<div class="supervisors-grid">
-  {% for bloco in data %}
-    <div class="supervisor-card">
-      <div class="supervisor-header">
-        <h3 class="supervisor-name">{{ bloco.supervisor.nome }}</h3>
-        <div class="supervisor-stats">
-          <div class="supervisor-stat">
-            <div class="supervisor-stat-number">{{ bloco.total_chamados }}</div>
-            <div class="supervisor-stat-label">Total</div>
-          </div>
-          <div class="supervisor-stat">
-            <div class="supervisor-stat-number">{{ bloco.num_agentes }}</div>
-            <div class="supervisor-stat-label">Agentes</div>
-          </div>
-        </div>
+<div class="dashboard-container">
+  <!-- Header com título e filtros -->
+  <div class="dashboard-header">
+    <h1 class="dashboard-title">
+      📊 Dashboard Executivo
+      {% if current_user.tipo == 'coordenadora' %}
+        <span style="font-size: 0.6em; opacity: 0.8;">- Visão de Coordenação</span>
+      {% endif %}
+    </h1>
+    
+    <form class="filter-section" method="GET">
+      <div class="filter-group">
+        <label for="data_inicio">📅 Data Inicial</label>
+        <input type="date" id="data_inicio" name="data_inicio" value="{{ data_inicio }}" />
       </div>
+      <div class="filter-group">
+        <label for="data_fim">📅 Data Final</label>
+        <input type="date" id="data_fim" name="data_fim" value="{{ data_fim }}" />
+      </div>
+      <button type="submit" class="filter-btn">🔍 Aplicar Filtro</button>
+    </form>
+  </div>
 
-      <div class="agents-section">
-        <div class="agents-header">
-          <span class="agents-title">🎯 Agentes da Equipe</span>
-          {% if bloco.agente_top %}
-            <span class="top-agent-badge">🏆 Top: {{ bloco.agente_top }}</span>
-          {% endif %}
-        </div>
+  <!-- Cards de estatísticas principais -->
+  <div class="stats-overview fade-in">
+    <div class="stat-card">
+      <div class="stat-number">{{ total_supervisores }}</div>
+      <div class="stat-label">Supervisores</div>
+      <div class="stat-trend trend-up">+{{ ((total_supervisores / (total_supervisores or 1)) * 100) | round(0) }}% ativos</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-number">{{ total_agentes }}</div>
+      <div class="stat-label">Agentes</div>
+      <div class="stat-trend trend-up">Distribuídos em equipes</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-number">{{ total_atendimentos }}</div>
+      <div class="stat-label">Atendimentos</div>
+      <div class="stat-trend">No período selecionado</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-number">{{ media_por_agente }}</div>
+      <div class="stat-label">Média por Agente</div>
+      <div class="stat-trend trend-up">Produtividade média</div>
+    </div>
+  </div>
 
-        {% for agente in bloco.agentes %}
-          <div class="agent-card" onclick="toggleDetails('agent-{{ loop.index0 }}-{{ loop.parent.loop.index0 }}')">
-            <div class="agent-summary">
-              <div class="agent-info">
-                <h4>
-                  {{ agente.nome }}
-                  {% set performance_level = 'high' if agente.qtd_chamados >= (media_por_agente * 1.2) else 'medium' if agente.qtd_chamados >= media_por_agente else 'low' %}
-                  <span class="performance-dot performance-{{ performance_level }}"></span>
-                </h4>
-                <div class="agent-performance">
-                  {% if bloco.total_chamados > 0 %}
-                    {{ ((agente.qtd_chamados / bloco.total_chamados) * 100) | round(1) }}% dos atendimentos
-                  {% else %}
-                    Sem atendimentos
-                  {% endif %}
-                </div>
+  <!-- Seção de supervisores -->
+  <div class="supervisors-section fade-in">
+    <div class="section-header">
+      <span>👥 Performance por Supervisor</span>
+      <div class="section-tools">
+        <button class="tool-btn" onclick="expandAll()">📖 Expandir Todos</button>
+        <button class="tool-btn" onclick="collapseAll()">📕 Recolher Todos</button>
+        <button class="tool-btn" onclick="exportData()">📊 Exportar</button>
+      </div>
+    </div>
+
+    <div class="supervisors-grid">
+      {% for bloco in data %}
+        <div class="supervisor-card">
+          <!-- Header do supervisor -->
+          <div class="supervisor-header">
+            <h3 class="supervisor-name">{{ bloco.supervisor.nome }}</h3>
+            <div class="supervisor-stats">
+              <div class="supervisor-stat">
+                <div class="supervisor-stat-number">{{ bloco.total_chamados }}</div>
+                <div class="supervisor-stat-label">Total</div>
               </div>
-              
-              <div class="agent-metrics">
-                <div class="metric">
-                  <div class="metric-number">{{ agente.qtd_chamados }}</div>
-                  <div class="metric-label">Atendimentos</div>
-                </div>
-                <div class="expand-icon">▼</div>
+              <div class="supervisor-stat">
+                <div class="supervisor-stat-number">{{ bloco.num_agentes }}</div>
+                <div class="supervisor-stat-label">Agentes</div>
               </div>
             </div>
+          </div>
 
-            <div id="agent-{{ loop.index0 }}-{{ loop.parent.loop.index0 }}" class="atendimentos-details">
-              <strong>📋 Histórico de Atendimentos:</strong>
-              <div class="atendimentos-list">
-                {% for atendimento in agente.chamados %}
-                  <div class="atendimento-item">
-                    <div class="atendimento-header">
-                      <span class="atendimento-id">#{{ atendimento.id }}</span>
-                      <span class="atendimento-date">{{ atendimento.data_hora.strftime('%d/%m/%Y %H:%M') }}</span>
+          <!-- Seção de agentes -->
+          <div class="agents-section">
+            <div class="agents-header">
+              <span class="agents-title">🎯 Agentes da Equipe</span>
+              {% if bloco.agente_top %}
+                <span class="top-agent-badge">🏆 Top: {{ bloco.agente_top }}</span>
+              {% endif %}
+            </div>
+
+            <div class="agents-list">
+              {% for agente in bloco.agentes %}
+                <div class="agent-item" onclick="toggleAgentDetails('agent-{{ loop.index0 }}-{{ loop.parent.loop.index0 }}')">
+                  <div class="agent-summary">
+                    <div class="agent-info">
+                      <div class="agent-name">
+                        {{ agente.nome }}
+                        <span class="performance-indicator performance-{{ 'high' if agente.qtd_chamados >= (media_por_agente * 1.2) else 'medium' if agente.qtd_chamados >= media_por_agente else 'low' }}"></span>
+                      </div>
+                      <div class="agent-performance">
+                        {% set performance_percent = ((agente.qtd_chamados / (bloco.total_chamados or 1)) * 100) | round(1) %}
+                        {{ performance_percent }}% dos atendimentos do supervisor
+                      </div>
                     </div>
-                    <div class="atendimento-status status-{{ atendimento.status or 'pendente' }}">
-                      {{ atendimento.status or 'pendente' }}
-                    </div>
-                    <div class="atendimento-content">
-                      <strong>{{ atendimento.classificacao or 'Sem classificação' }}</strong><br>
-                      {{ atendimento.conteudo[:100] }}{% if atendimento.conteudo|length > 100 %}...{% endif %}
+                    
+                    <div class="agent-metrics">
+                      <div class="metric">
+                        <div class="metric-number">{{ agente.qtd_chamados }}</div>
+                        <div class="metric-label">Atendimentos</div>
+                      </div>
+                      <div class="expand-icon">▼</div>
                     </div>
                   </div>
-                {% else %}
-                  <div class="empty-state">📭 Nenhum atendimento registrado</div>
-                {% endfor %}
+
+                  <!-- Detalhes expandíveis -->
+                  <div id="agent-{{ loop.index0 }}-{{ loop.parent.loop.index0 }}" class="agent-details">
+                    <div class="details-header">📋 Histórico de Atendimentos:</div>
+                    <div class="atendimentos-list">
+                      {% for atendimento in agente.chamados %}
+                        <div class="atendimento-item">
+                          <div class="atendimento-header">
+                            <span class="atendimento-id">#{{ atendimento.id }}</span>
+                            <span class="atendimento-date">{{ atendimento.data_hora.strftime('%d/%m/%Y %H:%M') }}</span>
+                          </div>
+                          <div class="atendimento-status status-{{ atendimento.status }}">
+                            {{ atendimento.status or 'pendente' }}
+                          </div>
+                          <div class="atendimento-content">
+                            <strong>{{ atendimento.classificacao or 'Sem classificação' }}</strong><br>
+                            {{ atendimento.conteudo[:100] }}{% if atendimento.conteudo|length > 100 %}...{% endif %}
+                          </div>
+                        </div>
+                      {% else %}
+                        <div class="empty-state">
+                          <div class="empty-state-icon">📭</div>
+                          Nenhum atendimento registrado
+                        </div>
+                      {% endfor %}
+                    </div>
+                  </div>
+                </div>
+              {% else %}
+                <div class="empty-state">
+                  <div class="empty-state-icon">👤</div>
+                  Nenhum agente cadastrado para este supervisor
+                </div>
+              {% endfor %}
+            </div>
+          </div>
+        </div>
+      {% else %}
+        <div class="empty-state">
+          <div class="empty-state-icon">👥</div>
+          <h3>Nenhum supervisor encontrado</h3>
+          <p>Não há dados para exibir no período selecionado.</p>
+        </div>
+      {% endfor %}
+    </div>
+  </div>
+
+  <!-- Top 5 Agentes -->
+  {% if top_5_agentes %}
+  <div class="supervisors-section fade-in">
+    <div class="section-header">
+      <span>🏆 Top 5 Agentes Geral</span>
+    </div>
+    <div style="padding: 25px;">
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px;">
+        {% for agente in top_5_agentes %}
+          <div class="agent-item" style="margin: 0;">
+            <div class="agent-summary" style="flex-direction: column; align-items: center; text-align: center;">
+              <div class="agent-name" style="font-size: 1.1em;">
+                {% if loop.index == 1 %}🥇{% elif loop.index == 2 %}🥈{% elif loop.index == 3 %}🥉{% else %}🏅{% endif %}
+                {{ agente.nome }}
+              </div>
+              <div class="metric" style="margin-top: 10px;">
+                <div class="metric-number">{{ agente.qtd_chamados }}</div>
+                <div class="metric-label">Atendimentos</div>
+              </div>
+              <div class="agent-performance" style="margin-top: 5px;">
+                Supervisor: {{ agente.supervisor_nome }}
               </div>
             </div>
           </div>
-        {% else %}
-          <div class="empty-state">👤 Nenhum agente cadastrado</div>
         {% endfor %}
       </div>
     </div>
-  {% else %}
-    <div class="empty-state">
-      <h3>👥 Nenhum supervisor encontrado</h3>
-      <p>Não há dados para exibir no período selecionado.</p>
-    </div>
-  {% endfor %}
-</div>
-
-{% if top_5_agentes %}
-<div class="top-section">
-  <div class="top-header">🏆 Top 5 Agentes Geral</div>
-  <div class="top-agents-grid">
-    {% for agente in top_5_agentes %}
-      <div class="top-agent-card">
-        <div class="top-agent-rank">
-          {% if loop.index == 1 %}🥇{% elif loop.index == 2 %}🥈{% elif loop.index == 3 %}🥉{% else %}🏅{% endif %}
-        </div>
-        <div class="top-agent-name">{{ agente.nome }}</div>
-        <div class="top-agent-score">{{ agente.qtd_chamados }}</div>
-        <div class="top-agent-supervisor">{{ agente.supervisor_nome }}</div>
-      </div>
-    {% endfor %}
   </div>
+  {% endif %}
 </div>
-{% endif %}
 
 <script>
-  // Validação do formulário
-  document.getElementById('filtro-data').addEventListener('submit', function(e) {
+  // Validação de formulário
+  document.querySelector('.filter-section').addEventListener('submit', function(e) {
     const inicio = document.getElementById('data_inicio').value;
     const fim = document.getElementById('data_fim').value;
     
     if (inicio && fim && inicio > fim) {
       e.preventDefault();
       alert('⚠️ A data inicial não pode ser maior que a data final.');
+      return false;
     }
   });
 
-  // Toggle dos detalhes dos agentes
-  function toggleDetails(elementId) {
-    const details = document.getElementById(elementId);
-    const card = details.closest('.agent-card');
+  // Toggle detalhes do agente
+  function toggleAgentDetails(agentId) {
+    const details = document.getElementById(agentId);
+    const agentItem = details.closest('.agent-item');
     
     if (details.classList.contains('show')) {
       details.classList.remove('show');
-      card.classList.remove('expanded');
+      agentItem.classList.remove('expanded');
     } else {
       details.classList.add('show');
-      card.classList.add('expanded');
+      agentItem.classList.add('expanded');
     }
   }
+
+  // Expandir todos os agentes
+  function expandAll() {
+    document.querySelectorAll('.agent-details').forEach(detail => {
+      detail.classList.add('show');
+      detail.closest('.agent-item').classList.add('expanded');
+    });
+  }
+
+  // Recolher todos os agentes
+  function collapseAll() {
+    document.querySelectorAll('.agent-details').forEach(detail => {
+      detail.classList.remove('show');
+      detail.closest('.agent-item').classList.remove('expanded');
+    });
+  }
+
+  // Exportar dados (placeholder)
+  function exportData() {
+    // Implementar exportação para Excel/PDF
+    alert('📊 Funcionalidade de exportação será implementada em breve!');
+  }
+
+  // Animação de fade-in nos cards
+  document.addEventListener('DOMContentLoaded', function() {
+    const cards = document.querySelectorAll('.fade-in');
+    cards.forEach((card, index) => {
+      setTimeout(() => {
+        card.style.opacity = '1';
+        card.style.transform = 'translateY(0)';
+      }, index * 100);
+    });
+  });
+
+  // Auto-refresh a cada 5 minutos (opcional)
+  // setInterval(() => {
+  //   if (confirm('🔄 Atualizar dados do dashboard?')) {
+  //     location.reload();
+  //   }
+  // }, 300000);
 </script>
 
 {% endblock %}

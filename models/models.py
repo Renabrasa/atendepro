@@ -11,6 +11,7 @@ agente_equipe = db.Table('agente_equipe',
     db.Column('agente_id', db.Integer, db.ForeignKey('agentes.id'), primary_key=True),
     db.Column('equipe_id', db.Integer, db.ForeignKey('equipes.id'), primary_key=True)
 )
+# Atualize a classe User no models/models.py
 
 class User(UserMixin, db.Model):
     __tablename__ = 'users'
@@ -18,12 +19,9 @@ class User(UserMixin, db.Model):
     email = db.Column(db.String(120), unique=True, nullable=False)
     nome = db.Column(db.String(100), nullable=False)
     senha = db.Column(db.String(200), nullable=False)
-    tipo = db.Column(db.String(20), nullable=False)  # 'admin' ou 'supervisor'
+    tipo = db.Column(db.String(20), nullable=False)  # 'admin', 'coordenador' ou 'supervisor'
     discord_id = db.Column(db.String(50), unique=True, nullable=True)
     servidor_discord_id = db.Column(db.Text, nullable=True)
-    
-    # REMOVIDAS as colunas novas que causam erro:
-    # status_online, ultimo_acesso, horario_inicio, horario_fim
     
     def atende_servidor(self, servidor_id):
         """Verifica se este supervisor atende o servidor especificado"""
@@ -32,7 +30,6 @@ class User(UserMixin, db.Model):
         
         servidor_id_str = str(servidor_id)
         
-        # Se é um JSON array (múltiplos servidores)
         if self.servidor_discord_id.startswith('['):
             try:
                 servidores = json.loads(self.servidor_discord_id)
@@ -40,8 +37,19 @@ class User(UserMixin, db.Model):
             except json.JSONDecodeError:
                 return False
         
-        # Se é um ID único
         return self.servidor_discord_id == servidor_id_str
+    
+    def pode_ver_todos_supervisores(self):
+        """Verifica se pode ver dados de todos os supervisores"""
+        return self.tipo in ['admin', 'coordenador']
+    
+    def pode_acessar_admin(self):
+        """Verifica se pode acessar painel admin"""
+        return self.tipo == 'admin'
+    
+    def pode_executar_funcoes_destrutivas(self):
+        """Verifica se pode executar funções como reset, etc."""
+        return self.tipo == 'admin'
 
 class Equipe(db.Model):
     __tablename__ = 'equipes'

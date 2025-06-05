@@ -68,6 +68,8 @@ def login():
 
 
 
+# Substitua a função dashboard() no app.py
+
 @app.route('/dashboard')
 @login_required
 def dashboard():
@@ -86,9 +88,12 @@ def dashboard():
         flash('Formato de data inválido.', 'danger')
         return redirect(url_for('dashboard'))
 
-    if current_user.tipo == 'admin':
+    # LÓGICA ATUALIZADA PARA COORDENADOR
+    if current_user.pode_ver_todos_supervisores():
+        # Admin e Coordenador veem todos os supervisores
         supervisores = User.query.filter_by(tipo='supervisor').all()
     else:
+        # Supervisor vê apenas a si mesmo
         supervisores = [current_user]
 
     data = []
@@ -663,12 +668,12 @@ import json
 @app.route('/admin')
 @login_required
 def admin_panel():
-    """Painel de administração exclusivo para admin"""
-    if current_user.tipo != 'admin':
+    """Painel de administração com controles por nível"""
+    if not current_user.pode_acessar_admin():
         flash('Acesso negado. Apenas administradores podem acessar este painel.', 'danger')
         return redirect(url_for('dashboard'))
     
-    # Estatísticas básicas para exibir no painel
+    # Estatísticas básicas
     stats = {
         'total_usuarios': User.query.count(),
         'total_agentes': Agente.query.count(),
@@ -679,6 +684,56 @@ def admin_panel():
     }
     
     return render_template('admin_panel.html', stats=stats)
+
+# NOVA ROTA: Painel de Coordenação (para coordenadores)
+@app.route('/coordenacao')
+@login_required
+def painel_coordenacao():
+    """Painel de coordenação para ver relatórios gerais sem funções admin"""
+    if not current_user.pode_ver_todos_supervisores():
+        flash('Acesso negado.', 'danger')
+        return redirect(url_for('dashboard'))
+    
+    # Estatísticas gerais que coordenador pode ver
+    stats = {
+        'total_supervisores': User.query.filter_by(tipo='supervisor').count(),
+        'total_agentes': Agente.query.count(),
+        'total_atendimentos': Atendimento.query.count(),
+        'atendimentos_mes': Atendimento.query.filter(
+            Atendimento.data_hora >= datetime.now().replace(day=1, hour=0, minute=0, second=0)
+        ).count(),
+        'atendimentos_hoje': Atendimento.query.filter(
+            Atendimento.data_hora >= datetime.now().replace(hour=0, minute=0, second=0)
+        ).count()
+    }
+    
+    # Relatório por supervisor
+    supervisores_stats = []
+    supervisores = User.query.filter_by(tipo='supervisor').all()
+    
+    for supervisor in supervisores:
+        atendimentos_supervisor = Atendimento.query.filter_by(supervisor_id=supervisor.id).count()
+        agentes_supervisor = Agente.query.filter_by(supervisor_id=supervisor.id).count()
+        equipes_supervisor = Equipe.query.filter_by(supervisor_id=supervisor.id).count()
+        
+        supervisores_stats.append({
+            'nome': supervisor.nome,
+            'atendimentos': atendimentos_supervisor,
+            'agentes': agentes_supervisor,
+            'equipes': equipes_supervisor,
+            'status_discord': '✅' if supervisor.discord_id else '❌'
+        })
+    
+    # Ordena por atendimentos
+    supervisores_stats.sort(key=lambda x: x['atendimentos'], reverse=True)
+    
+    return render_template('painel_coordenacao.html', 
+                         stats=stats, 
+                         supervisores_stats=supervisores_stats)
+
+
+
+
 
 # API para estatísticas em tempo real
 @app.route('/api/admin/stats')
@@ -716,9 +771,9 @@ def admin_stats_api():
 @app.route('/admin/migrate-tables')
 @login_required
 def migrate_tables():
-    """Cria/atualiza estrutura do banco de dados"""
-    if current_user.tipo != 'admin':
-        flash('Acesso negado.', 'danger')
+    """Migração - APENAS ADMIN"""
+    if not current_user.pode_executar_funcoes_destrutivas():
+        flash('Acesso negado. Apenas administradores podem executar esta função.', 'danger')
         return redirect(url_for('dashboard'))
     
     try:
@@ -737,9 +792,9 @@ def migrate_tables():
 @app.route('/admin/fix-agents-supervisors')
 @login_required
 def fix_agents_supervisors():
-    """Corrige agentes que estão com admin como supervisor"""
-    if current_user.tipo != 'admin':
-        flash('Acesso negado.', 'danger')
+    """Corrige agentes - APENAS ADMIN"""
+    if not current_user.pode_executar_funcoes_destrutivas():
+        flash('Acesso negado. Apenas administradores podem executar esta função.', 'danger')
         return redirect(url_for('dashboard'))
     
     try:

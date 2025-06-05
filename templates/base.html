@@ -1,6 +1,5 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
-
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -12,19 +11,17 @@
             padding: 0;
             box-sizing: border-box;
         }
-
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             background: #f5f7fa;
             color: #333;
             line-height: 1.6;
+            overflow-x: hidden;
         }
-
         a {
             color: #b9c8d8;
             text-decoration: none;
         }
-
         a:hover {
             text-decoration: underline;
         }
@@ -35,344 +32,474 @@
             min-height: 100vh;
         }
 
-        /* Barra lateral */
+        /* SIDEBAR FIXA MELHORADA */
         nav.sidebar {
-            width: 220px;
-            background-color: #003366;
+            width: 250px;
+            background: linear-gradient(180deg, #003366 0%, #004080 100%);
             color: #fff;
-            padding: 20px;
+            position: fixed;
+            top: 0;
+            left: 0;
+            height: 100vh;
+            overflow-y: auto;
+            z-index: 1000;
             display: flex;
             flex-direction: column;
-            justify-content: space-between;
+            box-shadow: 2px 0 10px rgba(0,0,0,0.1);
         }
-
-        .sidebar-content {
-            flex-grow: 1;
+        
+        /* Header da sidebar com usuário */
+        .sidebar-header {
+            padding: 20px;
+            background: rgba(0, 0, 0, 0.2);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            position: sticky;
+            top: 0;
+            z-index: 10;
         }
-
-        nav.sidebar h1 {
-            font-size: 1.3em;
-            margin-bottom: 30px;
+        
+        .sidebar-header h1 {
+            font-size: 1.4em;
+            margin-bottom: 15px;
             font-weight: bold;
             letter-spacing: 1.2px;
             text-align: center;
             user-select: none;
+            background: linear-gradient(45deg, #ffffff, #e3f2fd);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
         }
-
-        nav.sidebar a {
-            padding: 12px 15px;
-            margin-bottom: 10px;
-            border-radius: 6px;
-            background-color: #004080;
-            transition: background-color 0.3s ease;
-            display: block;
-        }
-
-        nav.sidebar a:hover,
-        nav.sidebar a.active {
-            background-color: #0059b3;
-        }
-
-        /* Informações do usuário */
-        .user-info {
-            margin-top: 20px;
+        
+        /* Informações do usuário no topo */
+        .user-info-top {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
             padding: 15px;
-            background-color: rgba(0, 89, 179, 0.2);
-            border-radius: 8px;
-            border-top: 2px solid #0059b3;
-            font-size: 0.85em;
+            margin-top: 10px;
         }
-
-        .user-info .user-avatar {
+        
+        .user-avatar {
             display: flex;
             align-items: center;
-            margin-bottom: 8px;
+            gap: 12px;
         }
-
-        .user-info .avatar-circle {
-            width: 32px;
-            height: 32px;
+        
+        .avatar-circle {
+            width: 40px;
+            height: 40px;
             background: linear-gradient(135deg, #0059b3, #007acc);
             border-radius: 50%;
             display: flex;
             align-items: center;
             justify-content: center;
             font-weight: bold;
-            font-size: 14px;
-            margin-right: 10px;
+            font-size: 16px;
             color: white;
             text-transform: uppercase;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            flex-shrink: 0;
         }
-
-        .user-info .user-details {
+        
+        .user-details {
             flex: 1;
+            min-width: 0;
         }
-
-        .user-info .user-name {
+        
+        .user-name {
             font-weight: 600;
             color: #fff;
-            margin-bottom: 2px;
+            margin-bottom: 3px;
+            font-size: 0.95em;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
         }
-
-        .user-info .user-type {
+        
+        .user-type {
             color: #b9c8d8;
-            font-size: 0.9em;
+            font-size: 0.85em;
             text-transform: capitalize;
+            display: flex;
+            align-items: center;
+            gap: 5px;
         }
-
-        .user-info .user-type.admin {
+        
+        .user-type.admin {
             color: #ffd700;
             font-weight: 500;
         }
-
-        .user-info .user-type.supervisor {
+        
+        .user-type.coordenador {
+            color: #ff6b9d;
+            font-weight: 500;
+        }
+        
+        .user-type.supervisor {
             color: #90ee90;
             font-weight: 500;
         }
 
-        /* Área principal */
-        main.content {
-            flex-grow: 1;
-            padding: 30px 40px;
-            background-color: #fff;
-            box-shadow: inset 0 0 10px #e0e0e0;
+        /* Navegação */
+        .sidebar-nav {
+            flex: 1;
+            padding: 20px;
             overflow-y: auto;
         }
+        
+        .sidebar-nav a {
+            display: block;
+            padding: 14px 18px;
+            margin-bottom: 8px;
+            border-radius: 8px;
+            background: rgba(255, 255, 255, 0.1);
+            transition: all 0.3s ease;
+            font-weight: 500;
+            border-left: 3px solid transparent;
+        }
+        
+        .sidebar-nav a:hover {
+            background: rgba(255, 255, 255, 0.2);
+            transform: translateX(5px);
+            border-left: 3px solid #007acc;
+            text-decoration: none;
+        }
+        
+        .sidebar-nav a.active {
+            background: rgba(255, 255, 255, 0.25);
+            border-left: 3px solid #ffd700;
+            font-weight: 600;
+        }
+        
+        /* Separadores visuais */
+        .nav-separator {
+            border-top: 1px solid rgba(255, 255, 255, 0.2);
+            margin: 15px 0 10px 0;
+            padding-top: 10px;
+        }
 
+        /* Área principal */
+        main.content {
+            flex: 1;
+            margin-left: 250px;
+            padding: 30px 40px;
+            background-color: #fff;
+            min-height: 100vh;
+            box-shadow: inset 0 0 10px rgba(0,0,0,0.05);
+        }
+        
         main.content h2 {
-            margin-bottom: 20px;
+            margin-bottom: 25px;
             font-weight: 700;
             color: #003366;
             border-bottom: 2px solid #003366;
             padding-bottom: 10px;
         }
 
-        /* Rodapé simples */
-        footer.footer {
-            text-align: center;
-            padding: 15px;
-            font-size: 0.9em;
-            color: #777;
-            background: #f0f0f0;
-            border-top: 1px solid #ddd;
-            user-select: none;
+        /* Status online indicator */
+        .user-status {
+            position: absolute;
+            bottom: 2px;
+            right: 2px;
+            width: 12px;
+            height: 12px;
+            background: #28a745;
+            border-radius: 50%;
+            border: 2px solid white;
         }
 
-        /* Scrollbar customizada para content */
-        main.content::-webkit-scrollbar {
-            width: 10px;
+        .avatar-circle {
+            position: relative;
         }
 
-        main.content::-webkit-scrollbar-track {
-            background: #f1f1f1;
+        /* Scrollbar customizada para sidebar */
+        .sidebar-nav::-webkit-scrollbar {
+            width: 6px;
         }
-
-        main.content::-webkit-scrollbar-thumb {
-            background-color: #003366;
+        .sidebar-nav::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.1);
+        }
+        .sidebar-nav::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.3);
             border-radius: 10px;
-            border: 2px solid #f1f1f1;
         }
 
         /* Responsividade */
         @media (max-width: 768px) {
-            .container {
-                flex-direction: column;
-            }
-
             nav.sidebar {
                 width: 100%;
+                height: auto;
+                position: relative;
                 flex-direction: row;
                 overflow-x: auto;
-                padding: 10px;
-                justify-content: flex-start;
             }
-
-            .sidebar-content {
+            
+            .sidebar-header {
+                min-width: 200px;
+                position: static;
+            }
+            
+            .sidebar-nav {
                 display: flex;
-                flex-direction: row;
-                align-items: center;
-                flex-grow: 1;
-            }
-
-            nav.sidebar h1 {
-                margin-right: 20px;
-                margin-bottom: 0;
-                font-size: 1.1em;
-            }
-
-            nav.sidebar a {
-                flex: 1 0 auto;
-                margin: 0 5px;
-                text-align: center;
-                margin-bottom: 0;
-            }
-
-            .user-info {
-                margin-top: 0;
-                margin-left: 15px;
                 padding: 10px;
-                min-width: 180px;
+                min-width: 400px;
             }
-
-            .user-info .user-avatar {
-                margin-bottom: 5px;
+            
+            .sidebar-nav a {
+                white-space: nowrap;
+                margin-right: 10px;
+                margin-bottom: 0;
             }
-
-            .user-info .avatar-circle {
-                width: 28px;
-                height: 28px;
-                font-size: 12px;
-            }
-
+            
             main.content {
+                margin-left: 0;
                 padding: 20px 15px;
             }
+            
+            .user-info-top {
+                margin-top: 0;
+            }
+            
+            .user-name {
+                font-size: 0.85em;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .sidebar-header h1 {
+                font-size: 1.1em;
+            }
+            
+            .user-avatar {
+                flex-direction: column;
+                text-align: center;
+                gap: 8px;
+            }
+            
+            .avatar-circle {
+                width: 35px;
+                height: 35px;
+                font-size: 14px;
+            }
+        }
+
+        /* Animações suaves */
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateX(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        .sidebar-nav a {
+            animation: slideIn 0.3s ease-out;
+        }
+
+        /* Melhorias visuais */
+        .content {
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+        }
+
+        /* Indicador de nível de acesso */
+        .access-indicator {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 0.7em;
+            font-weight: bold;
+            margin-left: 5px;
+        }
+
+        .access-admin {
+            background: #ffd700;
+            color: #333;
+        }
+
+        .access-coordenador {
+            background: #ff6b9d;
+            color: white;
+        }
+
+        .access-supervisor {
+            background: #90ee90;
+            color: #333;
         }
     </style>
     {% block head %}{% endblock %}
 </head>
-
 <body>
     <div class="container">
         <nav class="sidebar">
-            <div class="sidebar-content">
-                <div>
-                    <h1>-AtendePro-</h1>
-                    <a href="{{ url_for('dashboard') }}"
-                        class="{% if request.path.startswith('/dashboard') %}active{% endif %}">Dashboard</a>
-                    <a href="{{ url_for('atendimentos') }}"
-                        class="{% if request.path.startswith('/atendimentos') %}active{% endif %}">Atendimentos</a>
-
-                    {% if current_user.tipo == 'admin' %}
-                    <a href="{{ url_for('supervisores') }}"
-                        class="{% if request.path.startswith('/cadastros/supervisores') %}active{% endif %}">Supervisores</a>
-                    {% endif %}
-
-                    <a href="{{ url_for('equipes') }}"
-                        class="{% if request.path.startswith('/cadastros/equipes') %}active{% endif %}">Equipes</a>
-                    <a href="{{ url_for('agentes') }}"
-                        class="{% if request.path.startswith('/cadastros/agentes') %}active{% endif %}">Agentes</a>
-
-                    {% if current_user.tipo == 'admin' %}
-                    <a href="{{ url_for('admin_panel') }}"
-                        class="{% if request.path.startswith('/admin') %}active{% endif %}"
-                        style="border-top: 1px solid #004080; margin-top: 10px; padding-top: 10px;">
-                        🔧 Painel Admin
-                    </a>
-                    {% endif %}
-
-                    <a href="{{ url_for('logout') }}">Sair</a>
-                </div>
-            </div>
-
-            <!-- Informações do usuário logado -->
-            {% if current_user.is_authenticated %}
-            <div class="user-info">
-                <div class="user-avatar">
-                    <div class="avatar-circle">
-                        {{ current_user.nome[0] }}{{ current_user.nome.split(' ')[1][0] if current_user.nome.split('
-                        ')|length > 1 else '' }}
-                    </div>
-                    <div class="user-details">
-                        <div class="user-name">{{ current_user.nome }}</div>
-                        <div class="user-type {{ current_user.tipo }}">{{ current_user.tipo }}</div>
+            <!-- Header fixo com usuário sempre visível -->
+            <div class="sidebar-header">
+                <h1>-AtendePro-</h1>
+                
+                <!-- Informações do usuário SEMPRE no topo -->
+                {% if current_user.is_authenticated %}
+                <div class="user-info-top">
+                    <div class="user-avatar">
+                        <div class="avatar-circle">
+                            {{ current_user.nome[0] }}{{ current_user.nome.split(' ')[1][0] if current_user.nome.split(' ')|length > 1 else '' }}
+                            <div class="user-status"></div>
+                        </div>
+                        <div class="user-details">
+                            <div class="user-name">{{ current_user.nome }}</div>
+                            <div class="user-type {{ current_user.tipo }}">
+                                {% if current_user.tipo == 'admin' %}
+                                    🔧 Administrador
+                                    <span class="access-indicator access-admin">ADMIN</span>
+                                {% elif current_user.tipo == 'coordenador' %}
+                                    👑 Coordenador
+                                    <span class="access-indicator access-coordenador">COORD</span>
+                                {% elif current_user.tipo == 'supervisor' %}
+                                    👥 Supervisor
+                                    <span class="access-indicator access-supervisor">SUP</span>
+                                {% endif %}
+                            </div>
+                        </div>
                     </div>
                 </div>
+                {% endif %}
             </div>
-            {% endif %}
+            
+            <!-- Navegação -->
+            <div class="sidebar-nav">
+                <a href="{{ url_for('dashboard') }}" class="{% if request.path.startswith('/dashboard') %}active{% endif %}">
+                    📊 Dashboard
+                </a>
+                <a href="{{ url_for('atendimentos') }}" class="{% if request.path.startswith('/atendimentos') %}active{% endif %}">
+                    📋 Atendimentos
+                </a>
+                
+                {% if current_user.tipo == 'admin' %}
+                <a href="{{ url_for('supervisores') }}" class="{% if request.path.startswith('/cadastros/supervisores') %}active{% endif %}">
+                    👔 Supervisores
+                </a>
+                {% endif %}
+                
+                <a href="{{ url_for('equipes') }}" class="{% if request.path.startswith('/cadastros/equipes') %}active{% endif %}">
+                    🏢 Equipes
+                </a>
+                <a href="{{ url_for('agentes') }}" class="{% if request.path.startswith('/cadastros/agentes') %}active{% endif %}">
+                    👥 Agentes
+                </a>
+                
+                <!-- Seção administrativa -->
+                {% if current_user.tipo in ['admin', 'coordenador'] %}
+                <div class="nav-separator"></div>
+                {% endif %}
+                
+                {% if current_user.tipo == 'coordenador' %}
+                <a href="{{ url_for('painel_coordenacao') }}" class="{% if request.path.startswith('/coordenacao') %}active{% endif %}">
+                    👑 Painel Coordenação
+                </a>
+                {% endif %}
+                
+                {% if current_user.tipo == 'admin' %}
+                <a href="{{ url_for('admin_panel') }}" class="{% if request.path.startswith('/admin') %}active{% endif %}">
+                    🔧 Painel Admin
+                </a>
+                {% endif %}
+                
+                <div class="nav-separator"></div>
+                <a href="{{ url_for('logout') }}" style="background: rgba(220, 53, 69, 0.2); color: #ff6b6b;">
+                    🚪 Sair
+                </a>
+            </div>
         </nav>
+        
         <main class="content">
             {% with messages = get_flashed_messages(with_categories=true) %}
-            {% if messages %}
-            {% for category, message in messages %}
-            <div class="flash-message {{ category }}"
-                style="margin-bottom: 20px; padding: 12px; border-radius: 6px; background-color: {% if category == 'success' %}#d4edda{% elif category == 'danger' %}#f8d7da{% else %}#cce5ff{% endif %}; color: {% if category == 'success' %}#155724{% elif category == 'danger' %}#721c24{% else %}#004085{% endif %}; border: 1px solid {% if category == 'success' %}#c3e6cb{% elif category == 'danger' %}#f5c6cb{% else %}#b8daff{% endif %};">
-                {{ message }}
-            </div>
-            {% endfor %}
-            {% endif %}
+              {% if messages %}
+                {% for category, message in messages %}
+                  <div class="flash-message {{ category }}" style="margin-bottom: 20px; padding: 12px; border-radius: 6px; background-color: {% if category == 'success' %}#d4edda{% elif category == 'danger' %}#f8d7da{% else %}#cce5ff{% endif %}; color: {% if category == 'success' %}#155724{% elif category == 'danger' %}#721c24{% else %}#004085{% endif %}; border: 1px solid {% if category == 'success' %}#c3e6cb{% elif category == 'danger' %}#f5c6cb{% else %}#b8daff{% endif %};">
+                    {{ message }}
+                  </div>
+                {% endfor %}
+              {% endif %}
             {% endwith %}
             {% block content %}{% endblock %}
         </main>
     </div>
-    <footer class="footer">
-        &copy; Feito com carinho 😍
-    </footer>
     {% block scripts %}{% endblock %}
 </body>
 
 
 <script>
-// Sistema de notificações em tempo real
-class NotificationSystem {
-    constructor() {
-        this.audio = new Audio('/static/sounds/notification.mp3');
-        this.lastCheck = Date.now();
-        this.checkInterval = 10000; // 10 segundos
-        this.init();
-    }
-
-    init() {
-        this.requestPermission();
-        this.startPolling();
-        this.setupVisibilityChange();
-    }
-
-    async requestPermission() {
-        if ('Notification' in window) {
-            const permission = await Notification.requestPermission();
-            console.log('Notification permission:', permission);
-        }
-    }
-
-    startPolling() {
-        setInterval(() => {
-            this.checkNewAtendimentos();
-        }, this.checkInterval);
-    }
-
-    async checkNewAtendimentos() {
-        try {
-            const response = await fetch('/api/check-new-atendimentos', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    last_check: this.lastCheck
-                })
-            });
-            
-            const data = await response.json();
-            
-            if (data.new_atendimentos && data.new_atendimentos.length > 0) {
-                this.showNotifications(data.new_atendimentos);
-                this.updateBadge(data.total_pending);
-            }
-            
+    // Sistema de notificações em tempo real
+    class NotificationSystem {
+        constructor() {
+            this.audio = new Audio('/static/sounds/notification.mp3');
             this.lastCheck = Date.now();
-        } catch (error) {
-            console.error('Erro ao verificar novos atendimentos:', error);
+            this.checkInterval = 10000; // 10 segundos
+            this.init();
         }
-    }
 
-    showNotifications(atendimentos) {
-        atendimentos.forEach(atendimento => {
-            // Notificação visual
-            this.showToast(atendimento);
-            
-            // Notificação sonora
-            this.playSound();
-            
-            // Notificação do browser
-            this.showBrowserNotification(atendimento);
-        });
-    }
+        init() {
+            this.requestPermission();
+            this.startPolling();
+            this.setupVisibilityChange();
+        }
 
-    showToast(atendimento) {
-        const toast = document.createElement('div');
-        toast.className = 'notification-toast';
-        toast.innerHTML = `
+        async requestPermission() {
+            if ('Notification' in window) {
+                const permission = await Notification.requestPermission();
+                console.log('Notification permission:', permission);
+            }
+        }
+
+        startPolling() {
+            setInterval(() => {
+                this.checkNewAtendimentos();
+            }, this.checkInterval);
+        }
+
+        async checkNewAtendimentos() {
+            try {
+                const response = await fetch('/api/check-new-atendimentos', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        last_check: this.lastCheck
+                    })
+                });
+
+                const data = await response.json();
+
+                if (data.new_atendimentos && data.new_atendimentos.length > 0) {
+                    this.showNotifications(data.new_atendimentos);
+                    this.updateBadge(data.total_pending);
+                }
+
+                this.lastCheck = Date.now();
+            } catch (error) {
+                console.error('Erro ao verificar novos atendimentos:', error);
+            }
+        }
+
+        showNotifications(atendimentos) {
+            atendimentos.forEach(atendimento => {
+                // Notificação visual
+                this.showToast(atendimento);
+
+                // Notificação sonora
+                this.playSound();
+
+                // Notificação do browser
+                this.showBrowserNotification(atendimento);
+            });
+        }
+
+        showToast(atendimento) {
+            const toast = document.createElement('div');
+            toast.className = 'notification-toast';
+            toast.innerHTML = `
             <div class="toast-header">
                 <strong>🚨 Novo Atendimento</strong>
                 <button type="button" class="toast-close">&times;</button>
@@ -382,123 +509,65 @@ class NotificationSystem {
                 <strong>Conteúdo:</strong> ${atendimento.conteudo.substring(0, 50)}...
             </div>
         `;
-        
-        document.body.appendChild(toast);
-        
-        // Auto remove após 5 segundos
-        setTimeout(() => {
-            if (toast.parentNode) {
-                toast.remove();
-            }
-        }, 5000);
-        
-        // Remove ao clicar no X
-        toast.querySelector('.toast-close').onclick = () => toast.remove();
-    }
 
-    showBrowserNotification(atendimento) {
-        if (Notification.permission === 'granted') {
-            new Notification(`Novo atendimento - ${atendimento.agente_nome}`, {
-                body: atendimento.conteudo.substring(0, 100),
-                icon: '/static/images/logo.png',
-                tag: `atendimento-${atendimento.id}`
+            document.body.appendChild(toast);
+
+            // Auto remove após 5 segundos
+            setTimeout(() => {
+                if (toast.parentNode) {
+                    toast.remove();
+                }
+            }, 5000);
+
+            // Remove ao clicar no X
+            toast.querySelector('.toast-close').onclick = () => toast.remove();
+        }
+
+        showBrowserNotification(atendimento) {
+            if (Notification.permission === 'granted') {
+                new Notification(`Novo atendimento - ${atendimento.agente_nome}`, {
+                    body: atendimento.conteudo.substring(0, 100),
+                    icon: '/static/images/logo.png',
+                    tag: `atendimento-${atendimento.id}`
+                });
+            }
+        }
+
+        playSound() {
+            this.audio.play().catch(e => console.log('Erro ao tocar som:', e));
+        }
+
+        updateBadge(count) {
+            let badge = document.querySelector('.notification-badge');
+            if (!badge) {
+                badge = document.createElement('span');
+                badge.className = 'notification-badge';
+                document.querySelector('a[href="/atendimentos"]').appendChild(badge);
+            }
+
+            if (count > 0) {
+                badge.textContent = count;
+                badge.style.display = 'inline';
+            } else {
+                badge.style.display = 'none';
+            }
+        }
+
+        setupVisibilityChange() {
+            document.addEventListener('visibilitychange', () => {
+                if (!document.hidden) {
+                    // Página voltou ao foco, verificar imediatamente
+                    this.checkNewAtendimentos();
+                }
             });
         }
     }
 
-    playSound() {
-        this.audio.play().catch(e => console.log('Erro ao tocar som:', e));
+    // Inicializar apenas para supervisores
+    if (document.body.dataset.userType === 'supervisor') {
+        new NotificationSystem();
     }
-
-    updateBadge(count) {
-        let badge = document.querySelector('.notification-badge');
-        if (!badge) {
-            badge = document.createElement('span');
-            badge.className = 'notification-badge';
-            document.querySelector('a[href="/atendimentos"]').appendChild(badge);
-        }
-        
-        if (count > 0) {
-            badge.textContent = count;
-            badge.style.display = 'inline';
-        } else {
-            badge.style.display = 'none';
-        }
-    }
-
-    setupVisibilityChange() {
-        document.addEventListener('visibilitychange', () => {
-            if (!document.hidden) {
-                // Página voltou ao foco, verificar imediatamente
-                this.checkNewAtendimentos();
-            }
-        });
-    }
-}
-
-// Inicializar apenas para supervisores
-if (document.body.dataset.userType === 'supervisor') {
-    new NotificationSystem();
-}
 </script>
 
-<style>
-/* Estilos para notificações toast */
-.notification-toast {
-    position: fixed;
-    top: 20px;
-    right: 20px;
-    background: #fff;
-    border: 1px solid #dee2e6;
-    border-radius: 8px;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-    min-width: 300px;
-    z-index: 9999;
-    animation: slideIn 0.3s ease-out;
-}
 
-.toast-header {
-    background: #003366;
-    color: white;
-    padding: 8px 12px;
-    border-radius: 8px 8px 0 0;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-}
-
-.toast-close {
-    background: none;
-    border: none;
-    color: white;
-    font-size: 18px;
-    cursor: pointer;
-}
-
-.toast-body {
-    padding: 12px;
-    font-size: 0.9em;
-}
-
-.notification-badge {
-    background: #dc3545;
-    color: white;
-    font-size: 0.7em;
-    padding: 2px 6px;
-    border-radius: 10px;
-    margin-left: 5px;
-    font-weight: bold;
-}
-
-@keyframes slideIn {
-    from {
-        transform: translateX(100%);
-        opacity: 0;
-    }
-    to {
-        transform: translateX(0);
-        opacity: 1;
-    }
-}
-</style>
 </html>

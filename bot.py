@@ -6,7 +6,7 @@ from datetime import datetime
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from models.models import User, Agente, Atendimento
-from config import Config
+from configAWS import Config
 
 # Token do bot vindo da variável de ambiente
 TOKEN = os.getenv('DISCORD_TOKEN', 'SEU_TOKEN_AQUI')

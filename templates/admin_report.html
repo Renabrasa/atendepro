@@ -1,0 +1,357 @@
+{% extends 'base.html' %}
+{% block title %}Relatório Completo do Sistema{% endblock %}
+{% block content %}
+<div class="report-container">
+  <div class="report-header">
+    <h1>📊 Relatório Completo do Sistema</h1>
+    <p>Gerado em: {{ data_geracao.strftime('%d/%m/%Y às %H:%M:%S') }}</p>
+    <div class="report-actions">
+      <button onclick="window.print()" class="btn btn-primary">🖨️ Imprimir</button>
+      <a href="{{ url_for('admin_panel') }}" class="btn btn-secondary">↩️ Voltar</a>
+    </div>
+  </div>
+
+  <!-- Estatísticas Gerais -->
+  <div class="report-section">
+    <h2>📈 Estatísticas Gerais</h2>
+    <div class="stats-grid">
+      <div class="stat-card">
+        <div class="stat-number">{{ stats.total_usuarios }}</div>
+        <div class="stat-label">Total de Usuários</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-number">{{ stats.total_supervisores }}</div>
+        <div class="stat-label">Supervisores</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-number">{{ stats.total_agentes }}</div>
+        <div class="stat-label">Total de Agentes</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-number">{{ stats.agentes_ativos }}</div>
+        <div class="stat-label">Agentes Ativos</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-number">{{ stats.total_equipes }}</div>
+        <div class="stat-label">Equipes</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-number">{{ stats.total_atendimentos }}</div>
+        <div class="stat-label">Total de Atendimentos</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Atendimentos por Período -->
+  <div class="report-section">
+    <h2>📅 Atendimentos por Período</h2>
+    <div class="period-stats">
+      <div class="period-card">
+        <div class="period-number">{{ atendimentos_periodo.hoje }}</div>
+        <div class="period-label">Hoje</div>
+      </div>
+      <div class="period-card">
+        <div class="period-number">{{ atendimentos_periodo.esta_semana }}</div>
+        <div class="period-label">Esta Semana</div>
+      </div>
+      <div class="period-card">
+        <div class="period-number">{{ atendimentos_periodo.este_mes }}</div>
+        <div class="period-label">Este Mês</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Top Supervisores -->
+  <div class="report-section">
+    <h2>🏆 Top 5 Supervisores por Atendimentos</h2>
+    <div class="top-supervisores">
+      {% for supervisor in top_supervisores %}
+        <div class="supervisor-item">
+          <div class="supervisor-position">{{ loop.index }}º</div>
+          <div class="supervisor-info">
+            <div class="supervisor-name">{{ supervisor.nome }}</div>
+            <div class="supervisor-count">{{ supervisor.total_atendimentos }} atendimentos</div>
+          </div>
+          <div class="supervisor-bar">
+            <div class="bar-fill" style="width: {{ (supervisor.total_atendimentos / top_supervisores[0].total_atendimentos * 100) if top_supervisores else 0 }}%"></div>
+          </div>
+        </div>
+      {% else %}
+        <p class="no-data">Nenhum dado de supervisor disponível.</p>
+      {% endfor %}
+    </div>
+  </div>
+
+  <!-- Resumo do Sistema -->
+  <div class="report-section">
+    <h2>📋 Resumo do Sistema</h2>
+    <div class="summary-info">
+      <div class="summary-item">
+        <strong>Taxa de Agentes Ativos:</strong>
+        {% if stats.total_agentes > 0 %}
+          {{ "%.1f"|format((stats.agentes_ativos / stats.total_agentes * 100)) }}%
+        {% else %}
+          0%
+        {% endif %}
+      </div>
+      
+      <div class="summary-item">
+        <strong>Média de Atendimentos por Supervisor:</strong>
+        {% if stats.total_supervisores > 0 %}
+          {{ "%.1f"|format((stats.total_atendimentos / stats.total_supervisores)) }}
+        {% else %}
+          0
+        {% endif %}
+      </div>
+      
+      <div class="summary-item">
+        <strong>Atendimentos por Agente Ativo:</strong>
+        {% if stats.agentes_ativos > 0 %}
+          {{ "%.1f"|format((stats.total_atendimentos / stats.agentes_ativos)) }}
+        {% else %}
+          0
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+
+<style>
+/* Estilos específicos para o relatório */
+.report-container {
+  max-width: 1000px;
+  margin: 0 auto;
+  padding: 20px;
+  background: #fff;
+}
+
+.report-header {
+  text-align: center;
+  margin-bottom: 40px;
+  padding-bottom: 20px;
+  border-bottom: 2px solid #003366;
+}
+
+.report-header h1 {
+  color: #003366;
+  margin-bottom: 10px;
+}
+
+.report-header p {
+  color: #6c757d;
+  font-size: 1.1em;
+  margin-bottom: 20px;
+}
+
+.report-actions {
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+}
+
+.report-section {
+  margin-bottom: 40px;
+  padding: 20px;
+  background: #f8f9fa;
+  border-radius: 8px;
+  border-left: 4px solid #003366;
+}
+
+.report-section h2 {
+  color: #003366;
+  margin-bottom: 20px;
+  font-size: 1.3em;
+}
+
+/* Grid de estatísticas */
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 16px;
+}
+
+.stat-card {
+  background: #fff;
+  padding: 20px;
+  border-radius: 8px;
+  text-align: center;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  border-left: 4px solid #007bff;
+}
+
+.stat-number {
+  font-size: 2.5em;
+  font-weight: 700;
+  color: #003366;
+  line-height: 1;
+}
+
+.stat-label {
+  font-size: 0.9em;
+  color: #6c757d;
+  margin-top: 8px;
+}
+
+/* Estatísticas por período */
+.period-stats {
+  display: flex;
+  justify-content: space-around;
+  gap: 20px;
+}
+
+.period-card {
+  background: #fff;
+  padding: 24px;
+  border-radius: 8px;
+  text-align: center;
+  flex: 1;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  border-left: 4px solid #28a745;
+}
+
+.period-number {
+  font-size: 3em;
+  font-weight: 700;
+  color: #28a745;
+  line-height: 1;
+}
+
+.period-label {
+  font-size: 1em;
+  color: #6c757d;
+  margin-top: 8px;
+  font-weight: 600;
+}
+
+/* Top supervisores */
+.top-supervisores {
+  background: #fff;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.supervisor-item {
+  display: flex;
+  align-items: center;
+  padding: 16px 20px;
+  border-bottom: 1px solid #e9ecef;
+}
+
+.supervisor-item:last-child {
+  border-bottom: none;
+}
+
+.supervisor-position {
+  font-size: 1.5em;
+  font-weight: 700;
+  color: #ffc107;
+  width: 40px;
+  text-align: center;
+}
+
+.supervisor-info {
+  flex: 1;
+  margin-left: 16px;
+}
+
+.supervisor-name {
+  font-weight: 600;
+  color: #003366;
+  font-size: 1.1em;
+}
+
+.supervisor-count {
+  color: #6c757d;
+  font-size: 0.9em;
+}
+
+.supervisor-bar {
+  width: 200px;
+  height: 8px;
+  background: #e9ecef;
+  border-radius: 4px;
+  margin-left: 16px;
+  overflow: hidden;
+}
+
+.bar-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #007bff, #0056b3);
+  transition: width 0.3s ease;
+}
+
+/* Resumo */
+.summary-info {
+  background: #fff;
+  padding: 20px;
+  border-radius: 8px;
+}
+
+.summary-item {
+  padding: 12px 0;
+  border-bottom: 1px solid #e9ecef;
+  font-size: 1.1em;
+}
+
+.summary-item:last-child {
+  border-bottom: none;
+}
+
+.no-data {
+  text-align: center;
+  color: #6c757d;
+  font-style: italic;
+  padding: 20px;
+}
+
+/* Estilos para impressão */
+@media print {
+  .report-actions {
+    display: none;
+  }
+  
+  .report-container {
+    box-shadow: none;
+    max-width: none;
+  }
+  
+  .report-section {
+    page-break-inside: avoid;
+    margin-bottom: 30px;
+  }
+}
+
+/* Responsividade */
+@media (max-width: 768px) {
+  .period-stats {
+    flex-direction: column;
+  }
+  
+  .supervisor-item {
+    flex-direction: column;
+    text-align: center;
+    gap: 12px;
+  }
+  
+  .supervisor-bar {
+    width: 100%;
+    margin-left: 0;
+  }
+  
+  .stats-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 480px) {
+  .stats-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .report-actions {
+    flex-direction: column;
+  }
+}
+</style>
+
+{% endblock %}

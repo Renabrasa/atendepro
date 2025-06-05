@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
+
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -11,16 +12,19 @@
             padding: 0;
             box-sizing: border-box;
         }
+
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             background: #f5f7fa;
             color: #333;
             line-height: 1.6;
         }
+
         a {
             color: #b9c8d8;
             text-decoration: none;
         }
+
         a:hover {
             text-decoration: underline;
         }
@@ -41,11 +45,11 @@
             flex-direction: column;
             justify-content: space-between;
         }
-        
+
         .sidebar-content {
             flex-grow: 1;
         }
-        
+
         nav.sidebar h1 {
             font-size: 1.3em;
             margin-bottom: 30px;
@@ -54,6 +58,7 @@
             text-align: center;
             user-select: none;
         }
+
         nav.sidebar a {
             padding: 12px 15px;
             margin-bottom: 10px;
@@ -62,6 +67,7 @@
             transition: background-color 0.3s ease;
             display: block;
         }
+
         nav.sidebar a:hover,
         nav.sidebar a.active {
             background-color: #0059b3;
@@ -76,13 +82,13 @@
             border-top: 2px solid #0059b3;
             font-size: 0.85em;
         }
-        
+
         .user-info .user-avatar {
             display: flex;
             align-items: center;
             margin-bottom: 8px;
         }
-        
+
         .user-info .avatar-circle {
             width: 32px;
             height: 32px;
@@ -97,28 +103,28 @@
             color: white;
             text-transform: uppercase;
         }
-        
+
         .user-info .user-details {
             flex: 1;
         }
-        
+
         .user-info .user-name {
             font-weight: 600;
             color: #fff;
             margin-bottom: 2px;
         }
-        
+
         .user-info .user-type {
             color: #b9c8d8;
             font-size: 0.9em;
             text-transform: capitalize;
         }
-        
+
         .user-info .user-type.admin {
             color: #ffd700;
             font-weight: 500;
         }
-        
+
         .user-info .user-type.supervisor {
             color: #90ee90;
             font-weight: 500;
@@ -132,6 +138,7 @@
             box-shadow: inset 0 0 10px #e0e0e0;
             overflow-y: auto;
         }
+
         main.content h2 {
             margin-bottom: 20px;
             font-weight: 700;
@@ -155,9 +162,11 @@
         main.content::-webkit-scrollbar {
             width: 10px;
         }
+
         main.content::-webkit-scrollbar-track {
             background: #f1f1f1;
         }
+
         main.content::-webkit-scrollbar-thumb {
             background-color: #003366;
             border-radius: 10px;
@@ -169,6 +178,7 @@
             .container {
                 flex-direction: column;
             }
+
             nav.sidebar {
                 width: 100%;
                 flex-direction: row;
@@ -176,37 +186,44 @@
                 padding: 10px;
                 justify-content: flex-start;
             }
+
             .sidebar-content {
                 display: flex;
                 flex-direction: row;
                 align-items: center;
                 flex-grow: 1;
             }
+
             nav.sidebar h1 {
                 margin-right: 20px;
                 margin-bottom: 0;
                 font-size: 1.1em;
             }
+
             nav.sidebar a {
                 flex: 1 0 auto;
                 margin: 0 5px;
                 text-align: center;
                 margin-bottom: 0;
             }
+
             .user-info {
                 margin-top: 0;
                 margin-left: 15px;
                 padding: 10px;
                 min-width: 180px;
             }
+
             .user-info .user-avatar {
                 margin-bottom: 5px;
             }
+
             .user-info .avatar-circle {
                 width: 28px;
                 height: 28px;
                 font-size: 12px;
             }
+
             main.content {
                 padding: 20px 15px;
             }
@@ -214,27 +231,47 @@
     </style>
     {% block head %}{% endblock %}
 </head>
+
 <body>
     <div class="container">
         <nav class="sidebar">
             <div class="sidebar-content">
                 <div>
                     <h1>-AtendePro-</h1>
-                    <a href="{{ url_for('dashboard') }}" class="{% if request.path.startswith('/dashboard') %}active{% endif %}">Dashboard</a>
-                    <a href="{{ url_for('atendimentos') }}" class="{% if request.path.startswith('/atendimentos') %}active{% endif %}">Atendimentos</a>
-                    <a href="{{ url_for('supervisores') }}" class="{% if request.path.startswith('/cadastros/supervisores') %}active{% endif %}">Supervisores</a>
-                    <a href="{{ url_for('equipes') }}" class="{% if request.path.startswith('/cadastros/equipes') %}active{% endif %}">Equipes</a>
-                    <a href="{{ url_for('agentes') }}" class="{% if request.path.startswith('/cadastros/agentes') %}active{% endif %}">Agentes</a>
+                    <a href="{{ url_for('dashboard') }}"
+                        class="{% if request.path.startswith('/dashboard') %}active{% endif %}">Dashboard</a>
+                    <a href="{{ url_for('atendimentos') }}"
+                        class="{% if request.path.startswith('/atendimentos') %}active{% endif %}">Atendimentos</a>
+
+                    {% if current_user.tipo == 'admin' %}
+                    <a href="{{ url_for('supervisores') }}"
+                        class="{% if request.path.startswith('/cadastros/supervisores') %}active{% endif %}">Supervisores</a>
+                    {% endif %}
+
+                    <a href="{{ url_for('equipes') }}"
+                        class="{% if request.path.startswith('/cadastros/equipes') %}active{% endif %}">Equipes</a>
+                    <a href="{{ url_for('agentes') }}"
+                        class="{% if request.path.startswith('/cadastros/agentes') %}active{% endif %}">Agentes</a>
+
+                    {% if current_user.tipo == 'admin' %}
+                    <a href="{{ url_for('admin_panel') }}"
+                        class="{% if request.path.startswith('/admin') %}active{% endif %}"
+                        style="border-top: 1px solid #004080; margin-top: 10px; padding-top: 10px;">
+                        🔧 Painel Admin
+                    </a>
+                    {% endif %}
+
                     <a href="{{ url_for('logout') }}">Sair</a>
                 </div>
             </div>
-            
+
             <!-- Informações do usuário logado -->
             {% if current_user.is_authenticated %}
             <div class="user-info">
                 <div class="user-avatar">
                     <div class="avatar-circle">
-                        {{ current_user.nome[0] }}{{ current_user.nome.split(' ')[1][0] if current_user.nome.split(' ')|length > 1 else '' }}
+                        {{ current_user.nome[0] }}{{ current_user.nome.split(' ')[1][0] if current_user.nome.split('
+                        ')|length > 1 else '' }}
                     </div>
                     <div class="user-details">
                         <div class="user-name">{{ current_user.nome }}</div>
@@ -246,13 +283,14 @@
         </nav>
         <main class="content">
             {% with messages = get_flashed_messages(with_categories=true) %}
-              {% if messages %}
-                {% for category, message in messages %}
-                  <div class="flash-message {{ category }}" style="margin-bottom: 20px; padding: 12px; border-radius: 6px; background-color: {% if category == 'success' %}#d4edda{% elif category == 'danger' %}#f8d7da{% else %}#cce5ff{% endif %}; color: {% if category == 'success' %}#155724{% elif category == 'danger' %}#721c24{% else %}#004085{% endif %}; border: 1px solid {% if category == 'success' %}#c3e6cb{% elif category == 'danger' %}#f5c6cb{% else %}#b8daff{% endif %};">
-                    {{ message }}
-                  </div>
-                {% endfor %}
-              {% endif %}
+            {% if messages %}
+            {% for category, message in messages %}
+            <div class="flash-message {{ category }}"
+                style="margin-bottom: 20px; padding: 12px; border-radius: 6px; background-color: {% if category == 'success' %}#d4edda{% elif category == 'danger' %}#f8d7da{% else %}#cce5ff{% endif %}; color: {% if category == 'success' %}#155724{% elif category == 'danger' %}#721c24{% else %}#004085{% endif %}; border: 1px solid {% if category == 'success' %}#c3e6cb{% elif category == 'danger' %}#f5c6cb{% else %}#b8daff{% endif %};">
+                {{ message }}
+            </div>
+            {% endfor %}
+            {% endif %}
             {% endwith %}
             {% block content %}{% endblock %}
         </main>
@@ -262,4 +300,205 @@
     </footer>
     {% block scripts %}{% endblock %}
 </body>
+
+
+<script>
+// Sistema de notificações em tempo real
+class NotificationSystem {
+    constructor() {
+        this.audio = new Audio('/static/sounds/notification.mp3');
+        this.lastCheck = Date.now();
+        this.checkInterval = 10000; // 10 segundos
+        this.init();
+    }
+
+    init() {
+        this.requestPermission();
+        this.startPolling();
+        this.setupVisibilityChange();
+    }
+
+    async requestPermission() {
+        if ('Notification' in window) {
+            const permission = await Notification.requestPermission();
+            console.log('Notification permission:', permission);
+        }
+    }
+
+    startPolling() {
+        setInterval(() => {
+            this.checkNewAtendimentos();
+        }, this.checkInterval);
+    }
+
+    async checkNewAtendimentos() {
+        try {
+            const response = await fetch('/api/check-new-atendimentos', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    last_check: this.lastCheck
+                })
+            });
+            
+            const data = await response.json();
+            
+            if (data.new_atendimentos && data.new_atendimentos.length > 0) {
+                this.showNotifications(data.new_atendimentos);
+                this.updateBadge(data.total_pending);
+            }
+            
+            this.lastCheck = Date.now();
+        } catch (error) {
+            console.error('Erro ao verificar novos atendimentos:', error);
+        }
+    }
+
+    showNotifications(atendimentos) {
+        atendimentos.forEach(atendimento => {
+            // Notificação visual
+            this.showToast(atendimento);
+            
+            // Notificação sonora
+            this.playSound();
+            
+            // Notificação do browser
+            this.showBrowserNotification(atendimento);
+        });
+    }
+
+    showToast(atendimento) {
+        const toast = document.createElement('div');
+        toast.className = 'notification-toast';
+        toast.innerHTML = `
+            <div class="toast-header">
+                <strong>🚨 Novo Atendimento</strong>
+                <button type="button" class="toast-close">&times;</button>
+            </div>
+            <div class="toast-body">
+                <strong>Agente:</strong> ${atendimento.agente_nome}<br>
+                <strong>Conteúdo:</strong> ${atendimento.conteudo.substring(0, 50)}...
+            </div>
+        `;
+        
+        document.body.appendChild(toast);
+        
+        // Auto remove após 5 segundos
+        setTimeout(() => {
+            if (toast.parentNode) {
+                toast.remove();
+            }
+        }, 5000);
+        
+        // Remove ao clicar no X
+        toast.querySelector('.toast-close').onclick = () => toast.remove();
+    }
+
+    showBrowserNotification(atendimento) {
+        if (Notification.permission === 'granted') {
+            new Notification(`Novo atendimento - ${atendimento.agente_nome}`, {
+                body: atendimento.conteudo.substring(0, 100),
+                icon: '/static/images/logo.png',
+                tag: `atendimento-${atendimento.id}`
+            });
+        }
+    }
+
+    playSound() {
+        this.audio.play().catch(e => console.log('Erro ao tocar som:', e));
+    }
+
+    updateBadge(count) {
+        let badge = document.querySelector('.notification-badge');
+        if (!badge) {
+            badge = document.createElement('span');
+            badge.className = 'notification-badge';
+            document.querySelector('a[href="/atendimentos"]').appendChild(badge);
+        }
+        
+        if (count > 0) {
+            badge.textContent = count;
+            badge.style.display = 'inline';
+        } else {
+            badge.style.display = 'none';
+        }
+    }
+
+    setupVisibilityChange() {
+        document.addEventListener('visibilitychange', () => {
+            if (!document.hidden) {
+                // Página voltou ao foco, verificar imediatamente
+                this.checkNewAtendimentos();
+            }
+        });
+    }
+}
+
+// Inicializar apenas para supervisores
+if (document.body.dataset.userType === 'supervisor') {
+    new NotificationSystem();
+}
+</script>
+
+<style>
+/* Estilos para notificações toast */
+.notification-toast {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    background: #fff;
+    border: 1px solid #dee2e6;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    min-width: 300px;
+    z-index: 9999;
+    animation: slideIn 0.3s ease-out;
+}
+
+.toast-header {
+    background: #003366;
+    color: white;
+    padding: 8px 12px;
+    border-radius: 8px 8px 0 0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.toast-close {
+    background: none;
+    border: none;
+    color: white;
+    font-size: 18px;
+    cursor: pointer;
+}
+
+.toast-body {
+    padding: 12px;
+    font-size: 0.9em;
+}
+
+.notification-badge {
+    background: #dc3545;
+    color: white;
+    font-size: 0.7em;
+    padding: 2px 6px;
+    border-radius: 10px;
+    margin-left: 5px;
+    font-weight: bold;
+}
+
+@keyframes slideIn {
+    from {
+        transform: translateX(100%);
+        opacity: 0;
+    }
+    to {
+        transform: translateX(0);
+        opacity: 1;
+    }
+}
+</style>
 </html>

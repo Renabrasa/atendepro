@@ -1,3 +1,4 @@
+# models/models.py - Versão limpa compatível com banco atual
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import UserMixin
 from datetime import datetime
@@ -19,7 +20,10 @@ class User(UserMixin, db.Model):
     senha = db.Column(db.String(200), nullable=False)
     tipo = db.Column(db.String(20), nullable=False)  # 'admin' ou 'supervisor'
     discord_id = db.Column(db.String(50), unique=True, nullable=True)
-    servidor_discord_id = db.Column(db.Text, nullable=True)  # Novo campo para IDs dos servidores
+    servidor_discord_id = db.Column(db.Text, nullable=True)
+    
+    # REMOVIDAS as colunas novas que causam erro:
+    # status_online, ultimo_acesso, horario_inicio, horario_fim
     
     def atende_servidor(self, servidor_id):
         """Verifica se este supervisor atende o servidor especificado"""
@@ -49,7 +53,6 @@ class Equipe(db.Model):
     # Relacionamento many-to-many com Agente
     agentes = db.relationship('Agente', secondary=agente_equipe, back_populates='equipes')
 
-
 class Agente(db.Model):
     __tablename__ = 'agentes'
     id = db.Column(db.Integer, primary_key=True)
@@ -63,7 +66,6 @@ class Agente(db.Model):
     # Relacionamento many-to-many com Equipe
     equipes = db.relationship('Equipe', secondary=agente_equipe, back_populates='agentes')
     atendimentos = db.relationship('Atendimento', back_populates='agente_rel')
-
 
 class Atendimento(db.Model):
     __tablename__ = 'atendimentos'

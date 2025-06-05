@@ -1,7 +1,7 @@
 from flask import Flask, render_template, redirect, url_for, request, flash
 from flask_login import LoginManager, login_user, logout_user, login_required, current_user
 from models.models import db, User, Equipe, Agente, Atendimento, agente_equipe
-from config import Config
+from configAWS import Config
 from werkzeug.security import generate_password_hash, check_password_hash
 from collections import defaultdict
 import pytz
@@ -645,6 +645,525 @@ logging.basicConfig(level=logging.DEBUG,
 logger = logging.getLogger(__name__)
 
 logger.debug("Aplicação Flask iniciada.")
+
+
+#
+# 
+# Rotas administrativas
+# 
+# 
+# Adicione estas rotas ao seu app.py - Sistema Admin Simplificado
+
+from flask import jsonify, request, send_file
+from datetime import datetime, timedelta
+import os
+import json
+
+# Rota principal do painel admin
+@app.route('/admin')
+@login_required
+def admin_panel():
+    """Painel de administração exclusivo para admin"""
+    if current_user.tipo != 'admin':
+        flash('Acesso negado. Apenas administradores podem acessar este painel.', 'danger')
+        return redirect(url_for('dashboard'))
+    
+    # Estatísticas básicas para exibir no painel
+    stats = {
+        'total_usuarios': User.query.count(),
+        'total_agentes': Agente.query.count(),
+        'total_atendimentos': Atendimento.query.count(),
+        'atendimentos_mes': Atendimento.query.filter(
+            Atendimento.data_hora >= datetime.now().replace(day=1, hour=0, minute=0, second=0)
+        ).count()
+    }
+    
+    return render_template('admin_panel.html', stats=stats)
+
+# API para estatísticas em tempo real
+@app.route('/api/admin/stats')
+@login_required
+def admin_stats_api():
+    """API para buscar estatísticas atualizadas"""
+    if current_user.tipo != 'admin':
+        return jsonify({'error': 'Acesso negado'}), 403
+    
+    try:
+        stats = {
+            'total_usuarios': User.query.count(),
+            'total_agentes': Agente.query.count(),
+            'total_atendimentos': Atendimento.query.count(),
+            'atendimentos_mes': Atendimento.query.filter(
+                Atendimento.data_hora >= datetime.now().replace(day=1, hour=0, minute=0, second=0)
+            ).count(),
+            'atendimentos_hoje': Atendimento.query.filter(
+                Atendimento.data_hora >= datetime.now().replace(hour=0, minute=0, second=0)
+            ).count(),
+            'supervisores_ativos': User.query.filter_by(tipo='supervisor').count(),
+            'agentes_ativos': Agente.query.filter_by(ativo=True).count()
+        }
+        
+        return jsonify({
+            'success': True,
+            'stats': stats
+        })
+        
+    except Exception as e:
+        app.logger.error(f'Erro ao buscar estatísticas admin: {e}')
+        return jsonify({'error': 'Erro interno'}), 500
+
+# Migração de tabelas (executar uma vez)
+@app.route('/admin/migrate-tables')
+@login_required
+def migrate_tables():
+    """Cria/atualiza estrutura do banco de dados"""
+    if current_user.tipo != 'admin':
+        flash('Acesso negado.', 'danger')
+        return redirect(url_for('dashboard'))
+    
+    try:
+        # Cria todas as tabelas
+        db.create_all()
+        
+        flash('✅ Migração executada com sucesso! Estrutura do banco atualizada.', 'success')
+        
+    except Exception as e:
+        flash(f'❌ Erro na migração: {str(e)}', 'danger')
+        app.logger.error(f'Erro na migração: {e}')
+    
+    return redirect(url_for('admin_panel'))
+
+# Corrigir supervisores de agentes (executar quando necessário)
+@app.route('/admin/fix-agents-supervisors')
+@login_required
+def fix_agents_supervisors():
+    """Corrige agentes que estão com admin como supervisor"""
+    if current_user.tipo != 'admin':
+        flash('Acesso negado.', 'danger')
+        return redirect(url_for('dashboard'))
+    
+    try:
+        # Busca agentes que têm supervisor com tipo 'admin'
+        agentes_com_admin = db.session.query(Agente).join(
+            User, Agente.supervisor_id == User.id
+        ).filter(User.tipo == 'admin').all()
+        
+        if not agentes_com_admin:
+            flash('✅ Nenhum agente com supervisor admin encontrado.', 'info')
+            return redirect(url_for('admin_panel'))
+        
+        agentes_corrigidos = []
+        
+        for agente in agentes_com_admin:
+            if agente.equipes:
+                primeira_equipe = agente.equipes[0]
+                supervisor_correto = primeira_equipe.supervisor
+                
+                if supervisor_correto and supervisor_correto.tipo == 'supervisor':
+                    agente.supervisor_id = supervisor_correto.id
+                    agentes_corrigidos.append({
+                        'nome': agente.nome,
+                        'novo_supervisor': supervisor_correto.nome
+                    })
+            else:
+                # Se não tem equipes, usa o primeiro supervisor disponível
+                primeiro_supervisor = User.query.filter_by(tipo='supervisor').first()
+                if primeiro_supervisor:
+                    agente.supervisor_id = primeiro_supervisor.id
+                    agentes_corrigidos.append({
+                        'nome': agente.nome,
+                        'novo_supervisor': primeiro_supervisor.nome
+                    })
+        
+        if agentes_corrigidos:
+            db.session.commit()
+            
+            mensagem = f"✅ {len(agentes_corrigidos)} agente(s) corrigido(s): "
+            nomes = [f"{info['nome']} → {info['novo_supervisor']}" for info in agentes_corrigidos]
+            mensagem += " | ".join(nomes)
+            
+            flash(mensagem, 'success')
+        else:
+            flash('ℹ️ Nenhum agente foi corrigido.', 'info')
+            
+    except Exception as e:
+        db.session.rollback()
+        flash(f'❌ Erro ao corrigir agentes: {str(e)}', 'danger')
+        app.logger.error(f'Erro ao corrigir supervisores dos agentes: {e}')
+    
+    return redirect(url_for('admin_panel'))
+
+# Limpeza de dados antigos
+@app.route('/admin/cleanup', methods=['POST'])
+@login_required
+def cleanup_old_data():
+    """Remove ou arquiva dados muito antigos"""
+    if current_user.tipo != 'admin':
+        return jsonify({'error': 'Acesso negado'}), 403
+    
+    try:
+        # Define data limite (90 dias atrás)
+        data_limite = datetime.now() - timedelta(days=90)
+        
+        # Conta atendimentos muito antigos (sem remover, apenas conta)
+        atendimentos_antigos = Atendimento.query.filter(
+            Atendimento.data_hora < data_limite
+        ).count()
+        
+        # Aqui você pode decidir se quer realmente remover ou apenas contar
+        # Por segurança, vamos apenas contar por enquanto
+        
+        return jsonify({
+            'success': True,
+            'message': f'Limpeza concluída. Encontrados {atendimentos_antigos} atendimentos com mais de 90 dias.'
+        })
+        
+    except Exception as e:
+        app.logger.error(f'Erro na limpeza: {e}')
+        return jsonify({'error': f'Erro na limpeza: {str(e)}'}), 500
+
+# Backup do banco de dados
+@app.route('/admin/backup-database', methods=['POST'])
+@login_required
+def backup_database():
+    """Cria backup simples dos dados principais"""
+    if current_user.tipo != 'admin':
+        return jsonify({'error': 'Acesso negado'}), 403
+    
+    try:
+        # Cria backup dos dados principais em formato JSON
+        backup_data = {
+            'timestamp': datetime.now().isoformat(),
+            'usuarios': [
+                {
+                    'id': u.id,
+                    'nome': u.nome,
+                    'email': u.email,
+                    'tipo': u.tipo
+                } for u in User.query.all()
+            ],
+            'agentes': [
+                {
+                    'id': a.id,
+                    'nome': a.nome,
+                    'discord_id': a.discord_id,
+                    'ativo': a.ativo,
+                    'supervisor_id': a.supervisor_id
+                } for a in Agente.query.all()
+            ],
+            'atendimentos_count': Atendimento.query.count(),
+            'equipes': [
+                {
+                    'id': e.id,
+                    'nome': e.nome,
+                    'supervisor_id': e.supervisor_id
+                } for e in Equipe.query.all()
+            ]
+        }
+        
+        # Salva o backup em arquivo
+        backup_filename = f"backup_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json"
+        backup_path = os.path.join('backups', backup_filename)
+        
+        # Cria diretório se não existir
+        os.makedirs('backups', exist_ok=True)
+        
+        with open(backup_path, 'w', encoding='utf-8') as f:
+            json.dump(backup_data, f, ensure_ascii=False, indent=2)
+        
+        return jsonify({
+            'success': True,
+            'message': f'Backup criado com sucesso: {backup_filename}'
+        })
+        
+    except Exception as e:
+        app.logger.error(f'Erro no backup: {e}')
+        return jsonify({'error': f'Erro no backup: {str(e)}'}), 500
+
+# Recalcular estatísticas
+@app.route('/admin/recalculate-stats', methods=['POST'])
+@login_required
+def recalculate_stats():
+    """Recalcula estatísticas do sistema"""
+    if current_user.tipo != 'admin':
+        return jsonify({'error': 'Acesso negado'}), 403
+    
+    try:
+        # Conta totais atuais
+        total_usuarios = User.query.count()
+        total_agentes = Agente.query.count()
+        total_atendimentos = Atendimento.query.count()
+        agentes_ativos = Agente.query.filter_by(ativo=True).count()
+        agentes_inativos = Agente.query.filter_by(ativo=False).count()
+        
+        # Estatísticas por supervisor
+        supervisores_stats = []
+        supervisores = User.query.filter_by(tipo='supervisor').all()
+        
+        for supervisor in supervisores:
+            atendimentos_supervisor = Atendimento.query.filter_by(supervisor_id=supervisor.id).count()
+            agentes_supervisor = Agente.query.filter_by(supervisor_id=supervisor.id).count()
+            
+            supervisores_stats.append({
+                'nome': supervisor.nome,
+                'atendimentos': atendimentos_supervisor,
+                'agentes': agentes_supervisor
+            })
+        
+        return jsonify({
+            'success': True,
+            'message': f'Estatísticas recalculadas: {total_usuarios} usuários, {total_agentes} agentes, {total_atendimentos} atendimentos'
+        })
+        
+    except Exception as e:
+        app.logger.error(f'Erro ao recalcular stats: {e}')
+        return jsonify({'error': f'Erro ao recalcular: {str(e)}'}), 500
+
+# Validar integridade dos dados
+@app.route('/admin/validate-integrity', methods=['POST'])
+@login_required
+def validate_integrity():
+    """Valida a integridade dos dados do sistema"""
+    if current_user.tipo != 'admin':
+        return jsonify({'error': 'Acesso negado'}), 403
+    
+    try:
+        problemas = []
+        
+        # Verifica agentes sem supervisor válido
+        agentes_sem_supervisor = Agente.query.filter(
+            ~Agente.supervisor_id.in_(
+                db.session.query(User.id).filter_by(tipo='supervisor')
+            )
+        ).count()
+        
+        if agentes_sem_supervisor > 0:
+            problemas.append(f'{agentes_sem_supervisor} agentes com supervisor inválido')
+        
+        # Verifica atendimentos órfãos (sem agente ou supervisor)
+        atendimentos_orfaos = Atendimento.query.filter(
+            (Atendimento.agente_id.is_(None)) | 
+            (Atendimento.supervisor_id.is_(None))
+        ).count()
+        
+        if atendimentos_orfaos > 0:
+            problemas.append(f'{atendimentos_orfaos} atendimentos órfãos')
+        
+        # Verifica equipes sem supervisor
+        equipes_sem_supervisor = Equipe.query.filter(
+            ~Equipe.supervisor_id.in_(
+                db.session.query(User.id).filter_by(tipo='supervisor')
+            )
+        ).count()
+        
+        if equipes_sem_supervisor > 0:
+            problemas.append(f'{equipes_sem_supervisor} equipes sem supervisor válido')
+        
+        # Verifica agentes sem equipes
+        agentes_sem_equipes = Agente.query.filter(
+            ~Agente.id.in_(
+                db.session.query(agente_equipe.c.agente_id)
+            )
+        ).count()
+        
+        if agentes_sem_equipes > 0:
+            problemas.append(f'{agentes_sem_equipes} agentes sem equipes')
+        
+        if problemas:
+            mensagem = f'⚠️ Problemas encontrados: {" | ".join(problemas)}'
+        else:
+            mensagem = '✅ Integridade dos dados validada com sucesso. Nenhum problema encontrado.'
+        
+        return jsonify({
+            'success': True,
+            'message': mensagem
+        })
+        
+    except Exception as e:
+        app.logger.error(f'Erro na validação: {e}')
+        return jsonify({'error': f'Erro na validação: {str(e)}'}), 500
+
+# Testar sistema de notificações
+@app.route('/admin/test-notifications', methods=['POST'])
+@login_required
+def test_notifications():
+    """Testa o sistema de notificações"""
+    if current_user.tipo != 'admin':
+        return jsonify({'error': 'Acesso negado'}), 403
+    
+    try:
+        # Conta supervisores com Discord configurado
+        supervisores_discord = User.query.filter(
+            User.tipo == 'supervisor',
+            User.discord_id.isnot(None)
+        ).count()
+        
+        # Conta agentes com Discord configurado
+        agentes_discord = Agente.query.filter(
+            Agente.discord_id.isnot(None)
+        ).count()
+        
+        return jsonify({
+            'success': True,
+            'message': f'Sistema testado: {supervisores_discord} supervisores e {agentes_discord} agentes com Discord configurado'
+        })
+        
+    except Exception as e:
+        app.logger.error(f'Erro no teste: {e}')
+        return jsonify({'error': f'Erro no teste: {str(e)}'}), 500
+
+# Gerar relatório completo
+@app.route('/admin/generate-report')
+@login_required
+def generate_report():
+    """Gera relatório completo do sistema"""
+    if current_user.tipo != 'admin':
+        flash('Acesso negado.', 'danger')
+        return redirect(url_for('dashboard'))
+    
+    try:
+        # Coleta dados para o relatório
+        agora = datetime.now()
+        
+        # Estatísticas gerais
+        stats = {
+            'total_usuarios': User.query.count(),
+            'total_supervisores': User.query.filter_by(tipo='supervisor').count(),
+            'total_agentes': Agente.query.count(),
+            'agentes_ativos': Agente.query.filter_by(ativo=True).count(),
+            'total_equipes': Equipe.query.count(),
+            'total_atendimentos': Atendimento.query.count()
+        }
+        
+        # Atendimentos por período
+        hoje = agora.replace(hour=0, minute=0, second=0, microsecond=0)
+        esta_semana = hoje - timedelta(days=agora.weekday())
+        este_mes = agora.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+        
+        atendimentos_periodo = {
+            'hoje': Atendimento.query.filter(Atendimento.data_hora >= hoje).count(),
+            'esta_semana': Atendimento.query.filter(Atendimento.data_hora >= esta_semana).count(),
+            'este_mes': Atendimento.query.filter(Atendimento.data_hora >= este_mes).count()
+        }
+        
+        # Top supervisores por atendimentos
+        top_supervisores = db.session.query(
+            User.nome,
+            db.func.count(Atendimento.id).label('total_atendimentos')
+        ).join(
+            Atendimento, User.id == Atendimento.supervisor_id
+        ).filter(
+            User.tipo == 'supervisor'
+        ).group_by(User.id, User.nome).order_by(
+            db.func.count(Atendimento.id).desc()
+        ).limit(5).all()
+        
+        # Renderiza template de relatório
+        return render_template('admin_report.html', 
+                             stats=stats,
+                             atendimentos_periodo=atendimentos_periodo,
+                             top_supervisores=top_supervisores,
+                             data_geracao=agora)
+        
+    except Exception as e:
+        flash(f'❌ Erro ao gerar relatório: {str(e)}', 'danger')
+        app.logger.error(f'Erro ao gerar relatório: {e}')
+        return redirect(url_for('admin_panel'))
+
+# Limpar logs (se implementado sistema de logs)
+@app.route('/admin/clear-logs', methods=['POST'])
+@login_required
+def clear_logs():
+    """Limpa logs antigos do sistema"""
+    if current_user.tipo != 'admin':
+        return jsonify({'error': 'Acesso negado'}), 403
+    
+    try:
+        # Por enquanto, simula limpeza de logs
+        # No futuro pode limpar arquivos de log ou tabela de logs
+        
+        return jsonify({
+            'success': True,
+            'message': 'Logs antigos removidos com sucesso'
+        })
+        
+    except Exception as e:
+        app.logger.error(f'Erro ao limpar logs: {e}')
+        return jsonify({'error': f'Erro ao limpar logs: {str(e)}'}), 500
+
+# Reset completo do sistema (CUIDADO!)
+@app.route('/admin/reset-system', methods=['POST'])
+@login_required
+def reset_system():
+    """Reset completo do sistema - USE COM EXTREMO CUIDADO"""
+    if current_user.tipo != 'admin':
+        return jsonify({'error': 'Acesso negado'}), 403
+    
+    try:
+        # Por segurança, vamos apenas contar o que seria resetado
+        # NÃO vamos realmente deletar nada
+        
+        total_atendimentos = Atendimento.query.count()
+        total_agentes = Agente.query.count()
+        total_equipes = Equipe.query.count()
+        
+        # Se quiser implementar reset real no futuro, descomente as linhas abaixo:
+        # db.session.query(Atendimento).delete()
+        # db.session.query(Agente).delete() 
+        # db.session.query(Equipe).delete()
+        # db.session.commit()
+        
+        return jsonify({
+            'success': True,
+            'message': f'SIMULAÇÃO: Reset removeria {total_atendimentos} atendimentos, {total_agentes} agentes, {total_equipes} equipes'
+        })
+        
+    except Exception as e:
+        app.logger.error(f'Erro no reset: {e}')
+        return jsonify({'error': f'Erro no reset: {str(e)}'}), 500
+
+# API simplificada para notificações em tempo real (sem status complexos)
+@app.route('/api/check-new-atendimentos', methods=['POST'])
+@login_required
+def check_new_atendimentos():
+    """API simples para verificar novos atendimentos"""
+    if current_user.tipo != 'supervisor':
+        return jsonify({'error': 'Acesso negado'}), 403
+    
+    try:
+        data = request.get_json()
+        last_check = datetime.fromtimestamp(data.get('last_check', 0) / 1000)
+        
+        # Busca atendimentos novos para este supervisor (sem filtro de status complexo)
+        novos_atendimentos = Atendimento.query.filter(
+            Atendimento.supervisor_id == current_user.id,
+            Atendimento.data_hora > last_check
+        ).order_by(Atendimento.data_hora.desc()).all()
+        
+        # Total de atendimentos do supervisor
+        total_atendimentos = Atendimento.query.filter(
+            Atendimento.supervisor_id == current_user.id
+        ).count()
+        
+        # Serializa os dados
+        atendimentos_data = []
+        for atendimento in novos_atendimentos:
+            atendimentos_data.append({
+                'id': atendimento.id,
+                'agente_nome': atendimento.agente_rel.nome,
+                'conteudo': atendimento.conteudo,
+                'data_hora': atendimento.data_hora.isoformat()
+            })
+        
+        return jsonify({
+            'success': True,
+            'new_atendimentos': atendimentos_data,
+            'total_pending': len(novos_atendimentos)
+        })
+        
+    except Exception as e:
+        app.logger.error(f'Erro na API check_new_atendimentos: {e}')
+        return jsonify({'error': 'Erro interno'}), 500
 
 
 

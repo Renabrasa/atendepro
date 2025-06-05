@@ -1,0 +1,550 @@
+{% extends 'base.html' %}
+{% block title %}Painel de Administração{% endblock %}
+{% block content %}
+<h2>🔧 Painel de Administração</h2>
+
+<!-- Cards de Ações Rápidas -->
+<div class="admin-grid">
+  <!-- Migração e Banco de Dados -->
+  <div class="admin-card">
+    <div class="admin-card-header">
+      <h3>🗄️ Banco de Dados</h3>
+    </div>
+    <div class="admin-card-body">
+      <p>Ferramentas para migração e manutenção do banco de dados.</p>
+      <div class="admin-actions">
+        <button onclick="executarMigracao()" class="btn btn-primary">
+          <span class="btn-icon">⬆️</span>
+          Executar Migração
+        </button>
+        <button onclick="backupBanco()" class="btn btn-secondary">
+          <span class="btn-icon">💾</span>
+          Backup Banco
+        </button>
+        <button onclick="limparDados()" class="btn btn-warning">
+          <span class="btn-icon">🧹</span>
+          Limpar Dados Antigos
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Correção de Dados -->
+  <div class="admin-card">
+    <div class="admin-card-header">
+      <h3>🔧 Correção de Dados</h3>
+    </div>
+    <div class="admin-card-body">
+      <p>Corrigir problemas comuns nos dados do sistema.</p>
+      <div class="admin-actions">
+        <button onclick="corrigirSupervisores()" class="btn btn-primary">
+          <span class="btn-icon">👥</span>
+          Corrigir Supervisores de Agentes
+        </button>
+        <button onclick="recalcularEstatisticas()" class="btn btn-secondary">
+          <span class="btn-icon">📊</span>
+          Recalcular Estatísticas
+        </button>
+        <button onclick="validarIntegridade()" class="btn btn-info">
+          <span class="btn-icon">✅</span>
+          Validar Integridade
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Sistema de Logs -->
+  <div class="admin-card">
+    <div class="admin-card-header">
+      <h3>📋 Logs do Sistema</h3>
+    </div>
+    <div class="admin-card-body">
+      <p>Visualizar e gerenciar logs de atividade.</p>
+      <div class="admin-actions">
+        <button onclick="verLogs()" class="btn btn-primary">
+          <span class="btn-icon">👀</span>
+          Ver Logs Recentes
+        </button>
+        <button onclick="exportarLogs()" class="btn btn-secondary">
+          <span class="btn-icon">📤</span>
+          Exportar Logs
+        </button>
+        <button onclick="limparLogs()" class="btn btn-danger">
+          <span class="btn-icon">🗑️</span>
+          Limpar Logs Antigos
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Configurações Avançadas -->
+  <div class="admin-card">
+    <div class="admin-card-header">
+      <h3>⚙️ Configurações</h3>
+    </div>
+    <div class="admin-card-body">
+      <p>Configurações avançadas do sistema.</p>
+      <div class="admin-actions">
+        <button onclick="resetarSistema()" class="btn btn-danger">
+          <span class="btn-icon">🔄</span>
+          Reset Completo
+        </button>
+        <button onclick="gerarRelatorio()" class="btn btn-success">
+          <span class="btn-icon">📈</span>
+          Relatório Completo
+        </button>
+        <button onclick="testarNotificacoes()" class="btn btn-info">
+          <span class="btn-icon">🔔</span>
+          Testar Notificações
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Estatísticas do Sistema -->
+<div class="system-stats">
+  <div class="stats-header">
+    <h3>📊 Estatísticas do Sistema</h3>
+    <button onclick="atualizarStats()" class="btn btn-sm btn-secondary">🔄 Atualizar</button>
+  </div>
+  
+  <div class="stats-grid" id="systemStats">
+    <div class="stat-card">
+      <div class="stat-number">{{ stats.total_usuarios or 0 }}</div>
+      <div class="stat-label">Total de Usuários</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-number">{{ stats.total_agentes or 0 }}</div>
+      <div class="stat-label">Total de Agentes</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-number">{{ stats.total_atendimentos or 0 }}</div>
+      <div class="stat-label">Total de Atendimentos</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-number">{{ stats.atendimentos_mes or 0 }}</div>
+      <div class="stat-label">Atendimentos Este Mês</div>
+    </div>
+  </div>
+</div>
+
+<!-- Console de Resultados -->
+<div class="admin-console">
+  <div class="console-header">
+    <h3>💻 Console de Resultados</h3>
+    <button onclick="limparConsole()" class="btn btn-sm btn-secondary">🧹 Limpar</button>
+  </div>
+  <div class="console-content" id="adminConsole">
+    <div class="console-line">Sistema pronto para executar comandos administrativos...</div>
+  </div>
+</div>
+
+<style>
+/* Grid do painel admin */
+.admin-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+  gap: 24px;
+  margin-bottom: 32px;
+}
+
+/* Cards do admin */
+.admin-card {
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  border: 1px solid #e1e5e9;
+  overflow: hidden;
+}
+
+.admin-card-header {
+  background: linear-gradient(135deg, #dc3545, #c82333);
+  color: white;
+  padding: 16px 20px;
+  font-weight: 600;
+}
+
+.admin-card-header h3 {
+  margin: 0;
+  font-size: 1.1em;
+}
+
+.admin-card-body {
+  padding: 20px;
+}
+
+.admin-card-body p {
+  color: #6c757d;
+  margin-bottom: 16px;
+  font-size: 0.9em;
+}
+
+.admin-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.admin-actions .btn {
+  justify-content: flex-start;
+  text-align: left;
+}
+
+/* Botões específicos do admin */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 16px;
+  border: none;
+  border-radius: 6px;
+  font-weight: 600;
+  text-decoration: none;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-size: 0.9em;
+}
+
+.btn-primary {
+  background: #007bff;
+  color: white;
+}
+
+.btn-primary:hover {
+  background: #0056b3;
+  transform: translateY(-1px);
+}
+
+.btn-secondary {
+  background: #6c757d;
+  color: white;
+}
+
+.btn-secondary:hover {
+  background: #545b62;
+}
+
+.btn-warning {
+  background: #ffc107;
+  color: #212529;
+}
+
+.btn-warning:hover {
+  background: #e0a800;
+}
+
+.btn-danger {
+  background: #dc3545;
+  color: white;
+}
+
+.btn-danger:hover {
+  background: #c82333;
+}
+
+.btn-success {
+  background: #28a745;
+  color: white;
+}
+
+.btn-success:hover {
+  background: #1e7e34;
+}
+
+.btn-info {
+  background: #17a2b8;
+  color: white;
+}
+
+.btn-info:hover {
+  background: #138496;
+}
+
+.btn-sm {
+  padding: 6px 12px;
+  font-size: 0.8em;
+}
+
+.btn-icon {
+  font-size: 1em;
+}
+
+/* Estatísticas do sistema */
+.system-stats {
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  border: 1px solid #e1e5e9;
+  margin-bottom: 24px;
+}
+
+.stats-header {
+  background: linear-gradient(135deg, #28a745, #20c997);
+  color: white;
+  padding: 16px 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.stats-header h3 {
+  margin: 0;
+  font-size: 1.1em;
+}
+
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 16px;
+  padding: 20px;
+}
+
+.stat-card {
+  text-align: center;
+  padding: 16px;
+  background: #f8f9fa;
+  border-radius: 8px;
+  border-left: 4px solid #28a745;
+}
+
+.stat-number {
+  font-size: 2em;
+  font-weight: 700;
+  color: #003366;
+  line-height: 1;
+}
+
+.stat-label {
+  font-size: 0.85em;
+  color: #6c757d;
+  margin-top: 4px;
+}
+
+/* Console de resultados */
+.admin-console {
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  border: 1px solid #e1e5e9;
+}
+
+.console-header {
+  background: linear-gradient(135deg, #343a40, #495057);
+  color: white;
+  padding: 16px 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.console-header h3 {
+  margin: 0;
+  font-size: 1.1em;
+}
+
+.console-content {
+  background: #1e1e1e;
+  color: #00ff00;
+  font-family: 'Courier New', monospace;
+  padding: 20px;
+  min-height: 200px;
+  max-height: 400px;
+  overflow-y: auto;
+  font-size: 0.9em;
+  line-height: 1.4;
+}
+
+.console-line {
+  margin-bottom: 4px;
+}
+
+.console-success {
+  color: #00ff00;
+}
+
+.console-error {
+  color: #ff6b6b;
+}
+
+.console-info {
+  color: #74c0fc;
+}
+
+.console-warning {
+  color: #ffd43b;
+}
+
+/* Loading spinner */
+.loading {
+  display: inline-block;
+  width: 16px;
+  height: 16px;
+  border: 2px solid #f3f3f3;
+  border-top: 2px solid #007bff;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* Responsividade */
+@media (max-width: 768px) {
+  .admin-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .stats-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  
+  .admin-actions {
+    gap: 6px;
+  }
+  
+  .stats-header, .console-header {
+    flex-direction: column;
+    gap: 8px;
+    text-align: center;
+  }
+}
+</style>
+
+<script>
+// Funções JavaScript para o painel admin
+function adicionarLogConsole(mensagem, tipo = 'info') {
+  const console = document.getElementById('adminConsole');
+  const timestamp = new Date().toLocaleTimeString();
+  const linha = document.createElement('div');
+  linha.className = `console-line console-${tipo}`;
+  linha.textContent = `[${timestamp}] ${mensagem}`;
+  console.appendChild(linha);
+  console.scrollTop = console.scrollHeight;
+}
+
+function limparConsole() {
+  document.getElementById('adminConsole').innerHTML = 
+    '<div class="console-line">Console limpo...</div>';
+}
+
+async function executarComandoAdmin(endpoint, mensagemInicio) {
+  adicionarLogConsole(mensagemInicio, 'info');
+  
+  try {
+    const response = await fetch(endpoint, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      }
+    });
+    
+    const data = await response.json();
+    
+    if (data.success) {
+      adicionarLogConsole(`✅ ${data.message}`, 'success');
+    } else {
+      adicionarLogConsole(`❌ Erro: ${data.error}`, 'error');
+    }
+  } catch (error) {
+    adicionarLogConsole(`❌ Erro de conexão: ${error.message}`, 'error');
+  }
+}
+
+// Funções específicas
+function executarMigracao() {
+  window.location.href = '/admin/migrate-tables';
+}
+
+function corrigirSupervisores() {
+  window.location.href = '/admin/fix-agents-supervisors';
+}
+
+function backupBanco() {
+  executarComandoAdmin('/admin/backup-database', 'Iniciando backup do banco de dados...');
+}
+
+function limparDados() {
+  if (confirm('Tem certeza que deseja limpar dados antigos? Esta ação não pode ser desfeita.')) {
+    executarComandoAdmin('/admin/cleanup', 'Iniciando limpeza de dados antigos...');
+  }
+}
+
+function recalcularEstatisticas() {
+  executarComandoAdmin('/admin/recalculate-stats', 'Recalculando estatísticas do sistema...');
+}
+
+function validarIntegridade() {
+  executarComandoAdmin('/admin/validate-integrity', 'Validando integridade dos dados...');
+}
+
+function verLogs() {
+  window.open('/admin/logs', '_blank');
+}
+
+function exportarLogs() {
+  window.location.href = '/admin/export-logs';
+}
+
+function limparLogs() {
+  if (confirm('Tem certeza que deseja limpar logs antigos?')) {
+    executarComandoAdmin('/admin/clear-logs', 'Limpando logs antigos...');
+  }
+}
+
+function resetarSistema() {
+  const confirmacao = prompt('Digite "RESETAR" para confirmar o reset completo do sistema:');
+  if (confirmacao === 'RESETAR') {
+    executarComandoAdmin('/admin/reset-system', 'ATENÇÃO: Iniciando reset completo do sistema...');
+  }
+}
+
+function gerarRelatorio() {
+  window.location.href = '/admin/generate-report';
+}
+
+function testarNotificacoes() {
+  executarComandoAdmin('/admin/test-notifications', 'Testando sistema de notificações...');
+}
+
+async function atualizarStats() {
+  adicionarLogConsole('Atualizando estatísticas...', 'info');
+  
+  try {
+    const response = await fetch('/api/admin/stats');
+    const data = await response.json();
+    
+    if (data.success) {
+      const statsGrid = document.getElementById('systemStats');
+      statsGrid.innerHTML = `
+        <div class="stat-card">
+          <div class="stat-number">${data.stats.total_usuarios}</div>
+          <div class="stat-label">Total de Usuários</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-number">${data.stats.total_agentes}</div>
+          <div class="stat-label">Total de Agentes</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-number">${data.stats.total_atendimentos}</div>
+          <div class="stat-label">Total de Atendimentos</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-number">${data.stats.atendimentos_mes}</div>
+          <div class="stat-label">Atendimentos Este Mês</div>
+        </div>
+      `;
+      adicionarLogConsole('✅ Estatísticas atualizadas com sucesso', 'success');
+    }
+  } catch (error) {
+    adicionarLogConsole(`❌ Erro ao atualizar estatísticas: ${error.message}`, 'error');
+  }
+}
+
+// Atualiza stats automaticamente ao carregar a página
+document.addEventListener('DOMContentLoaded', atualizarStats);
+</script>
+
+{% endblock %}

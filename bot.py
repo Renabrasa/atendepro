@@ -105,7 +105,8 @@ class SupervisorButton(discord.ui.Button):
                 self.supervisor, 
                 self.agente.nome, 
                 self.conteudo,
-                interaction.guild.name if interaction.guild else "DM"
+                interaction.guild.name if interaction.guild else "DM",
+                interaction
             )
             
             session.close()
@@ -117,23 +118,25 @@ class SupervisorButton(discord.ui.Button):
                 view=None
             )
 
-    async def enviar_notificacao_supervisor(self, supervisor, nome_agente, conteudo, nome_servidor):
+    async def enviar_notificacao_supervisor(self, supervisor, nome_agente, conteudo, nome_servidor, interaction):
         try:
             if not supervisor.discord_id:
                 logger.warning(f'Supervisor {supervisor.nome} não possui discord_id')
                 return
 
-            bot = interaction.client if hasattr(self, 'interaction') else None
-            if bot:
-                user_supervisor = await bot.fetch_user(int(supervisor.discord_id))
-                await user_supervisor.send(
-                    f"🚨 **Novo atendimento recebido**\n\n"
-                    f"**Servidor:** {nome_servidor}\n"
-                    f"**Agente:** {nome_agente}\n"
-                    f"**Conteúdo:** {conteudo}\n\n"
-                    "Por favor, entre em contato com o agente o mais breve possível."
-                )
-                logger.info(f'Notificação enviada ao supervisor {supervisor.nome}')
+            user_supervisor = await interaction.client.fetch_user(int(supervisor.discord_id))
+            await user_supervisor.send(
+                f"🚨 **Novo atendimento recebido**\n\n"
+                f"**Servidor:** {nome_servidor}\n"
+                f"**Agente:** {nome_agente}\n"
+                f"**Conteúdo:** {conteudo}\n\n"
+                "Por favor, entre em contato com o agente o mais breve possível."
+            )
+            logger.info(f'Notificação enviada ao supervisor {supervisor.nome}')
+        except discord.NotFound:
+            logger.error(f'Usuário do supervisor {supervisor.nome} não encontrado (ID: {supervisor.discord_id})')
+        except discord.Forbidden:
+            logger.warning(f'Supervisor {supervisor.nome} não permite DMs')
         except Exception as e:
             logger.error(f'Erro ao notificar supervisor {supervisor.nome}: {e}')
 

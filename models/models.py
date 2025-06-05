@@ -41,7 +41,7 @@ class User(UserMixin, db.Model):
     
     def pode_ver_todos_supervisores(self):
         """Verifica se pode ver dados de todos os supervisores"""
-        return self.tipo in ['admin', 'coordenador']
+        return self.tipo in ['admin', 'coordenadora']
     
     def pode_acessar_admin(self):
         """Verifica se pode acessar painel admin"""

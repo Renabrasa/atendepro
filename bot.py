@@ -145,6 +145,8 @@ class MeuBot(discord.Client):
         super().__init__(*args, **kwargs)
 
     async def on_ready(self):
+        with open('bot_status.txt', 'w') as f:
+            f.write(f"ONLINE:{datetime.now().isoformat()}")
         logger.info(f'Bot conectado como {self.user}')
         logger.info(f'Bot está em {len(self.guilds)} servidores')
         logger.info(f'Servidores: {[f"{guild.name} (ID: {guild.id})" for guild in self.guilds]}')
@@ -311,6 +313,8 @@ class MeuBot(discord.Client):
             logger.error(f'Não foi possível enviar mensagem de erro genérico para {user}')
 
     async def on_disconnect(self):
+        if os.path.exists('bot_status.txt'):
+            os.remove('bot_status.txt')
         logger.warning('Bot desconectado do Discord')
 
     async def on_resumed(self):

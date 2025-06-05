@@ -767,7 +767,7 @@ def admin_panel():
 @login_required
 def painel_coordenacao():
     """Painel de coordenação para ver relatórios gerais sem funções admin"""
-    if not current_user.pode_ver_todos_supervisores():
+    if current_user.tipo not in ['admin', 'coordenadora']:
         flash('Acesso negado.', 'danger')
         return redirect(url_for('dashboard'))
     
@@ -1297,6 +1297,44 @@ def check_new_atendimentos():
         app.logger.error(f'Erro na API check_new_atendimentos: {e}')
         return jsonify({'error': 'Erro interno'}), 500
 
+
+@app.route('/admin/bot-status')
+@login_required
+def check_bot_status():
+    """Verifica se o bot está online"""
+    if current_user.tipo != 'admin':
+        return jsonify({'error': 'Acesso negado'}), 403
+    
+    try:
+        if os.path.exists('bot_status.txt'):
+            with open('bot_status.txt', 'r') as f:
+                content = f.read()
+                if content.startswith('ONLINE:'):
+                    timestamp = content.split(':', 1)[1]
+                    last_online = datetime.fromisoformat(timestamp)
+                    
+                    # Verifica se está online há menos de 2 minutos
+                    diff = datetime.now() - last_online
+                    if diff.total_seconds() < 120:  # 2 minutos
+                        return jsonify({
+                            'success': True,
+                            'status': 'online',
+                            'last_seen': timestamp,
+                            'message': '🟢 Bot está ONLINE'
+                        })
+        
+        return jsonify({
+            'success': True,
+            'status': 'offline',
+            'message': '🔴 Bot está OFFLINE'
+        })
+        
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'status': 'error',
+            'message': f'❌ Erro ao verificar status: {str(e)}'
+        })
 
 
 if __name__ == '__main__':

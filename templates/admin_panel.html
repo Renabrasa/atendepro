@@ -545,6 +545,64 @@ async function atualizarStats() {
 
 // Atualiza stats automaticamente ao carregar a página
 document.addEventListener('DOMContentLoaded', atualizarStats);
+
+
+
+
+function checkBotStatus() {
+    const statusDiv = document.getElementById('bot-status');
+    statusDiv.innerHTML = '<div class="spinner-border" role="status"><span class="sr-only">Verificando...</span></div>';
+    
+    fetch('/admin/bot-status', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            statusDiv.innerHTML = `
+                <div class="alert alert-${data.status === 'online' ? 'success' : 'danger'}">
+                    ${data.message}
+                </div>
+                <button class="btn btn-primary btn-sm" onclick="checkBotStatus()">
+                    Atualizar
+                </button>
+            `;
+        } else {
+            statusDiv.innerHTML = `
+                <div class="alert alert-danger">${data.message}</div>
+                <button class="btn btn-primary btn-sm" onclick="checkBotStatus()">
+                    Tentar Novamente
+                </button>
+            `;
+        }
+    })
+    .catch(error => {
+        statusDiv.innerHTML = `
+            <div class="alert alert-danger">❌ Erro de conexão</div>
+            <button class="btn btn-primary btn-sm" onclick="checkBotStatus()">
+                Tentar Novamente
+            </button>
+        `;
+    });
+}
+
+// Verificação automática a cada 30 segundos
+setInterval(checkBotStatus, 30000);
+
+// Verifica na primeira carga
+checkBotStatus();
+
+
+
+
+
+
+
+
+
 </script>
 
 {% endblock %}

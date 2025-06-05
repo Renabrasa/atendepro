@@ -406,7 +406,7 @@
                 </a>
                 {% endif %}
                 
-                {% if current_user.tipo in ['supervisor', 'coordenadora'] %}
+                {% if current_user.tipo in ['supervisor', 'coordenadora','admin'] %}
                 <a href="{{ url_for('meu_perfil') }}" class="{% if request.path.startswith('/meu-perfil') %}active{% endif %}">
                     👤 Meu Perfil
                 </a>

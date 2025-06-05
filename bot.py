@@ -8,12 +8,12 @@ from sqlalchemy.orm import sessionmaker
 from models.models import User, Agente, Atendimento
 from config import Config
 
-# Token do bot vindo da variável de ambiente (recomendo configurar no .env)
+# Token do bot vindo da variável de ambiente
 TOKEN = os.getenv('DISCORD_TOKEN', 'SEU_TOKEN_AQUI')
 
 KEYWORD = '@@problema'
 
-# Configuração do logger para console e arquivo, com encoding UTF-8
+# Configuração do logger
 console_handler = logging.StreamHandler(sys.stdout)
 console_handler.setLevel(logging.INFO)
 formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
@@ -29,13 +29,113 @@ logger.handlers = []
 logger.addHandler(console_handler)
 logger.addHandler(file_handler)
 
-# Configuração dos intents do Discord para receber conteúdo das mensagens
+# Configuração dos intents do Discord
 intents = discord.Intents.default()
 intents.message_content = True
 
-# Configuração do banco de dados usando URI do config.py
+# Configuração do banco de dados
 engine = create_engine(Config.SQLALCHEMY_DATABASE_URI)
 Session = sessionmaker(bind=engine)
+
+class SupervisorSelectView(discord.ui.View):
+    def __init__(self, supervisores, agente, conteudo_original, server_id):
+        super().__init__(timeout=300)  # 5 minutos para responder
+        self.supervisores = supervisores
+        self.agente = agente
+        self.conteudo_original = conteudo_original
+        self.server_id = server_id
+        
+        # Adiciona botões para cada supervisor
+        for i, supervisor in enumerate(supervisores):
+            button = SupervisorButton(
+                supervisor=supervisor,
+                agente=agente,
+                conteudo=conteudo_original,
+                server_id=server_id,
+                style=discord.ButtonStyle.primary,
+                label=f"{supervisor.nome}",
+                custom_id=f"supervisor_{supervisor.id}"
+            )
+            self.add_item(button)
+
+    async def on_timeout(self):
+        # Remove os botões quando expira
+        for item in self.children:
+            item.disabled = True
+
+class SupervisorButton(discord.ui.Button):
+    def __init__(self, supervisor, agente, conteudo, server_id, **kwargs):
+        super().__init__(**kwargs)
+        self.supervisor = supervisor
+        self.agente = agente
+        self.conteudo = conteudo
+        self.server_id = server_id
+
+    async def callback(self, interaction: discord.Interaction):
+        try:
+            session = Session()
+            
+            # Cria o atendimento com o supervisor escolhido
+            atendimento = Atendimento(
+                agente_id=self.agente.id,
+                supervisor_id=self.supervisor.id,
+                conteudo=self.conteudo,
+                classificacao=None,
+                status='pendente',
+                data_hora=datetime.utcnow(),
+                servidor_discord_id=self.server_id
+            )
+            session.add(atendimento)
+            session.commit()
+            
+            logger.info(f'Atendimento criado (ID: {atendimento.id}) para agente {self.agente.nome} com supervisor {self.supervisor.nome}')
+            
+            # Responde à interação
+            await interaction.response.edit_message(
+                content=f"✅ **Atendimento criado!**\n\n"
+                        f"**Agente:** {self.agente.nome}\n"
+                        f"**Supervisor selecionado:** {self.supervisor.nome}\n"
+                        f"**ID do atendimento:** #{atendimento.id}\n\n"
+                        f"O supervisor {self.supervisor.nome} foi notificado e entrará em contato em breve.",
+                view=None  # Remove os botões
+            )
+            
+            # Envia notificação para o supervisor
+            await self.enviar_notificacao_supervisor(
+                self.supervisor, 
+                self.agente.nome, 
+                self.conteudo,
+                interaction.guild.name if interaction.guild else "DM"
+            )
+            
+            session.close()
+            
+        except Exception as e:
+            logger.error(f'Erro ao processar seleção do supervisor: {e}', exc_info=True)
+            await interaction.response.edit_message(
+                content="❌ Erro ao processar sua solicitação. Tente novamente.",
+                view=None
+            )
+
+    async def enviar_notificacao_supervisor(self, supervisor, nome_agente, conteudo, nome_servidor):
+        try:
+            if not supervisor.discord_id:
+                logger.warning(f'Supervisor {supervisor.nome} não possui discord_id')
+                return
+
+            bot = interaction.client if hasattr(self, 'interaction') else None
+            if bot:
+                user_supervisor = await bot.fetch_user(int(supervisor.discord_id))
+                await user_supervisor.send(
+                    f"🚨 **Novo atendimento recebido**\n\n"
+                    f"**Servidor:** {nome_servidor}\n"
+                    f"**Agente:** {nome_agente}\n"
+                    f"**Conteúdo:** {conteudo}\n\n"
+                    "Por favor, entre em contato com o agente o mais breve possível."
+                )
+                logger.info(f'Notificação enviada ao supervisor {supervisor.nome}')
+        except Exception as e:
+            logger.error(f'Erro ao notificar supervisor {supervisor.nome}: {e}')
 
 class MeuBot(discord.Client):
     def __init__(self, *args, **kwargs):
@@ -76,7 +176,6 @@ class MeuBot(discord.Client):
                 server_id = str(message.guild.id) if message.guild else None
 
                 logger.info(f"Buscando agente com discord_id: {discord_id}")
-                logger.info(f"Servidor da mensagem: {server_id}")
 
                 agente = session.query(Agente).filter_by(discord_id=discord_id).first()
                 if not agente:
@@ -86,39 +185,55 @@ class MeuBot(discord.Client):
 
                 logger.info(f"Agente encontrado: {agente.nome}")
 
-                supervisor = None
-                if server_id:
-                    supervisores = session.query(User).filter_by(tipo='supervisor').all()
-                    for sup in supervisores:
-                        if hasattr(sup, 'atende_servidor') and sup.atende_servidor(server_id):
-                            supervisor = sup
-                            logger.info(f"Supervisor encontrado pelo servidor: {supervisor.nome}")
-                            break
-
-                if not supervisor:
-                    supervisor = agente.supervisor
-                    logger.info(f"Usando supervisor principal do agente: {supervisor.nome if supervisor else 'Nenhum'}")
-
-                if not supervisor:
-                    logger.warning(f'Nenhum supervisor encontrado para agente {agente.nome} no servidor {server_id}.')
-                    await self.enviar_erro_supervisor_nao_encontrado(message.author, agente.nome)
+                # Busca TODOS os supervisores ativos
+                supervisores = session.query(User).filter_by(tipo='supervisor').all()
+                
+                if not supervisores:
+                    logger.warning('Nenhum supervisor encontrado no sistema.')
+                    await self.enviar_erro_sem_supervisores(message.author)
                     return
 
-                atendimento = Atendimento(
-                    agente_id=agente.id,
-                    supervisor_id=supervisor.id,
-                    conteudo=message.content,
-                    classificacao=None,
-                    status='pendente',
-                    data_hora=datetime.utcnow(),
-                    servidor_discord_id=server_id
-                )
-                session.add(atendimento)
-                session.commit()
-                logger.info(f'Atendimento criado (ID: {atendimento.id}) para agente {agente.nome} com supervisor {supervisor.nome}')
+                # Se há apenas um supervisor, cria automaticamente
+                if len(supervisores) == 1:
+                    supervisor = supervisores[0]
+                    atendimento = Atendimento(
+                        agente_id=agente.id,
+                        supervisor_id=supervisor.id,
+                        conteudo=message.content,
+                        classificacao=None,
+                        status='pendente',
+                        data_hora=datetime.utcnow(),
+                        servidor_discord_id=server_id
+                    )
+                    session.add(atendimento)
+                    session.commit()
+                    
+                    await self.enviar_confirmacao_agente(message.author, agente.nome, supervisor.nome)
+                    await self.enviar_notificacao_supervisor(supervisor, agente.nome, message.content, message.guild.name if message.guild else "DM")
+                    return
 
-                await self.enviar_confirmacao_agente(message.author, agente.nome, supervisor.nome)
-                await self.enviar_notificacao_supervisor(supervisor, agente.nome, message.content, message.guild.name if message.guild else "DM")
+                # Se há múltiplos supervisores, oferece escolha
+                embed = discord.Embed(
+                    title="🎯 Selecione o Supervisor",
+                    description=f"Olá **{agente.nome}**!\n\nPara qual supervisor você gostaria de direcionar seu atendimento?",
+                    color=0x003366
+                )
+                
+                # Adiciona informações dos supervisores no embed
+                supervisor_info = ""
+                for sup in supervisores:
+                    equipes_count = len(sup.equipes) if hasattr(sup, 'equipes') else 0
+                    supervisor_info += f"**{sup.nome}** - {equipes_count} equipe(s)\n"
+                
+                embed.add_field(name="Supervisores Disponíveis:", value=supervisor_info, inline=False)
+                embed.add_field(name="Seu problema:", value=message.content[:100] + "..." if len(message.content) > 100 else message.content, inline=False)
+                
+                view = SupervisorSelectView(supervisores, agente, message.content, server_id)
+                
+                await message.author.send(embed=embed, view=view)
+                
+                # Confirma que recebeu a solicitação
+                await message.add_reaction("✅")
 
             except Exception as e:
                 logger.error(f'Erro ao processar atendimento: {e}', exc_info=True)
@@ -174,10 +289,10 @@ class MeuBot(discord.Client):
         except Exception:
             logger.error(f'Não foi possível enviar mensagem de erro para {user}')
 
-    async def enviar_erro_supervisor_nao_encontrado(self, user, nome_agente):
+    async def enviar_erro_sem_supervisores(self, user):
         try:
             await user.send(
-                f"❌ **Erro:** Nenhum supervisor disponível para atender {nome_agente} neste servidor.\n"
+                "❌ **Erro:** Nenhum supervisor disponível no momento.\n"
                 "Entre em contato com o administrador."
             )
         except Exception:

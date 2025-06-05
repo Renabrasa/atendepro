@@ -1,7 +1,7 @@
 from flask import Flask, render_template, redirect, url_for, request, flash
 from flask_login import LoginManager, login_user, logout_user, login_required, current_user
 from models.models import db, User, Equipe, Agente, Atendimento, agente_equipe
-from configAWS import Config
+from config import Config
 from werkzeug.security import generate_password_hash, check_password_hash
 from collections import defaultdict
 import pytz

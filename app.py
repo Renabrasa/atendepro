@@ -88,9 +88,9 @@ def dashboard():
         flash('Formato de data inválido.', 'danger')
         return redirect(url_for('dashboard'))
 
-    # LÓGICA ATUALIZADA PARA COORDENADOR
-    if current_user.pode_ver_todos_supervisores():
-        # Admin e Coordenador veem todos os supervisores
+    # CORREÇÃO AQUI:
+    if current_user.tipo in ['admin', 'coordenadora']:
+        # Admin e Coordenadora veem todos os supervisores
         supervisores = User.query.filter_by(tipo='supervisor').all()
     else:
         # Supervisor vê apenas a si mesmo
@@ -181,9 +181,18 @@ def dashboard():
 @app.route('/atendimentos')
 @login_required
 def atendimentos():
-    if current_user.tipo == 'admin':
+    # ANTES:
+    # if current_user.tipo == 'admin':
+    #     atendimentos = Atendimento.query.order_by(Atendimento.data_hora.desc()).all()
+    # else:
+    #     atendimentos = Atendimento.query.filter_by(supervisor_id=current_user.id).order_by(Atendimento.data_hora.desc()).all()
+    
+    # NOVO:
+    if current_user.tipo in ['admin', 'coordenadora']:
+        # Admin e Coordenadora veem todos
         atendimentos = Atendimento.query.order_by(Atendimento.data_hora.desc()).all()
     else:
+        # Supervisor vê apenas os seus
         atendimentos = Atendimento.query.filter_by(supervisor_id=current_user.id).order_by(Atendimento.data_hora.desc()).all()
 
     # Ajusta timezone para cada atendimento
@@ -201,7 +210,7 @@ from datetime import date
 @login_required
 def novo_atendimento():
     # CORREÇÃO: Busca agentes corretamente usando consulta SQL direta
-    if current_user.tipo == 'admin':
+    if current_user.tipo in ['admin', 'coordenadora']:
         agentes = Agente.query.filter_by(ativo=True).all()
     else:
         # Busca agentes que estão em equipes do supervisor atual
@@ -254,7 +263,7 @@ def novo_atendimento():
 def editar_atendimento(atendimento_id):
     atendimento = Atendimento.query.get_or_404(atendimento_id)
 
-    if current_user.tipo != 'admin' and atendimento.supervisor_id != current_user.id:
+    if current_user.tipo not in ['admin', 'coordenadora'] and atendimento.supervisor_id != current_user.id:
         flash('Acesso negado.', 'danger')
         return redirect(url_for('atendimentos'))
 
@@ -278,7 +287,7 @@ def editar_atendimento(atendimento_id):
         return redirect(url_for('atendimentos'))
 
     # CORREÇÃO: Lista agentes disponíveis para edição usando consulta SQL direta
-    if current_user.tipo == 'admin':
+    if current_user.tipo in ['admin', 'coordenadora']:
         agentes = Agente.query.all()
     else:
         # Busca agentes que estão em equipes do supervisor atual
@@ -297,7 +306,7 @@ def editar_atendimento(atendimento_id):
 def excluir_atendimento(atendimento_id):
     atendimento = Atendimento.query.get_or_404(atendimento_id)
 
-    if current_user.tipo != 'admin' and atendimento.supervisor_id != current_user.id:
+    if current_user.tipo not in ['admin', 'coordenadora'] and atendimento.supervisor_id != current_user.id:
         flash('Acesso negado.', 'danger')
         return redirect(url_for('atendimentos'))
 
@@ -387,7 +396,7 @@ def meu_perfil():
 @app.route('/cadastros/supervisores', methods=['GET', 'POST'])
 @login_required
 def supervisores():
-    if current_user.tipo != 'admin':
+    if current_user.tipo not in ['admin', 'coordenadora']:
         flash('Acesso negado', 'danger')
         return redirect(url_for('dashboard'))
 
@@ -432,7 +441,7 @@ def supervisores():
 @app.route('/cadastros/supervisor/editar/<int:supervisor_id>', methods=['GET', 'POST'])
 @login_required
 def editar_supervisor(supervisor_id):
-    if current_user.tipo != 'admin':
+    if current_user.tipo not in ['admin', 'coordenadora']:
         flash('Acesso negado', 'danger')
         return redirect(url_for('dashboard'))
     
@@ -482,10 +491,11 @@ from flask_login import login_required, current_user
 def agentes():
     supervisores = User.query.filter_by(tipo='supervisor').all()
     
-    if current_user.tipo == 'admin':
+    # NOVO:
+    if current_user.tipo in ['admin', 'coordenadora']:
         equipes = Equipe.query.all()
     else:
-        equipes = Equipe.query.all()
+        equipes = Equipe.query.filter_by(supervisor_id=current_user.id).all()
 
     if request.method == 'POST':
         nome = request.form['nome']
@@ -537,7 +547,7 @@ def agentes():
         return redirect(url_for('agentes'))
 
     # Listagem de agentes
-    if current_user.tipo == 'admin':
+    if current_user.tipo in ['admin', 'coordenadora']:
         agentes = Agente.query.all()
     else:
         agentes = db.session.query(Agente).join(
@@ -621,18 +631,18 @@ def editar_agente(agente_id):
 @app.route('/cadastros/equipes', methods=['GET', 'POST'])
 @login_required
 def equipes():
-    if current_user.tipo != 'admin' and current_user.tipo != 'supervisor':
+    if current_user.tipo not in ['admin', 'coordenadora', 'supervisor']:
         flash('Acesso negado.', 'danger')
         return redirect(url_for('dashboard'))
 
     # Lista de supervisores para o admin escolher
-    supervisores = User.query.filter_by(tipo='supervisor').all() if current_user.tipo == 'admin' else None
+    supervisores = User.query.filter_by(tipo='supervisor').all() if current_user.tipo in ['admin', 'coordenadora'] else None
 
     if request.method == 'POST':
         nome = request.form['nome']
         
         # CORREÇÃO: Admin pode escolher o supervisor, supervisor cria para si
-        if current_user.tipo == 'admin':
+        if current_user.tipo in ['admin', 'coordenadora']:
             supervisor_id = request.form.get('supervisor_id')
             if not supervisor_id:
                 flash('Selecione um supervisor para a equipe.', 'danger')
@@ -661,7 +671,7 @@ def equipes():
         flash(f'Equipe "{nome}" criada com sucesso para o supervisor {supervisor_nome}!', 'success')
         return redirect(url_for('equipes'))
 
-    if current_user.tipo == 'admin':
+    if current_user.tipo in ['admin', 'coordenadora']:
         equipes = Equipe.query.all()
     else:
         equipes = Equipe.query.filter_by(supervisor_id=current_user.id).all()
@@ -671,7 +681,7 @@ def equipes():
 @app.route('/cadastros/equipe/editar/<int:equipe_id>', methods=['GET', 'POST'])
 @login_required
 def editar_equipe(equipe_id):
-    if current_user.tipo != 'admin':
+    if current_user.tipo not in ['admin', 'coordenadora']:
         flash('Acesso negado.', 'danger')
         return redirect(url_for('dashboard'))
     

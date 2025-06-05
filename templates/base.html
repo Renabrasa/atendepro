@@ -400,13 +400,13 @@
                     📋 Atendimentos
                 </a>
                 
-                {% if current_user.tipo == 'admin' %}
+                {% if current_user.tipo in ['admin', 'coordenadora'] %}
                 <a href="{{ url_for('supervisores') }}" class="{% if request.path.startswith('/cadastros/supervisores') %}active{% endif %}">
                     👔 Supervisores
                 </a>
                 {% endif %}
                 
-                {% if current_user.tipo == 'supervisor' %}
+                {% if current_user.tipo in ['supervisor', 'coordenadora'] %}
                 <a href="{{ url_for('meu_perfil') }}" class="{% if request.path.startswith('/meu-perfil') %}active{% endif %}">
                     👤 Meu Perfil
                 </a>

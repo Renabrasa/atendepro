@@ -313,7 +313,7 @@ def excluir_atendimento(atendimento_id):
 @login_required
 def meu_perfil():
     """Permite supervisor editar seu próprio perfil"""
-    if current_user.tipo not in ['supervisor', 'coordenador']:
+    if current_user.tipo not in ['supervisor', 'coordenadora']:
         flash('Acesso negado.', 'danger')
         return redirect(url_for('dashboard'))
     

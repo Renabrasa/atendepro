@@ -11,7 +11,7 @@
   <form method="post" class="agent-form">
     <div class="form-row">
       <div class="form-group">
-        <label for="nome" class="form-label">Nome</label>
+        <label for="nome" class="form-label">Nome *</label>
         <input type="text" id="nome" name="nome" required class="form-input" placeholder="Digite o nome completo" />
       </div>
       
@@ -21,15 +21,28 @@
         <small class="form-help">ID do Discord do agente (opcional)</small>
       </div>
     </div>
-    
-    <div class="form-group">
-      <label for="equipes" class="form-label">Equipes</label>
-      <select id="equipes" name="equipes" multiple size="4" class="form-input multi-select" required>
-        {% for equipe in equipes %}
-          <option value="{{ equipe.id }}">{{ equipe.nome }} ({{ equipe.supervisor.nome }})</option>
-        {% endfor %}
-      </select>
-      <small class="form-help">Mantenha Ctrl pressionado para selecionar múltiplas equipes</small>
+
+    <div class="form-row">
+      <div class="form-group">
+        <label for="supervisor_id" class="form-label">Supervisor Principal *</label>
+        <select id="supervisor_id" name="supervisor_id" required class="form-input">
+          <option value="">Selecione o supervisor principal</option>
+          {% for supervisor in supervisores %}
+            <option value="{{ supervisor.id }}">{{ supervisor.nome }}</option>
+          {% endfor %}
+        </select>
+        <small class="form-help">Supervisor responsável principal por este agente</small>
+      </div>
+      
+      <div class="form-group">
+        <label for="equipes" class="form-label">Equipes *</label>
+        <select id="equipes" name="equipes" multiple size="4" class="form-input multi-select" required>
+          {% for equipe in equipes %}
+            <option value="{{ equipe.id }}">{{ equipe.nome }} ({{ equipe.supervisor.nome }})</option>
+          {% endfor %}
+        </select>
+        <small class="form-help">Mantenha Ctrl pressionado para selecionar múltiplas equipes</small>
+      </div>
     </div>
     
     <div class="form-actions">
@@ -69,14 +82,14 @@
         <label for="filterSupervisor">Filtrar por Supervisor:</label>
         <select id="filterSupervisor" class="filter-select">
           <option value="">Todos os supervisores</option>
-          {% set supervisores = [] %}
-          {% for equipe in equipes %}
-            {% if equipe.supervisor.nome not in supervisores %}
-              {% set _ = supervisores.append(equipe.supervisor.nome) %}
+          {% set supervisores_list = [] %}
+          {% for supervisor in supervisores %}
+            {% if supervisor.nome not in supervisores_list %}
+              {% set _ = supervisores_list.append(supervisor.nome) %}
             {% endif %}
           {% endfor %}
-          {% for supervisor in supervisores %}
-            <option value="{{ supervisor }}">{{ supervisor }}</option>
+          {% for supervisor_nome in supervisores_list %}
+            <option value="{{ supervisor_nome }}">{{ supervisor_nome }}</option>
           {% endfor %}
         </select>
       </div>
@@ -215,12 +228,11 @@
 </div>
 
 <style>
-/* Reset e base */
+/* Mantém todos os estilos anteriores... */
 * {
   box-sizing: border-box;
 }
 
-/* Cards principais */
 .form-card, .filters-card, .agents-container {
   background: #fff;
   border-radius: 12px;
@@ -245,7 +257,6 @@
   font-weight: 600;
 }
 
-/* Formulário */
 .agent-form {
   padding: 24px;
 }
@@ -300,7 +311,6 @@
   margin-top: 24px;
 }
 
-/* Botões */
 .btn {
   display: inline-flex;
   align-items: center;
@@ -353,7 +363,6 @@
   font-size: 1em;
 }
 
-/* Filtros */
 .filters-content {
   padding: 24px;
 }
@@ -376,7 +385,6 @@
   font-size: 0.9em;
 }
 
-/* Estatísticas */
 .stats-bar {
   display: flex;
   background: #f8f9fa;
@@ -406,7 +414,6 @@
   margin-top: 4px;
 }
 
-/* Controles de ordenação */
 .sort-controls {
   display: flex;
   align-items: center;
@@ -432,7 +439,6 @@
   color: white;
 }
 
-/* Grid de agentes */
 .agents-grid {
   padding: 24px;
   display: grid;
@@ -557,7 +563,6 @@
   font-size: 0.9em;
 }
 
-/* Estados vazios */
 .empty-state, .no-results {
   text-align: center;
   padding: 60px 20px;
@@ -581,7 +586,6 @@
   font-size: 0.95em;
 }
 
-/* Responsividade */
 @media (max-width: 768px) {
   .form-row {
     grid-template-columns: 1fr;
@@ -627,7 +631,6 @@
   }
 }
 
-/* Animações */
 @keyframes fadeIn {
   from {
     opacity: 0;
@@ -643,7 +646,6 @@
   animation: fadeIn 0.3s ease-out;
 }
 
-/* Utilitários para filtros */
 .agent-card.hidden {
   display: none;
 }

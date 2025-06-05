@@ -393,24 +393,25 @@ from flask_login import login_required, current_user
 
 
 
+# Substitua a função agentes() no seu app.py por esta versão corrigida:
+
 @app.route('/cadastros/agentes', methods=['GET', 'POST'])
 @login_required
 def agentes():
     supervisores = User.query.filter_by(tipo='supervisor').all()
     
-    # CORREÇÃO 1: Admin vê todas as equipes, supervisor vê todas também (para poder associar agentes)
     if current_user.tipo == 'admin':
         equipes = Equipe.query.all()
     else:
-        # Supervisor vê todas as equipes para poder associar agentes
         equipes = Equipe.query.all()
 
     if request.method == 'POST':
         nome = request.form['nome']
         discord_id = request.form.get('discord_id')
+        supervisor_id = request.form.get('supervisor_id')
         equipes_ids = request.form.getlist('equipes')
 
-        # CORREÇÃO 2: Verifica se já existe agente com mesmo nome (não discord_id)
+        # Verifica se já existe agente com mesmo nome
         existente_nome = Agente.query.filter_by(nome=nome).first()
         if existente_nome:
             flash(f'Já existe um agente com o nome "{nome}".', 'danger')
@@ -427,25 +428,21 @@ def agentes():
             flash('Selecione pelo menos uma equipe.', 'danger')
             return redirect(url_for('agentes'))
 
-        # CORREÇÃO 3: Define supervisor_id baseado na primeira equipe OU usuário atual
-        primeira_equipe = Equipe.query.filter(Equipe.id.in_(equipes_ids)).first()
-        
-        # Se o usuário atual é supervisor de uma das equipes selecionadas, ele vira o supervisor principal
-        equipes_do_usuario = [eq for eq in Equipe.query.filter(Equipe.id.in_(equipes_ids)).all() 
-                             if eq.supervisor_id == current_user.id]
-        
-        if equipes_do_usuario:
-            supervisor_principal = current_user.id
-        elif primeira_equipe:
-            supervisor_principal = primeira_equipe.supervisor_id
-        else:
-            supervisor_principal = current_user.id
+        if not supervisor_id:
+            flash('Selecione um supervisor principal.', 'danger')
+            return redirect(url_for('agentes'))
+
+        # Valida se o supervisor existe e é do tipo correto
+        supervisor = User.query.filter_by(id=supervisor_id, tipo='supervisor').first()
+        if not supervisor:
+            flash('Supervisor selecionado não é válido.', 'danger')
+            return redirect(url_for('agentes'))
 
         novo_agente = Agente(
             nome=nome,
             discord_id=discord_id if discord_id else None,
             ativo=True,
-            supervisor_id=supervisor_principal
+            supervisor_id=int(supervisor_id)
         )
 
         # Associa às equipes selecionadas
@@ -454,15 +451,13 @@ def agentes():
 
         db.session.add(novo_agente)
         db.session.commit()
-        flash('Agente criado com sucesso!', 'success')
+        flash(f'Agente "{nome}" criado com sucesso! Supervisor principal: {supervisor.nome}', 'success')
         return redirect(url_for('agentes'))
 
-    # CORREÇÃO PRINCIPAL: Listagem correta de agentes usando consulta SQL direta
+    # Listagem de agentes
     if current_user.tipo == 'admin':
         agentes = Agente.query.all()
     else:
-        # Busca agentes que estão em equipes do supervisor atual
-        # Usando uma consulta que une as tabelas diretamente
         agentes = db.session.query(Agente).join(
             agente_equipe, Agente.id == agente_equipe.c.agente_id
         ).join(
@@ -484,8 +479,6 @@ from datetime import datetime
 def editar_agente(agente_id):
     agente = Agente.query.get_or_404(agente_id)
     supervisores = User.query.filter_by(tipo='supervisor').all()
-    
-    # CORREÇÃO 5: Todos podem ver todas as equipes para edição
     equipes = Equipe.query.all()
 
     if request.method == 'POST':
@@ -499,24 +492,46 @@ def editar_agente(agente_id):
 
         agente.nome = novo_nome
         
+        # Atualiza Discord ID
         novo_discord = request.form.get('discord_id')
         if novo_discord != agente.discord_id:
             if novo_discord:
                 existente_discord = Agente.query.filter_by(discord_id=novo_discord).first()
-                if existente_discord:
+                if existente_discord and existente_discord.id != agente.id:
                     flash('Este Discord ID já está cadastrado para outro agente.', 'danger')
                     return redirect(url_for('editar_agente', agente_id=agente_id))
         
         agente.discord_id = novo_discord if novo_discord else None
 
+        # Atualiza supervisor principal
+        supervisor_id = request.form.get('supervisor_id')
+        if not supervisor_id:
+            flash('Selecione um supervisor principal.', 'danger')
+            return redirect(url_for('editar_agente', agente_id=agente_id))
+
+        # Valida se o supervisor existe e é do tipo correto
+        supervisor = User.query.filter_by(id=supervisor_id, tipo='supervisor').first()
+        if not supervisor:
+            flash('Supervisor selecionado não é válido.', 'danger')
+            return redirect(url_for('editar_agente', agente_id=agente_id))
+
+        agente.supervisor_id = int(supervisor_id)
+
+        # Atualiza equipes
         equipes_ids = request.form.getlist('equipes')
         if equipes_ids:
             agente.equipes = Equipe.query.filter(Equipe.id.in_(equipes_ids)).all()
         else:
-            agente.equipes = []
+            flash('Selecione pelo menos uma equipe.', 'danger')
+            return redirect(url_for('editar_agente', agente_id=agente_id))
+
+        # Atualiza status se presente no formulário
+        ativo = request.form.get('ativo')
+        if ativo is not None:
+            agente.ativo = bool(int(ativo))
 
         db.session.commit()
-        flash('Agente atualizado com sucesso!', 'success')
+        flash(f'Agente "{agente.nome}" atualizado com sucesso! Supervisor principal: {supervisor.nome}', 'success')
         return redirect(url_for('agentes'))
 
     return render_template('agente_edit.html', agente=agente, supervisores=supervisores, equipes=equipes)

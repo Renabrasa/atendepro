@@ -2,7 +2,7 @@
 {% block title %}Dashboard Executivo{% endblock %}
 {% block content %}
 <style>
-  /* Mantém compatibilidade com estrutura original */
+  /* Estilos melhorados mantendo compatibilidade */
   .stats-container {
     display: flex;
     gap: 20px;
@@ -34,28 +34,6 @@
     margin-top: 8px;
     opacity: 0.9;
   }
-  
-  .stat-detail {
-    font-size: 0.5em;
-    margin-top: 5px;
-    opacity: 0.8;
-  }
-
-  /* Header melhorado */
-  .dashboard-header {
-    background: linear-gradient(135deg, #003366, #0056b3);
-    color: white;
-    padding: 25px;
-    border-radius: 12px;
-    margin-bottom: 30px;
-    box-shadow: 0 4px 15px rgba(0,0,0,0.15);
-  }
-  
-  .dashboard-title {
-    font-size: 2em;
-    font-weight: 700;
-    margin: 0 0 20px 0;
-  }
 
   /* Filtro melhorado */
   #filtro-data {
@@ -86,12 +64,6 @@
     border-radius: 8px;
     border: 2px solid #e2e8f0;
     font-size: 1em;
-    transition: border-color 0.3s ease;
-  }
-  
-  #filtro-data input[type="date"]:focus {
-    border-color: #003366;
-    outline: none;
   }
   
   #filtro-data button {
@@ -103,54 +75,45 @@
     cursor: pointer;
     height: 44px;
     font-weight: 600;
-    transition: all 0.3s ease;
+  }
+
+  /* Board melhorado */
+  .trello-board {
+    display: flex;
+    gap: 25px;
+    overflow-x: auto;
+    min-height: 400px;
+    padding: 10px 0;
   }
   
-  #filtro-data button:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(0,51,102,0.3);
-  }
-
-  /* Grid de supervisores melhorado */
-  .supervisors-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(400px, 1fr));
-    gap: 25px;
-    margin-bottom: 30px;
-  }
-
-  .supervisor-card {
+  .column {
     background: white;
     border-radius: 12px;
+    padding: 20px;
+    min-width: 350px;
+    max-height: 80vh;
     box-shadow: 0 4px 15px rgba(0,0,0,0.1);
-    overflow: hidden;
-    transition: all 0.3s ease;
+    display: flex;
+    flex-direction: column;
   }
   
-  .supervisor-card:hover {
-    transform: translateY(-3px);
-    box-shadow: 0 8px 25px rgba(0,0,0,0.15);
-  }
-
-  .supervisor-header {
+  .column-header {
     background: linear-gradient(135deg, #667eea, #764ba2);
     color: white;
-    padding: 20px;
+    padding: 15px 20px;
+    border-radius: 8px;
+    margin: -20px -20px 20px -20px;
+    font-size: 1.3em;
+    font-weight: 600;
     display: flex;
     justify-content: space-between;
     align-items: center;
   }
   
-  .supervisor-name {
-    font-size: 1.3em;
-    font-weight: 600;
-    margin: 0;
-  }
-  
   .supervisor-stats {
     display: flex;
-    gap: 20px;
-    font-size: 0.9em;
+    gap: 15px;
+    font-size: 0.8em;
   }
   
   .supervisor-stat {
@@ -159,144 +122,98 @@
   
   .supervisor-stat-number {
     font-weight: 700;
-    font-size: 1.3em;
+    font-size: 1.2em;
   }
   
   .supervisor-stat-label {
     font-size: 0.8em;
     opacity: 0.9;
   }
-
-  /* Agentes melhorados */
-  .agents-section {
-    padding: 20px;
-  }
   
-  .agents-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 15px;
-    padding-bottom: 10px;
-    border-bottom: 2px solid #e2e8f0;
-  }
-  
-  .agents-title {
-    font-weight: 600;
-    color: #2d3748;
-    font-size: 1.1em;
-  }
-  
-  .top-agent-badge {
-    background: linear-gradient(135deg, #28a745, #20c997);
-    color: white;
-    padding: 5px 12px;
-    border-radius: 20px;
-    font-size: 0.8em;
-    font-weight: 600;
-  }
-
-  .agent-card {
+  .column-info {
+    margin-bottom: 20px;
+    padding: 15px;
     background: #f8f9fa;
+    border-radius: 8px;
+    font-size: 0.9em;
+  }
+  
+  .card {
+    background: white;
     border: 2px solid #e9ecef;
     border-radius: 10px;
     padding: 15px;
-    margin-bottom: 12px;
+    margin-bottom: 15px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
     cursor: pointer;
     transition: all 0.3s ease;
-    position: relative;
   }
   
-  .agent-card:hover {
+  .card:hover {
     border-color: #667eea;
-    box-shadow: 0 3px 12px rgba(102, 126, 234, 0.15);
+    box-shadow: 0 4px 16px rgba(102, 126, 234, 0.15);
   }
   
-  .agent-card.expanded {
+  .card.expanded {
     border-color: #667eea;
-    box-shadow: 0 4px 15px rgba(102, 126, 234, 0.2);
+    box-shadow: 0 4px 16px rgba(102, 126, 234, 0.2);
   }
   
-  .agent-summary {
+  .card-header {
+    font-weight: 600;
+    color: #2d3748;
+    margin-bottom: 8px;
     display: flex;
     justify-content: space-between;
     align-items: center;
   }
   
-  .agent-info h4 {
-    margin: 0 0 5px 0;
-    font-size: 1.1em;
-    color: #2d3748;
+  .card-badge {
+    background: #667eea;
+    color: white;
+    font-size: 0.8em;
+    padding: 4px 12px;
+    border-radius: 12px;
+    font-weight: 700;
   }
   
   .agent-performance {
     font-size: 0.85em;
     color: #718096;
-  }
-  
-  .agent-metrics {
-    display: flex;
-    gap: 20px;
-    align-items: center;
-  }
-  
-  .metric {
-    text-align: center;
-  }
-  
-  .metric-number {
-    font-size: 1.5em;
-    font-weight: 700;
-    color: #667eea;
-  }
-  
-  .metric-label {
-    font-size: 0.75em;
-    color: #718096;
-    text-transform: uppercase;
-  }
-  
-  .expand-icon {
-    color: #718096;
-    transition: transform 0.3s ease;
-    font-size: 1.2em;
-  }
-  
-  .agent-card.expanded .expand-icon {
-    transform: rotate(180deg);
-  }
-
-  /* Detalhes dos atendimentos */
-  .atendimentos-details {
-    margin-top: 15px;
-    padding-top: 15px;
-    border-top: 2px solid #e2e8f0;
-    display: none;
-  }
-  
-  .atendimentos-details.show {
-    display: block;
+    margin-bottom: 10px;
   }
   
   .atendimentos-list {
-    max-height: 250px;
+    font-size: 0.85em;
+    margin-top: 15px;
+    max-height: 200px;
     overflow-y: auto;
+    display: none;
+    padding-top: 15px;
+    border-top: 2px solid #e2e8f0;
+  }
+  
+  .atendimentos-list.show {
+    display: block;
   }
   
   .atendimento-item {
-    background: white;
+    background: #f8f9fa;
     border: 1px solid #e2e8f0;
-    border-radius: 8px;
-    padding: 12px;
+    border-radius: 6px;
+    padding: 10px;
     margin-bottom: 10px;
-    font-size: 0.9em;
+  }
+  
+  .atendimento-item:last-child {
+    margin-bottom: 0;
   }
   
   .atendimento-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 8px;
+    margin-bottom: 5px;
   }
   
   .atendimento-id {
@@ -305,15 +222,15 @@
   }
   
   .atendimento-date {
-    color: #718096;
-    font-size: 0.85em;
+    color: #a0aec0;
+    font-size: 0.8em;
   }
   
   .atendimento-status {
     display: inline-block;
-    padding: 3px 8px;
+    padding: 2px 8px;
     border-radius: 12px;
-    font-size: 0.75em;
+    font-size: 0.7em;
     font-weight: 600;
     text-transform: uppercase;
     margin-bottom: 5px;
@@ -329,15 +246,20 @@
     color: #155724;
   }
   
-  .atendimento-content {
-    color: #2d3748;
-    line-height: 1.4;
+  .expand-icon {
+    color: #718096;
+    transition: transform 0.3s ease;
+    margin-left: 10px;
+  }
+  
+  .card.expanded .expand-icon {
+    transform: rotate(180deg);
   }
 
   /* Performance indicators */
   .performance-dot {
-    width: 10px;
-    height: 10px;
+    width: 8px;
+    height: 8px;
     border-radius: 50%;
     display: inline-block;
     margin-left: 8px;
@@ -347,89 +269,24 @@
   .performance-medium { background: #ffc107; }
   .performance-low { background: #dc3545; }
 
-  /* Top 5 section */
-  .top-section {
-    background: white;
-    border-radius: 12px;
-    padding: 25px;
-    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
-    margin-bottom: 30px;
-  }
-  
-  .top-header {
-    background: linear-gradient(135deg, #f093fb, #f5576c);
-    color: white;
-    padding: 15px 20px;
-    border-radius: 8px;
-    margin: -25px -25px 20px -25px;
-    font-size: 1.2em;
-    font-weight: 600;
-  }
-  
-  .top-agents-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
-    gap: 15px;
-  }
-  
-  .top-agent-card {
-    background: #f8f9fa;
-    border: 2px solid #e9ecef;
-    border-radius: 10px;
-    padding: 15px;
-    text-align: center;
-    transition: all 0.3s ease;
-  }
-  
-  .top-agent-card:hover {
-    border-color: #667eea;
-    transform: translateY(-2px);
-  }
-  
-  .top-agent-rank {
-    font-size: 1.5em;
-    margin-bottom: 8px;
-  }
-  
-  .top-agent-name {
-    font-weight: 600;
-    color: #2d3748;
-    margin-bottom: 5px;
-  }
-  
-  .top-agent-score {
-    font-size: 1.3em;
-    font-weight: 700;
-    color: #667eea;
-  }
-  
-  .top-agent-supervisor {
-    font-size: 0.8em;
-    color: #718096;
-    margin-top: 5px;
-  }
-
   /* Responsividade */
   @media (max-width: 768px) {
     .stats-container {
       flex-direction: column;
     }
     
-    .supervisors-grid {
-      grid-template-columns: 1fr;
+    .trello-board {
+      flex-direction: column;
+    }
+    
+    .column {
+      min-width: auto;
+      max-height: none;
     }
     
     #filtro-data {
       flex-direction: column;
       align-items: stretch;
-    }
-    
-    .agent-metrics {
-      gap: 10px;
-    }
-    
-    .top-agents-grid {
-      grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
     }
   }
 
@@ -442,9 +299,7 @@
   }
 </style>
 
-<div class="dashboard-header">
-  <h1 class="dashboard-title">📊 Dashboard Executivo</h1>
-</div>
+<h1>📊 Dashboard Executivo</h1>
 
 <form id="filtro-data" method="GET">
   <div>
@@ -462,30 +317,26 @@
   <div class="stat-card">
     {{ total_supervisores }}
     <div class="stat-label">Supervisores</div>
-    <div class="stat-detail">Ativos no sistema</div>
   </div>
   <div class="stat-card">
     {{ total_agentes }}
     <div class="stat-label">Agentes</div>
-    <div class="stat-detail">Distribuídos em equipes</div>
   </div>
   <div class="stat-card">
     {{ total_atendimentos }}
     <div class="stat-label">Atendimentos</div>
-    <div class="stat-detail">No período selecionado</div>
   </div>
   <div class="stat-card">
     {{ media_por_agente }}
     <div class="stat-label">Média por Agente</div>
-    <div class="stat-detail">Produtividade média</div>
   </div>
 </div>
 
-<div class="supervisors-grid">
+<div class="trello-board">
   {% for bloco in data %}
-    <div class="supervisor-card">
-      <div class="supervisor-header">
-        <h3 class="supervisor-name">{{ bloco.supervisor.nome }}</h3>
+    <div class="column">
+      <div class="column-header">
+        <span>{{ bloco.supervisor.nome }}</span>
         <div class="supervisor-stats">
           <div class="supervisor-stat">
             <div class="supervisor-stat-number">{{ bloco.total_chamados }}</div>
@@ -497,69 +348,52 @@
           </div>
         </div>
       </div>
-
-      <div class="agents-section">
-        <div class="agents-header">
-          <span class="agents-title">🎯 Agentes da Equipe</span>
-          {% if bloco.agente_top %}
-            <span class="top-agent-badge">🏆 Top: {{ bloco.agente_top }}</span>
-          {% endif %}
-        </div>
-
-        {% for agente in bloco.agentes %}
-          <div class="agent-card" onclick="toggleDetails('agent-{{ loop.index0 }}-{{ loop.parent.loop.index0 }}')">
-            <div class="agent-summary">
-              <div class="agent-info">
-                <h4>
-                  {{ agente.nome }}
-                  {% set performance_level = 'high' if agente.qtd_chamados >= (media_por_agente * 1.2) else 'medium' if agente.qtd_chamados >= media_por_agente else 'low' %}
-                  <span class="performance-dot performance-{{ performance_level }}"></span>
-                </h4>
-                <div class="agent-performance">
-                  {% if bloco.total_chamados > 0 %}
-                    {{ ((agente.qtd_chamados / bloco.total_chamados) * 100) | round(1) }}% dos atendimentos
-                  {% else %}
-                    Sem atendimentos
-                  {% endif %}
-                </div>
-              </div>
-              
-              <div class="agent-metrics">
-                <div class="metric">
-                  <div class="metric-number">{{ agente.qtd_chamados }}</div>
-                  <div class="metric-label">Atendimentos</div>
-                </div>
-                <div class="expand-icon">▼</div>
-              </div>
-            </div>
-
-            <div id="agent-{{ loop.index0 }}-{{ loop.parent.loop.index0 }}" class="atendimentos-details">
-              <strong>📋 Histórico de Atendimentos:</strong>
-              <div class="atendimentos-list">
-                {% for atendimento in agente.chamados %}
-                  <div class="atendimento-item">
-                    <div class="atendimento-header">
-                      <span class="atendimento-id">#{{ atendimento.id }}</span>
-                      <span class="atendimento-date">{{ atendimento.data_hora.strftime('%d/%m/%Y %H:%M') }}</span>
-                    </div>
-                    <div class="atendimento-status status-{{ atendimento.status or 'pendente' }}">
-                      {{ atendimento.status or 'pendente' }}
-                    </div>
-                    <div class="atendimento-content">
-                      <strong>{{ atendimento.classificacao or 'Sem classificação' }}</strong><br>
-                      {{ atendimento.conteudo[:100] }}{% if atendimento.conteudo|length > 100 %}...{% endif %}
-                    </div>
-                  </div>
-                {% else %}
-                  <div class="empty-state">📭 Nenhum atendimento registrado</div>
-                {% endfor %}
-              </div>
-            </div>
-          </div>
-        {% else %}
-          <div class="empty-state">👤 Nenhum agente cadastrado</div>
-        {% endfor %}
+      
+      <div class="column-info">
+        <div><strong>🏆 Melhor Agente:</strong> {{ bloco.agente_top or 'Nenhum' }} ({{ bloco.qtd_top }})</div>
       </div>
+
+      {% for agente in bloco.agentes %}
+        <div class="card" onclick="toggleAtendimentos('atendimentos-{{ loop.index0 }}-{{ loop.parent.loop.index0 }}')">
+          <div class="card-header">
+            <span>
+              {{ agente.nome }}
+              {% set performance_level = 'high' if agente.qtd_chamados >= (media_por_agente * 1.2) else 'medium' if agente.qtd_chamados >= media_por_agente else 'low' %}
+              <span class="performance-dot performance-{{ performance_level }}"></span>
+            </span>
+            <span class="card-badge">{{ agente.qtd_chamados }} <span class="expand-icon">▼</span></span>
+          </div>
+          
+          <div class="agent-performance">
+            {% if bloco.total_chamados > 0 %}
+              {{ ((agente.qtd_chamados / bloco.total_chamados) * 100) | round(1) }}% dos atendimentos do supervisor
+            {% else %}
+              Sem atendimentos no período
+            {% endif %}
+          </div>
+
+          <div id="atendimentos-{{ loop.index0 }}-{{ loop.parent.loop.index0 }}" class="atendimentos-list">
+            <strong>📋 Histórico de Atendimentos:</strong>
+            {% for atendimento in agente.chamados %}
+              <div class="atendimento-item">
+                <div class="atendimento-header">
+                  <span class="atendimento-id">#{{ atendimento.id }}</span>
+                  <span class="atendimento-date">{{ atendimento.data_hora.strftime('%d/%m/%Y %H:%M') }}</span>
+                </div>
+                <div class="atendimento-status status-{{ atendimento.status or 'pendente' }}">
+                  {{ atendimento.status or 'pendente' }}
+                </div>
+                <div><strong>{{ atendimento.classificacao or 'Sem classificação' }}</strong></div>
+                <div>{{ atendimento.conteudo[:80] }}{% if atendimento.conteudo|length > 80 %}...{% endif %}</div>
+              </div>
+            {% else %}
+              <div class="empty-state">📭 Nenhum atendimento registrado</div>
+            {% endfor %}
+          </div>
+        </div>
+      {% else %}
+        <div class="empty-state">👤 Nenhum agente cadastrado</div>
+      {% endfor %}
     </div>
   {% else %}
     <div class="empty-state">
@@ -570,17 +404,17 @@
 </div>
 
 {% if top_5_agentes %}
-<div class="top-section">
-  <div class="top-header">🏆 Top 5 Agentes Geral</div>
-  <div class="top-agents-grid">
+<div style="background: white; border-radius: 12px; padding: 25px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); margin-top: 30px;">
+  <h3 style="background: linear-gradient(135deg, #f093fb, #f5576c); color: white; padding: 15px 20px; border-radius: 8px; margin: -25px -25px 20px -25px;">🏆 Top 5 Agentes Geral</h3>
+  <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 15px;">
     {% for agente in top_5_agentes %}
-      <div class="top-agent-card">
-        <div class="top-agent-rank">
+      <div style="background: #f8f9fa; border: 2px solid #e9ecef; border-radius: 10px; padding: 15px; text-align: center;">
+        <div style="font-size: 1.5em; margin-bottom: 8px;">
           {% if loop.index == 1 %}🥇{% elif loop.index == 2 %}🥈{% elif loop.index == 3 %}🥉{% else %}🏅{% endif %}
         </div>
-        <div class="top-agent-name">{{ agente.nome }}</div>
-        <div class="top-agent-score">{{ agente.qtd_chamados }}</div>
-        <div class="top-agent-supervisor">{{ agente.supervisor_nome }}</div>
+        <div style="font-weight: 600; color: #2d3748; margin-bottom: 5px;">{{ agente.nome }}</div>
+        <div style="font-size: 1.3em; font-weight: 700; color: #667eea;">{{ agente.qtd_chamados }}</div>
+        <div style="font-size: 0.8em; color: #718096; margin-top: 5px;">{{ agente.supervisor_nome }}</div>
       </div>
     {% endfor %}
   </div>
@@ -599,16 +433,16 @@
     }
   });
 
-  // Toggle dos detalhes dos agentes
-  function toggleDetails(elementId) {
-    const details = document.getElementById(elementId);
-    const card = details.closest('.agent-card');
+  // Toggle dos detalhes dos atendimentos
+  function toggleAtendimentos(id) {
+    const el = document.getElementById(id);
+    const card = el.closest('.card');
     
-    if (details.classList.contains('show')) {
-      details.classList.remove('show');
+    if (el.classList.contains('show')) {
+      el.classList.remove('show');
       card.classList.remove('expanded');
     } else {
-      details.classList.add('show');
+      el.classList.add('show');
       card.classList.add('expanded');
     }
   }

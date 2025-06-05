@@ -189,7 +189,7 @@ class MeuBot(discord.Client):
                 logger.info(f"Agente encontrado: {agente.nome}")
 
                 # Busca TODOS os supervisores ativos
-                supervisores = session.query(User).filter_by(tipo='supervisor').all()
+                supervisores = session.query(User).filter(User.tipo.in_(['supervisor', 'coordenadora'])).all()
                 
                 if not supervisores:
                     logger.warning('Nenhum supervisor encontrado no sistema.')

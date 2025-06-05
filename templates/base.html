@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>{% block title %}Sistema de Atendimentos{% endblock %}</title>
+    <title>{% block title %}AtendePro{% endblock %}</title>
     <style>
         /* Reset básico */
         * {
@@ -182,10 +182,16 @@
         main.content {
             flex: 1;
             margin-left: 250px;
-            padding: 30px 40px;
             background-color: #fff;
             min-height: 100vh;
             box-shadow: inset 0 0 10px rgba(0,0,0,0.05);
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .content-wrapper {
+            flex: 1;
+            padding: 30px 40px;
         }
         
         main.content h2 {
@@ -194,6 +200,17 @@
             color: #003366;
             border-bottom: 2px solid #003366;
             padding-bottom: 10px;
+        }
+
+        /* Rodapé fixo */
+        .footer {
+            background: #f8f9fa;
+            border-top: 1px solid #e9ecef;
+            padding: 15px 40px;
+            text-align: center;
+            font-size: 0.9em;
+            color: #6c757d;
+            margin-top: auto;
         }
 
         /* Status online indicator */
@@ -253,7 +270,15 @@
             
             main.content {
                 margin-left: 0;
+                padding: 0;
+            }
+            
+            .content-wrapper {
                 padding: 20px 15px;
+            }
+            
+            .footer {
+                padding: 15px;
             }
             
             .user-info-top {
@@ -381,6 +406,12 @@
                 </a>
                 {% endif %}
                 
+                {% if current_user.tipo == 'supervisor' %}
+                <a href="{{ url_for('meu_perfil') }}" class="{% if request.path.startswith('/meu-perfil') %}active{% endif %}">
+                    👤 Meu Perfil
+                </a>
+                {% endif %}
+                
                 <a href="{{ url_for('equipes') }}" class="{% if request.path.startswith('/cadastros/equipes') %}active{% endif %}">
                     🏢 Equipes
                 </a>
@@ -413,20 +444,28 @@
         </nav>
         
         <main class="content">
-            {% with messages = get_flashed_messages(with_categories=true) %}
-              {% if messages %}
-                {% for category, message in messages %}
-                  <div class="flash-message {{ category }}" style="margin-bottom: 20px; padding: 12px; border-radius: 6px; background-color: {% if category == 'success' %}#d4edda{% elif category == 'danger' %}#f8d7da{% else %}#cce5ff{% endif %}; color: {% if category == 'success' %}#155724{% elif category == 'danger' %}#721c24{% else %}#004085{% endif %}; border: 1px solid {% if category == 'success' %}#c3e6cb{% elif category == 'danger' %}#f5c6cb{% else %}#b8daff{% endif %};">
-                    {{ message }}
-                  </div>
-                {% endfor %}
-              {% endif %}
-            {% endwith %}
-            {% block content %}{% endblock %}
+            <div class="content-wrapper">
+                {% with messages = get_flashed_messages(with_categories=true) %}
+                  {% if messages %}
+                    {% for category, message in messages %}
+                      <div class="flash-message {{ category }}" style="margin-bottom: 20px; padding: 12px; border-radius: 6px; background-color: {% if category == 'success' %}#d4edda{% elif category == 'danger' %}#f8d7da{% else %}#cce5ff{% endif %}; color: {% if category == 'success' %}#155724{% elif category == 'danger' %}#721c24{% else %}#004085{% endif %}; border: 1px solid {% if category == 'success' %}#c3e6cb{% elif category == 'danger' %}#f5c6cb{% else %}#b8daff{% endif %};">
+                        {{ message }}
+                      </div>
+                    {% endfor %}
+                  {% endif %}
+                {% endwith %}
+                {% block content %}{% endblock %}
+            </div>
+            
+            <!-- Rodapé com trademark -->
+            <footer class="footer">
+                &copy; {{ moment().format('YYYY') if moment else '2025' }} AtendePro - Feito com carinho 😍
+            </footer>
         </main>
     </div>
     {% block scripts %}{% endblock %}
 </body>
+
 
 
 <script>

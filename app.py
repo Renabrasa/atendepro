@@ -307,6 +307,83 @@ def excluir_atendimento(atendimento_id):
     return redirect(url_for('atendimentos'))
 
 
+# Adicione estas rotas ao seu app.py
+
+@app.route('/meu-perfil', methods=['GET', 'POST'])
+@login_required
+def meu_perfil():
+    """Permite supervisor editar seu próprio perfil"""
+    if current_user.tipo not in ['supervisor', 'coordenador']:
+        flash('Acesso negado.', 'danger')
+        return redirect(url_for('dashboard'))
+    
+    if request.method == 'POST':
+        # Atualizar dados do próprio usuário
+        current_user.nome = request.form['nome']
+        current_user.email = request.form['email']
+        
+        # Discord ID
+        discord_id = request.form.get('discord_id')
+        current_user.discord_id = discord_id if discord_id else None
+        
+        # Servidor Discord ID (apenas para supervisores)
+        if current_user.tipo == 'supervisor':
+            servidor_discord_id = request.form.get('servidor_discord_id')
+            if servidor_discord_id:
+                # Remove espaços e divide por vírgula se houver múltiplos
+                servidores = [s.strip() for s in servidor_discord_id.split(',') if s.strip()]
+                if len(servidores) > 1:
+                    import json
+                    current_user.servidor_discord_id = json.dumps(servidores)
+                else:
+                    current_user.servidor_discord_id = servidores[0] if servidores else None
+            else:
+                current_user.servidor_discord_id = None
+        
+        # Alterar senha se fornecida
+        nova_senha = request.form.get('nova_senha')
+        confirmar_senha = request.form.get('confirmar_senha')
+        
+        if nova_senha:
+            if nova_senha != confirmar_senha:
+                flash('As senhas não coincidem.', 'danger')
+                return redirect(url_for('meu_perfil'))
+            
+            if len(nova_senha) < 6:
+                flash('A senha deve ter pelo menos 6 caracteres.', 'danger')
+                return redirect(url_for('meu_perfil'))
+            
+            current_user.senha = generate_password_hash(nova_senha)
+        
+        try:
+            db.session.commit()
+            flash('Perfil atualizado com sucesso!', 'success')
+        except Exception as e:
+            db.session.rollback()
+            flash(f'Erro ao atualizar perfil: {str(e)}', 'danger')
+        
+        return redirect(url_for('meu_perfil'))
+    
+    # Preparar dados para exibição
+    equipes_supervisionadas = []
+    agentes_supervisionados = []
+    total_atendimentos = 0
+    
+    if current_user.tipo == 'supervisor':
+        equipes_supervisionadas = Equipe.query.filter_by(supervisor_id=current_user.id).all()
+        agentes_supervisionados = Agente.query.filter_by(supervisor_id=current_user.id).all()
+        total_atendimentos = Atendimento.query.filter_by(supervisor_id=current_user.id).count()
+    
+    return render_template('meu_perfil.html',
+                         equipes=equipes_supervisionadas,
+                         agentes=agentes_supervisionados,
+                         total_atendimentos=total_atendimentos)
+
+
+
+
+
+
 @app.route('/cadastros/supervisores', methods=['GET', 'POST'])
 @login_required
 def supervisores():

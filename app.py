@@ -1059,13 +1059,12 @@ def admin_panel():
     
     return render_template('admin_panel.html', stats=stats)
 
-# NOVA ROTA: Painel de Coordenação (para coordenadores)
-# ADICIONE esta rota ao seu app.py - substituindo a atual se existir
+# SUBSTITUA a rota '/painel_coordenacao' no seu app.py por esta versão corrigida
 
 @app.route('/painel_coordenacao')
 @login_required  
 def painel_coordenacao():
-    """Painel da Coordenação com dados reais do sistema - VERSÃO CORRIGIDA"""
+    """Painel da Coordenação com dados reais do sistema - VERSÃO CORRIGIDA COMPLETA"""
     if current_user.tipo not in ['admin', 'coordenadora']:
         flash('Acesso negado.', 'danger')
         return redirect(url_for('dashboard'))
@@ -1078,10 +1077,8 @@ def painel_coordenacao():
         data_fim = datetime.now()
         data_inicio = data_fim - timedelta(days=periodo)
         
-        # === 1. KPIs PRINCIPAIS ===
-        supervisores_query = User.query.filter(User.tipo.in_(['supervisor', 'coordenadora']))
-        total_supervisores = supervisores_query.count()
-        
+        # === 1. KPIs BÁSICOS ===
+        total_supervisores = User.query.filter(User.tipo.in_(['supervisor', 'coordenadora'])).count()
         total_agentes = Agente.query.filter_by(ativo=True).count()
         
         # Atendimentos no período
@@ -1090,262 +1087,95 @@ def painel_coordenacao():
             Atendimento.data_hora <= data_fim
         ).count()
         
-        # Média por supervisor (protege divisão por zero)
+        # Média por supervisor
         media_por_supervisor = round(atendimentos_periodo / total_supervisores, 1) if total_supervisores > 0 else 0
         
-        # === 2. DADOS POR SUPERVISOR ===
+        # === 2. DADOS DOS SUPERVISORES ===
         supervisores_data = []
-        supervisores = supervisores_query.all()
+        supervisores = User.query.filter_by(tipo='supervisor').all()
         
         for supervisor in supervisores:
-            try:
-                # Atendimentos do supervisor no período
-                atendimentos_sup = Atendimento.query.filter(
-                    Atendimento.supervisor_id == supervisor.id,
-                    Atendimento.data_hora >= data_inicio,
-                    Atendimento.data_hora <= data_fim
-                ).all()
-                
-                total_atendimentos_sup = len(atendimentos_sup)
-                
-                # Classificação por complexidade (VERSÃO SEGURA)
-                complexidade_counts = {
-                    'basico': 0,
-                    'medio': 0, 
-                    'complexo': 0
-                }
-                
-                for atendimento in atendimentos_sup:
-                    if atendimento.classificacao and isinstance(atendimento.classificacao, str):
-                        classificacao = atendimento.classificacao.lower()
-                        if any(palavra in classificacao for palavra in ['básico', 'basico', 'simples', 'fácil', 'facil']):
-                            complexidade_counts['basico'] += 1
-                        elif any(palavra in classificacao for palavra in ['médio', 'medio', 'intermediário', 'intermediario']):
-                            complexidade_counts['medio'] += 1
-                        elif any(palavra in classificacao for palavra in ['complexo', 'difícil', 'dificil', 'avançado', 'avancado']):
-                            complexidade_counts['complexo'] += 1
-                        else:
-                            # Classificação não reconhecida = básico
-                            complexidade_counts['basico'] += 1
-                    else:
-                        # Sem classificação = básico
-                        complexidade_counts['basico'] += 1
-                
-                # Top 5 agentes do supervisor (VERSÃO SEGURA)
-                agentes_contador = defaultdict(int)
-                for atendimento in atendimentos_sup:
-                    if hasattr(atendimento, 'agente_rel') and atendimento.agente_rel:
-                        agente_nome = getattr(atendimento.agente_rel, 'nome', 'Agente Desconhecido')
-                        agentes_contador[agente_nome] += 1
-                
-                # Ordena e pega top 5
-                top_agentes = sorted(agentes_contador.items(), key=lambda x: x[1], reverse=True)[:5]
-                
-                # Formata para o template (SERIALIZAÇÃO SEGURA)
-                top_agentes_formatted = []
-                for i, (agente_nome, qtd) in enumerate(top_agentes):
-                    rank_class = ''
-                    if i == 0:
-                        rank_class = 'first'
-                    elif i == 1:
-                        rank_class = 'second'
-                    elif i == 2:
-                        rank_class = 'third'
-                    
-                    top_agentes_formatted.append({
-                        'posicao': i + 1,
-                        'rank_class': rank_class,
-                        'nome': str(agente_nome),  # Força string
-                        'qtd_atendimentos': int(qtd)  # Força int
-                    })
-                
-                # Dados do supervisor para template
-                supervisor_dict = {
-                    'id': supervisor.id,
-                    'nome': str(supervisor.nome),
-                    'tipo': str(supervisor.tipo)
-                }
-                
-                supervisores_data.append({
-                    'supervisor': supervisor_dict,
-                    'total_atendimentos': int(total_atendimentos_sup),
-                    'complexidade': {
-                        'basico': int(complexidade_counts['basico']),
-                        'medio': int(complexidade_counts['medio']),
-                        'complexo': int(complexidade_counts['complexo'])
-                    },
-                    'top_agentes': top_agentes_formatted
-                })
-                
-            except Exception as e:
-                app.logger.error(f'Erro ao processar supervisor {supervisor.id}: {e}')
-                # Em caso de erro, adiciona dados vazios
-                supervisores_data.append({
-                    'supervisor': {
-                        'id': supervisor.id,
-                        'nome': str(supervisor.nome),
-                        'tipo': str(supervisor.tipo)
-                    },
-                    'total_atendimentos': 0,
-                    'complexidade': {'basico': 0, 'medio': 0, 'complexo': 0},
-                    'top_agentes': []
-                })
-        
-        # Ordena supervisores por total de atendimentos
-        supervisores_data.sort(key=lambda x: x['total_atendimentos'], reverse=True)
-        
-        # === 3. ANÁLISE TEMPORAL - VOLUME POR DIA DA SEMANA ===
-        try:
-            # Agrupa atendimentos por dia da semana
-            dias_semana = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb']
-            volume_semanal = [0] * 7  # Inicializa com zeros
-            
-            atendimentos_todos = Atendimento.query.filter(
+            # Busca atendimentos deste supervisor no período
+            atendimentos_supervisor = Atendimento.query.filter(
+                Atendimento.supervisor_id == supervisor.id,
                 Atendimento.data_hora >= data_inicio,
                 Atendimento.data_hora <= data_fim
             ).all()
             
-            for atendimento in atendimentos_todos:
-                try:
-                    # Ajusta timezone de forma segura
-                    if atendimento.data_hora.tzinfo is None:
-                        data_ajustada = atendimento.data_hora.replace(tzinfo=pytz.utc)
-                    else:
-                        data_ajustada = atendimento.data_hora
-                    
-                    data_local = data_ajustada.astimezone(br_tz)
-                    dia_semana = data_local.weekday()
-                    # Python: 0=Segunda, queremos 0=Domingo
-                    dia_semana_ajustado = (dia_semana + 1) % 7
-                    volume_semanal[dia_semana_ajustado] += 1
-                    
-                except Exception as e:
-                    app.logger.error(f'Erro ao processar data do atendimento {atendimento.id}: {e}')
-                    continue
+            # Separa por complexidade
+            basicos = len([a for a in atendimentos_supervisor if a.classificacao == 'basico'])
+            medios = len([a for a in atendimentos_supervisor if a.classificacao == 'medio'])
+            complexos = len([a for a in atendimentos_supervisor if a.classificacao == 'complexo'])
+            total = len(atendimentos_supervisor)
             
-            # Calcula altura das barras (percentual do maior valor)
-            max_volume = max(volume_semanal) if any(volume_semanal) else 1
+            # Busca agentes do supervisor
+            agentes_supervisor = Agente.query.filter_by(supervisor_id=supervisor.id, ativo=True).count()
             
-            volume_semanal_formatted = []
-            for i in range(7):
-                volume = volume_semanal[i]
-                altura_percentual = (volume / max_volume * 100) if max_volume > 0 else 0
-                
-                volume_semanal_formatted.append({
-                    'dia_nome': dias_semana[i],
-                    'volume': int(volume),
-                    'altura_percentual': float(altura_percentual)
-                })
-                
-        except Exception as e:
-            app.logger.error(f'Erro na análise temporal: {e}')
-            # Dados padrão em caso de erro
-            volume_semanal_formatted = [
-                {'dia_nome': dia, 'volume': 0, 'altura_percentual': 0} 
-                for dia in ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb']
-            ]
+            supervisores_data.append({
+                'id': supervisor.id,
+                'nome': supervisor.nome,
+                'total_atendimentos': total,
+                'atendimentos_basicos': basicos,
+                'atendimentos_medios': medios,
+                'atendimentos_complexos': complexos,
+                'total_agentes': agentes_supervisor,
+                'media_por_agente': round(total / agentes_supervisor, 1) if agentes_supervisor > 0 else 0
+            })
         
-        # === 4. COMPARATIVO (VERSÃO SIMPLIFICADA E SEGURA) ===
-        try:
-            # Período anterior para comparação
-            periodo_anterior_inicio = data_inicio - timedelta(days=periodo)
-            periodo_anterior_fim = data_inicio
+        # Ordena por total de atendimentos (decrescente)
+        supervisores_data.sort(key=lambda x: x['total_atendimentos'], reverse=True)
+        
+        # === 3. ANÁLISE TEMPORAL (últimos 7 dias) ===
+        volume_semanal = []
+        for i in range(7):
+            dia = data_fim - timedelta(days=i)
+            inicio_dia = dia.replace(hour=0, minute=0, second=0, microsecond=0)
+            fim_dia = dia.replace(hour=23, minute=59, second=59, microsecond=999999)
             
-            # Atendimentos período anterior
-            atendimentos_anterior = Atendimento.query.filter(
-                Atendimento.data_hora >= periodo_anterior_inicio,
-                Atendimento.data_hora < periodo_anterior_fim
+            count = Atendimento.query.filter(
+                Atendimento.data_hora >= inicio_dia,
+                Atendimento.data_hora <= fim_dia
             ).count()
             
-            # Função segura para calcular variação
-            def calcular_variacao_segura(atual, anterior):
-                try:
-                    if anterior == 0:
-                        return "+100%" if atual > 0 else "0%"
-                    variacao = ((atual - anterior) / anterior) * 100
-                    sinal = "+" if variacao >= 0 else ""
-                    return f"{sinal}{variacao:.1f}%"
-                except:
-                    return "0%"
-            
-            def classificar_mudanca_segura(atual, anterior):
-                try:
-                    if anterior == 0:
-                        return "change-positive" if atual > 0 else "change-neutral"
-                    variacao = ((atual - anterior) / anterior) * 100
-                    if variacao > 0:
-                        return "change-positive"
-                    elif variacao < 0:
-                        return "change-negative"
-                    else:
-                        return "change-neutral"
-                except:
-                    return "change-neutral"
-            
-            # Casos complexos (simples contagem)
-            casos_complexos_atual = sum(1 for data in supervisores_data for _ in range(data['complexidade']['complexo']))
-            casos_complexos_anterior = max(0, casos_complexos_atual - 5)  # Simulação segura
-            
-            # Taxa de resolução (atendimentos com classificação)
-            atendimentos_resolvidos = sum(1 for a in atendimentos_todos if a.classificacao)
-            taxa_resolucao_atual = (atendimentos_resolvidos / len(atendimentos_todos) * 100) if atendimentos_todos else 0
-            taxa_resolucao_anterior = max(0, taxa_resolucao_atual - 5)  # Simulação
-            
-            # Dados de comparação (SEGUROS PARA SERIALIZAÇÃO)
-            media_anterior = round(atendimentos_anterior / total_supervisores, 1) if total_supervisores > 0 else 0
-            
-            comparativo_data = {
-                'total_atendimentos': {
-                    'atual': int(atendimentos_periodo),
-                    'anterior': int(atendimentos_anterior),
-                    'variacao': calcular_variacao_segura(atendimentos_periodo, atendimentos_anterior),
-                    'classe': classificar_mudanca_segura(atendimentos_periodo, atendimentos_anterior)
-                },
-                'media_supervisor': {
-                    'atual': float(media_por_supervisor),
-                    'anterior': float(media_anterior),
-                    'variacao': calcular_variacao_segura(media_por_supervisor, media_anterior),
-                    'classe': classificar_mudanca_segura(media_por_supervisor, media_anterior)
-                },
-                'casos_complexos': {
-                    'atual': int(casos_complexos_atual),
-                    'anterior': int(casos_complexos_anterior),
-                    'variacao': calcular_variacao_segura(casos_complexos_atual, casos_complexos_anterior),
-                    'classe': classificar_mudanca_segura(casos_complexos_atual, casos_complexos_anterior)
-                },
-                'taxa_resolucao': {
-                    'atual': f"{taxa_resolucao_atual:.0f}%",
-                    'anterior': f"{taxa_resolucao_anterior:.0f}%",
-                    'variacao': calcular_variacao_segura(taxa_resolucao_atual, taxa_resolucao_anterior),
-                    'classe': classificar_mudanca_segura(taxa_resolucao_atual, taxa_resolucao_anterior)
-                },
-                'tempo_medio': {
-                    'atual': 8.5,
-                    'anterior': 9.2,
-                    'variacao': "-7.6%",
-                    'classe': "change-positive"
-                },
-                'satisfacao': {
-                    'atual': 4.6,
-                    'anterior': 4.4,
-                    'variacao': "+4.5%",
-                    'classe': "change-positive"
-                }
-            }
-            
-        except Exception as e:
-            app.logger.error(f'Erro no comparativo: {e}')
-            # Dados padrão em caso de erro
-            comparativo_data = {
-                'total_atendimentos': {'atual': 0, 'anterior': 0, 'variacao': '0%', 'classe': 'change-neutral'},
-                'media_supervisor': {'atual': 0, 'anterior': 0, 'variacao': '0%', 'classe': 'change-neutral'},
-                'casos_complexos': {'atual': 0, 'anterior': 0, 'variacao': '0%', 'classe': 'change-neutral'},
-                'taxa_resolucao': {'atual': '0%', 'anterior': '0%', 'variacao': '0%', 'classe': 'change-neutral'},
-                'tempo_medio': {'atual': 0, 'anterior': 0, 'variacao': '0%', 'classe': 'change-neutral'},
-                'satisfacao': {'atual': 0, 'anterior': 0, 'variacao': '0%', 'classe': 'change-neutral'}
-            }
+            volume_semanal.append({
+                'dia': inicio_dia.strftime('%a'),
+                'data': inicio_dia.strftime('%d/%m'),
+                'volume': count
+            })
         
-        # === 5. DADOS PARA O TEMPLATE (FORMATO SEGURO) ===
+        # Inverte para mostrar do mais antigo para o mais recente
+        volume_semanal.reverse()
+        
+        # Formata para JSON seguro no template
+        volume_semanal_formatted = [{
+            'dia': item['dia'],
+            'data': item['data'],
+            'volume': int(item['volume'])
+        } for item in volume_semanal]
+        
+        # === 4. COMPARATIVO COM PERÍODO ANTERIOR ===
+        periodo_anterior_inicio = data_inicio - timedelta(days=periodo)
+        periodo_anterior_fim = data_inicio
+        
+        atendimentos_anterior = Atendimento.query.filter(
+            Atendimento.data_hora >= periodo_anterior_inicio,
+            Atendimento.data_hora < periodo_anterior_fim
+        ).count()
+        
+        # Calcula mudança percentual
+        if atendimentos_anterior > 0:
+            mudanca_percentual = round(((atendimentos_periodo - atendimentos_anterior) / atendimentos_anterior) * 100, 1)
+        else:
+            mudanca_percentual = 100 if atendimentos_periodo > 0 else 0
+        
+        comparativo_data = {
+            'periodo_atual': atendimentos_periodo,
+            'periodo_anterior': atendimentos_anterior,
+            'mudanca_percentual': mudanca_percentual,
+            'mudanca_tipo': 'aumento' if mudanca_percentual > 0 else 'reducao' if mudanca_percentual < 0 else 'estavel'
+        }
+        
+        # === DADOS PARA O TEMPLATE (FORMATO SEGURO) ===
         periodo_label = "Semana" if periodo == 7 else f"Últimos {periodo} dias"
         
         context = {
@@ -1377,10 +1207,15 @@ def painel_coordenacao():
         
     except Exception as e:
         app.logger.error(f'Erro geral no painel coordenação: {e}')
+        # Log mais detalhado para debug
+        import traceback
+        app.logger.error(f'Traceback completo: {traceback.format_exc()}')
+        
         flash('Erro ao carregar painel da coordenação. Tente novamente.', 'danger')
         return redirect(url_for('dashboard'))
 
 
+# ADICIONE também esta rota de API para suporte
 @app.route('/api/painel_coordenacao/dados')
 @login_required
 def api_painel_coordenacao_dados():
@@ -1949,6 +1784,6 @@ def check_bot_status():
 
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    app.run(debug=False)
 
 

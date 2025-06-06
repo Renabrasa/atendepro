@@ -482,7 +482,7 @@
       <p>
         <strong>{{ periodo_atual }}:</strong>
         {% if periodo_atual == "HOJE" %}
-          {{ data_inicio|strftime('%d/%m/%Y') }}
+          {{ data_inicio }}
         {% else %}
           {{ data_inicio }} a {{ data_fim }}
         {% endif %}
@@ -664,7 +664,7 @@
           <div style="font-size: 13px; color: var(--muted); line-height: 1.6;">
             <p><strong>Período:</strong> {{ periodo_atual }}</p>
             {% if periodo_atual == "HOJE" %}
-              <p><strong>Data:</strong> {{ data_inicio|strftime('%d/%m/%Y') }}</p>
+              <p><strong>Data:</strong> {{ data_inicio }}</p>
             {% else %}
               <p><strong>De:</strong> {{ data_inicio }}</p>
               <p><strong>Até:</strong> {{ data_fim }}</p>
@@ -674,9 +674,9 @@
             <hr style="margin: 12px 0; border: none; border-top: 1px solid var(--border);">
             <p style="font-size: 12px; color: var(--muted);">
               {% if periodo_atual == "HOJE" %}
-                💡 Mostrando dados de hoje. Use os filtros para ver outros períodos.
+                Mostrando dados de hoje. Use os filtros para ver outros períodos.
               {% else %}
-                📅 Período personalizado ativo. Clique em "Hoje" para voltar aos dados atuais.
+                Período personalizado ativo. Clique em "Hoje" para voltar aos dados atuais.
               {% endif %}
             </p>
           </div>

@@ -557,12 +557,12 @@
           </div>
 
           {% for agente in bloco.agentes %}
-            <div class="card" onclick="toggleAtendimentos('atendimentos-{{ loop.parent.loop.index0 }}-{{ loop.index0 }}')">
+            <div class="card" onclick="toggleAtendimentos('atendimentos-{{ bloco.supervisor.id }}-{{ loop.index0 }}')">
               <div class="card-header">
                 <span>{{ agente.nome }}</span>
                 <span class="card-badge">{{ agente.qtd_chamados }}</span>
               </div>
-              <div id="atendimentos-{{ loop.parent.loop.index0 }}-{{ loop.index0 }}" class="atendimentos-list" style="display:none;">
+              <div id="atendimentos-{{ bloco.supervisor.id }}-{{ loop.index0 }}" class="atendimentos-list" style="display:none;">
                 {% for a in agente.chamados %}
                   <div class="atendimento-item">
                     <div>

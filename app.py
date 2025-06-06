@@ -68,159 +68,112 @@ def login():
 
 
 
-# Substitua a função dashboard() no app.py
-
-# VERSÃO SEGURA DO DASHBOARD - Use se a versão debug não resolver
-
 @app.route('/dashboard')
 @login_required
 def dashboard():
+    data_inicio_str = request.args.get('data_inicio', '')
+    data_fim_str = request.args.get('data_fim', '')
+
+    data_inicio = None
+    data_fim = None
+
     try:
-        data_inicio_str = request.args.get('data_inicio', '')
-        data_fim_str = request.args.get('data_fim', '')
+        if data_inicio_str:
+            data_inicio = datetime.strptime(data_inicio_str, '%Y-%m-%d')
+        if data_fim_str:
+            data_fim = datetime.strptime(data_fim_str, '%Y-%m-%d') + timedelta(days=1) - timedelta(seconds=1)
+    except ValueError:
+        flash('Formato de data inválido.', 'danger')
+        return redirect(url_for('dashboard'))
 
-        data_inicio = None
-        data_fim = None
+    # CORREÇÃO AQUI:
+    if current_user.tipo in ['admin', 'coordenadora']:
+        # Admin e Coordenadora veem todos os supervisores E coordenadores
+        supervisores = User.query.filter(User.tipo.in_(['supervisor', 'coordenadora'])).all()
+    else:
+        # Supervisor vê apenas a si mesmo
+        supervisores = [current_user]
 
-        try:
-            if data_inicio_str:
-                data_inicio = datetime.strptime(data_inicio_str, '%Y-%m-%d')
-            if data_fim_str:
-                data_fim = datetime.strptime(data_fim_str, '%Y-%m-%d') + timedelta(days=1) - timedelta(seconds=1)
-        except ValueError:
-            flash('Formato de data inválido.', 'danger')
-            return redirect(url_for('dashboard'))
+    data = []
+    total_atendimentos = 0
+    total_agentes = 0
+    todos_agentes = []
 
-        # CORREÇÃO AQUI:
-        if current_user.tipo in ['admin', 'coordenadora']:
-            # Admin e Coordenadora veem todos os supervisores E coordenadores
-            supervisores = User.query.filter(User.tipo.in_(['supervisor', 'coordenadora'])).all()
+    for sup in supervisores:
+        query = Atendimento.query.filter_by(supervisor_id=sup.id)
+        if data_inicio:
+            query = query.filter(Atendimento.data_hora >= data_inicio)
+        if data_fim:
+            query = query.filter(Atendimento.data_hora <= data_fim)
+
+        atendimentos = query.order_by(Atendimento.data_hora.desc()).all()
+
+        # Ajusta timezone para cada atendimento
+        for atendimento in atendimentos:
+            if atendimento.data_hora.tzinfo is None:
+                atendimento.data_hora = atendimento.data_hora.replace(tzinfo=pytz.utc)
+            atendimento.data_hora = atendimento.data_hora.astimezone(br_tz)
+
+        total_chamados = len(atendimentos)
+        total_atendimentos += total_chamados
+
+        contador_agentes = defaultdict(list)
+        for a in atendimentos:
+            contador_agentes[a.agente_rel.nome].append(a)
+
+        num_agentes_supervisor = len(contador_agentes)
+        total_agentes += num_agentes_supervisor
+
+        if contador_agentes:
+            agente_top, chamados_top = max(contador_agentes.items(), key=lambda x: len(x[1]))
+            qtd_top = len(chamados_top)
         else:
-            # Supervisor vê apenas a si mesmo
-            supervisores = [current_user]
+            agente_top, chamados_top, qtd_top = None, [], 0
 
-        data = []
-        total_atendimentos = 0
-        total_agentes = 0
-        todos_agentes = []
-
-        for sup in supervisores:
-            query = Atendimento.query.filter_by(supervisor_id=sup.id)
-            if data_inicio:
-                query = query.filter(Atendimento.data_hora >= data_inicio)
-            if data_fim:
-                query = query.filter(Atendimento.data_hora <= data_fim)
-
-            atendimentos = query.order_by(Atendimento.data_hora.desc()).all()
-
-            # Ajusta timezone para cada atendimento
-            for atendimento in atendimentos:
-                if atendimento.data_hora.tzinfo is None:
-                    atendimento.data_hora = atendimento.data_hora.replace(tzinfo=pytz.utc)
-                atendimento.data_hora = atendimento.data_hora.astimezone(br_tz)
-
-            total_chamados = len(atendimentos)
-            total_atendimentos += total_chamados
-
-            contador_agentes = defaultdict(list)
-            for a in atendimentos:
-                contador_agentes[a.agente_rel.nome].append(a)
-
-            num_agentes_supervisor = len(contador_agentes)
-            total_agentes += num_agentes_supervisor
-
-            if contador_agentes:
-                agente_top, chamados_top = max(contador_agentes.items(), key=lambda x: len(x[1]))
-                qtd_top = len(chamados_top)
-            else:
-                agente_top, chamados_top, qtd_top = None, [], 0
-
-            agentes_data = []
-            for agente_nome, chamados in contador_agentes.items():
-                qtd_chamados = len(chamados)
-                agentes_data.append({
-                    'nome': agente_nome,
-                    'qtd_chamados': qtd_chamados,
-                    'chamados': chamados
-                })
-                todos_agentes.append({
-                    'nome': agente_nome,
-                    'qtd_chamados': qtd_chamados,
-                    'supervisor_nome': sup.nome
-                })
-
-            agentes_data.sort(key=lambda x: x['qtd_chamados'], reverse=True)
-
-            data.append({
-                'supervisor': sup,
-                'total_chamados': total_chamados,
-                'agente_top': agente_top,
-                'qtd_top': qtd_top,
-                'agentes': agentes_data,
-                'num_agentes': num_agentes_supervisor
+        agentes_data = []
+        for agente_nome, chamados in contador_agentes.items():
+            qtd_chamados = len(chamados)
+            agentes_data.append({
+                'nome': agente_nome,
+                'qtd_chamados': qtd_chamados,
+                'chamados': chamados
+            })
+            todos_agentes.append({
+                'nome': agente_nome,
+                'qtd_chamados': qtd_chamados,
+                'supervisor_nome': sup.nome
             })
 
-        data.sort(key=lambda x: x['total_chamados'], reverse=True)
-        todos_agentes.sort(key=lambda x: x['qtd_chamados'], reverse=True)
-        top_5_agentes = todos_agentes[:5]
+        agentes_data.sort(key=lambda x: x['qtd_chamados'], reverse=True)
 
-        total_supervisores = len(supervisores)
-        media_por_agente = round(total_atendimentos / total_agentes, 1) if total_agentes > 0 else 0
+        data.append({
+            'supervisor': sup,
+            'total_chamados': total_chamados,
+            'agente_top': agente_top,
+            'qtd_top': qtd_top,
+            'agentes': agentes_data,
+            'num_agentes': num_agentes_supervisor
+        })
 
-        return render_template('dashboard.html',
-                               data=data,
-                               total_supervisores=total_supervisores,
-                               total_agentes=total_agentes,
-                               total_atendimentos=total_atendimentos,
-                               media_por_agente=media_por_agente,
-                               top_5_agentes=top_5_agentes,
-                               data_inicio=data_inicio_str,
-                               data_fim=data_fim_str)
+    data.sort(key=lambda x: x['total_chamados'], reverse=True)
+    todos_agentes.sort(key=lambda x: x['qtd_chamados'], reverse=True)
+    top_5_agentes = todos_agentes[:5]
 
-    except Exception as e:
-        import traceback
-        error_details = traceback.format_exc()
-        
-        return f"""
-        <!DOCTYPE html>
-        <html>
-        <head>
-            <title>Dashboard Debug - Erro Capturado</title>
-            <style>
-                body {{ font-family: Arial, sans-serif; margin: 20px; }}
-                .error-container {{ max-width: 1200px; margin: 0 auto; }}
-                .error-header {{ background: #dc3545; color: white; padding: 20px; border-radius: 8px; }}
-                .error-content {{ background: #f8f9fa; padding: 20px; border: 1px solid #dee2e6; margin-top: 10px; }}
-                .traceback {{ background: #e9ecef; padding: 15px; border-radius: 4px; overflow: auto; white-space: pre-wrap; font-family: monospace; font-size: 12px; }}
-                .user-info {{ background: #007bff; color: white; padding: 15px; margin: 10px 0; border-radius: 4px; }}
-                .btn {{ background: #28a745; color: white; padding: 10px 20px; text-decoration: none; border-radius: 4px; display: inline-block; margin-top: 15px; }}
-            </style>
-        </head>
-        <body>
-            <div class="error-container">
-                <div class="error-header">
-                    <h1>🔍 Dashboard Debug - Erro 500 Capturado</h1>
-                    <h2>Erro Principal: {str(e)}</h2>
-                </div>
-                
-                <div class="user-info">
-                    <h3>👤 Informações do Usuário:</h3>
-                    <p><strong>Nome:</strong> {current_user.nome}</p>
-                    <p><strong>Tipo:</strong> {current_user.tipo}</p>
-                    <p><strong>ID:</strong> {current_user.id}</p>
-                </div>
-                
-                <div class="error-content">
-                    <h3>📋 Traceback Completo:</h3>
-                    <div class="traceback">{error_details}</div>
-                </div>
-                
-                <a href="/atendimentos" class="btn">← Voltar para Atendimentos</a>
-                <a href="/login" class="btn" style="background: #6c757d;">🔄 Fazer Login Novamente</a>
-            </div>
-        </body>
-        </html>
-        """
+    total_supervisores = len(supervisores)
+    media_por_agente = round(total_atendimentos / total_agentes, 1) if total_agentes > 0 else 0
+
+    return render_template('dashboard.html',
+                           data=data,
+                           total_supervisores=total_supervisores,
+                           total_agentes=total_agentes,
+                           total_atendimentos=total_atendimentos,
+                           media_por_agente=media_por_agente,
+                           top_5_agentes=top_5_agentes,
+                           data_inicio=data_inicio_str,
+                           data_fim=data_fim_str)
+
+
+
 
 @app.route('/atendimentos')
 @login_required

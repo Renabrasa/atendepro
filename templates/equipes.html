@@ -228,10 +228,7 @@
                         <td> {{ agentes_por_supervisor.get(equipe.supervisor_id, 0) }}</td>
                         {% if current_user.tipo in ['admin', 'coordenadora'] %}
 
-                        <td><a href="{{ url_for('editar_equipe', equipe_id=equipe.id) }}"
-                                class="btn btn-sm btn-primary">
-                                Editar
-                            </a></td>
+                        <a href="{{ url_for('editar_equipe', equipe_id=equipe.id) }}"class="btn btn-sm btn-primary"> Editar </a>
                         {% endif %}
                         </td>
                     </tr>

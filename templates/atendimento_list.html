@@ -1,346 +1,557 @@
 {% extends 'base.html' %}
-{% block title %}Lista de Atendimentos{% endblock %}
+{% block title %}Atendimentos{% endblock %}
 {% block content %}
 <style>
-  .atendimentos-container {
+  /* Variáveis Profissionais */
+  :root {
+    --primary: #1e293b;
+    --secondary: #475569;
+    --accent: #3b82f6;
+    --background: #f8fafc;
+    --white: #ffffff;
+    --border: #e2e8f0;
+    --text: #334155;
+    --muted: #64748b;
+    --success: #059669;
+    --warning: #d97706;
+    --danger: #dc2626;
+  }
+
+  * {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+  }
+
+  body {
+    background: var(--background);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    line-height: 1.5;
+  }
+
+  .atendimentos {
     max-width: 1400px;
     margin: 0 auto;
-    padding: 20px;
+    padding: 24px;
   }
 
-  .header-section {
-    background: linear-gradient(135deg, #003366, #0056b3);
-    color: white;
-    padding: 25px;
-    border-radius: 12px;
-    margin-bottom: 30px;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    flex-wrap: wrap;
-    gap: 15px;
-  }
-
-  .header-title {
-    font-size: 2em;
-    font-weight: 700;
-    margin: 0;
-  }
-
-  .btn {
-    padding: 10px 20px;
-    border: none;
+  /* Header com KPIs Integrados */
+  .header {
+    background: var(--white);
+    border: 1px solid var(--border);
     border-radius: 8px;
-    text-decoration: none;
-    font-weight: 600;
-    cursor: pointer;
-    transition: all 0.3s ease;
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
+    padding: 24px 32px;
+    margin-bottom: 24px;
   }
 
-  .btn-primary {
-    background: rgba(255,255,255,0.2);
-    color: white;
-    border: 2px solid rgba(255,255,255,0.3);
-  }
-
-  .btn-primary:hover {
-    background: rgba(255,255,255,0.3);
-    transform: translateY(-2px);
-  }
-
-  .btn-success { background: #28a745; color: white; }
-  .btn-danger { background: #dc3545; color: white; }
-  .btn-info { background: #17a2b8; color: white; }
-  .btn-sm { padding: 6px 12px; font-size: 0.875em; }
-
-  /* Filtros */
-  .filters-section {
-    background: white;
-    padding: 25px;
-    border-radius: 12px;
-    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-    margin-bottom: 25px;
-  }
-
-  .filters-header {
+  .header-top {
     display: flex;
     justify-content: space-between;
     align-items: center;
     margin-bottom: 20px;
   }
 
-  .filters-title {
-    font-size: 1.2em;
+  .header-content h1 {
+    font-size: 24px;
     font-weight: 600;
-    color: #003366;
-    margin: 0;
+    color: var(--primary);
+    margin-bottom: 4px;
   }
 
-  .filters-content {
+  .header-content p {
+    color: var(--muted);
+    font-size: 14px;
+  }
+
+  .header-actions {
+    display: flex;
+    gap: 12px;
+  }
+
+  .btn {
+    padding: 8px 16px;
+    border-radius: 6px;
+    border: 1px solid var(--border);
+    background: var(--white);
+    color: var(--text);
+    text-decoration: none;
+    font-size: 14px;
+    font-weight: 500;
+    transition: all 0.2s;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .btn:hover {
+    background: var(--background);
+    border-color: var(--accent);
+  }
+
+  .btn-primary {
+    background: var(--accent);
+    color: var(--white);
+    border-color: var(--accent);
+  }
+
+  .btn-primary:hover {
+    background: #2563eb;
+  }
+
+  .btn-success {
+    background: var(--success);
+    color: var(--white);
+    border-color: var(--success);
+  }
+
+  .btn-success:hover {
+    background: #047857;
+  }
+
+  .btn-sm {
+    padding: 4px 8px;
+    font-size: 12px;
+  }
+
+  .btn-danger {
+    background: var(--danger);
+    color: var(--white);
+    border-color: var(--danger);
+  }
+
+  .btn-danger:hover {
+    background: #b91c1c;
+  }
+
+  /* KPIs Compactos */
+  .kpis {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-    gap: 20px;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 24px;
+  }
+
+  .kpi {
+    text-align: center;
+  }
+
+  .kpi-value {
+    font-size: 28px;
+    font-weight: 700;
+    color: var(--primary);
+    line-height: 1;
+    margin-bottom: 6px;
+  }
+
+  .kpi-label {
+    font-size: 12px;
+    color: var(--muted);
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  /* Filtros Horizontais */
+  .filters {
+    background: var(--white);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 20px 24px;
+    margin-bottom: 24px;
+  }
+
+  .filters-row {
+    display: grid;
+    grid-template-columns: 150px 150px 200px 150px 200px 1fr auto;
+    gap: 16px;
     align-items: end;
   }
 
-  .filter-group {
+  .form-group {
     display: flex;
     flex-direction: column;
-    gap: 5px;
+    gap: 6px;
   }
 
-  .filter-group label {
-    font-weight: 600;
-    color: #003366;
-    font-size: 0.9em;
-  }
-
-  .filter-group input,
-  .filter-group select {
-    padding: 10px;
-    border: 2px solid #e2e8f0;
-    border-radius: 8px;
-    font-size: 1em;
-    transition: border-color 0.3s ease;
-  }
-
-  .filter-group input:focus,
-  .filter-group select:focus {
-    border-color: #003366;
-    outline: none;
-  }
-
-  /* Estatísticas */
-  .stats-row {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-    gap: 20px;
-    margin-bottom: 25px;
-  }
-
-  .stat-card {
-    background: white;
-    padding: 20px;
-    border-radius: 12px;
-    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-    text-align: center;
-    border-left: 4px solid #003366;
-  }
-
-  .stat-number {
-    font-size: 2em;
-    font-weight: 700;
-    color: #003366;
-    margin-bottom: 5px;
-  }
-
-  .stat-label {
-    color: #718096;
-    font-weight: 600;
+  .form-label {
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--text);
     text-transform: uppercase;
-    font-size: 0.85em;
+    letter-spacing: 0.5px;
   }
 
-  /* Tabela */
-  .table-container {
-    background: white;
-    border-radius: 12px;
-    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+  .form-input, .form-select {
+    padding: 8px 12px;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    font-size: 14px;
+    transition: border-color 0.2s;
+    background: var(--white);
+  }
+
+  .form-input:focus, .form-select:focus {
+    outline: none;
+    border-color: var(--accent);
+  }
+
+  .form-select {
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='m6 8 4 4 4-4'/%3e%3c/svg%3e");
+    background-position: right 8px center;
+    background-repeat: no-repeat;
+    background-size: 16px;
+    padding-right: 32px;
+    appearance: none;
+  }
+
+  .filter-actions {
+    display: flex;
+    gap: 8px;
+  }
+
+  /* Tabela Principal */
+  .data-table {
+    background: var(--white);
+    border: 1px solid var(--border);
+    border-radius: 8px;
     overflow: hidden;
+    margin-bottom: 24px;
   }
 
   .table-header {
-    background: linear-gradient(135deg, #003366, #0056b3);
-    color: white;
-    padding: 20px 25px;
+    padding: 16px 20px;
+    border-bottom: 1px solid var(--border);
+    background: #fafbfc;
     display: flex;
     justify-content: space-between;
     align-items: center;
   }
 
   .table-title {
-    font-size: 1.2em;
+    font-size: 16px;
     font-weight: 600;
-    margin: 0;
+    color: var(--primary);
   }
 
-  .table-responsive {
-    overflow-x: auto;
-    max-height: 600px;
+  .table-subtitle {
+    font-size: 12px;
+    color: var(--muted);
+  }
+
+  .table-container {
+    height: 500px;
     overflow-y: auto;
   }
 
   .table {
     width: 100%;
     border-collapse: collapse;
-    margin: 0;
   }
 
   .table th {
-    background: #f8f9fa;
-    padding: 15px 12px;
+    background: #fafbfc;
+    padding: 12px 16px;
     text-align: left;
+    font-size: 11px;
     font-weight: 600;
-    color: #2d3748;
-    border-bottom: 2px solid #e2e8f0;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    border-bottom: 1px solid var(--border);
     position: sticky;
     top: 0;
     z-index: 10;
   }
 
   .table td {
-    padding: 15px 12px;
-    border-bottom: 1px solid #e2e8f0;
+    padding: 16px;
+    border-bottom: 1px solid #f1f5f9;
+    font-size: 14px;
     vertical-align: middle;
   }
 
   .table tr:hover {
-    background: #f8f9fa;
+    background: #fafbfc;
   }
 
-  .status-badge {
-    padding: 4px 12px;
-    border-radius: 20px;
-    font-size: 0.8em;
+  .atendimento-id {
     font-weight: 600;
-    text-transform: uppercase;
+    color: var(--accent);
+    font-family: monospace;
   }
 
-  .status-pendente { background: #fff3cd; color: #856404; }
-  .status-classificado { background: #d4edda; color: #155724; }
-  .status-concluido { background: #cce5ff; color: #0066cc; }
+  .agente-name {
+    font-weight: 600;
+    color: var(--primary);
+  }
+
+  .supervisor-name {
+    color: var(--muted);
+    font-size: 13px;
+  }
 
   .conteudo-preview {
     max-width: 300px;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
+    color: var(--text);
+    line-height: 1.4;
   }
 
-  /* Paginação */
-  .pagination-container {
-    background: white;
-    padding: 20px;
+  .status-badge {
+    padding: 4px 8px;
     border-radius: 12px;
-    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-    margin-top: 20px;
+    font-size: 11px;
+    font-weight: 500;
+    text-transform: uppercase;
   }
 
-  .pagination {
+  .status-pendente {
+    background: #fef3c7;
+    color: #92400e;
+  }
+
+  .status-classificado {
+    background: #dcfce7;
+    color: #166534;
+  }
+
+  .status-concluido {
+    background: #dbeafe;
+    color: #1d4ed8;
+  }
+
+  .classificacao-badge {
+    padding: 2px 8px;
+    border-radius: 10px;
+    font-size: 10px;
+    font-weight: 500;
+    text-transform: uppercase;
+  }
+
+  .classificacao-basico {
+    background: #dcfce7;
+    color: #166534;
+  }
+
+  .classificacao-medio {
+    background: #fef3c7;
+    color: #92400e;
+  }
+
+  .classificacao-complexo {
+    background: #fecaca;
+    color: #991b1b;
+  }
+
+  .classificacao-sem {
+    background: #f1f5f9;
+    color: var(--muted);
+  }
+
+  .actions-cell {
     display: flex;
-    justify-content: center;
+    gap: 4px;
+  }
+
+  .date-cell {
+    font-size: 13px;
+    color: var(--text);
+  }
+
+  .time-cell {
+    font-size: 11px;
+    color: var(--muted);
+    margin-top: 2px;
+  }
+
+  /* Paginação Simples */
+  .pagination {
+    background: var(--white);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 16px 20px;
+    display: flex;
+    justify-content: between;
     align-items: center;
-    gap: 10px;
-    flex-wrap: wrap;
-  }
-
-  .pagination a,
-  .pagination span {
-    padding: 8px 12px;
-    border: 1px solid #ddd;
-    text-decoration: none;
-    color: #003366;
-    border-radius: 5px;
-    transition: all 0.3s ease;
-  }
-
-  .pagination a:hover {
-    background: #003366;
-    color: white;
-  }
-
-  .pagination .current {
-    background: #003366;
-    color: white;
-    font-weight: 600;
-  }
-
-  .pagination .disabled {
-    color: #999;
-    cursor: not-allowed;
   }
 
   .pagination-info {
-    text-align: center;
-    margin-bottom: 15px;
-    color: #718096;
-    font-size: 0.9em;
+    font-size: 13px;
+    color: var(--muted);
   }
 
-  /* Estados vazios */
+  .pagination-controls {
+    display: flex;
+    gap: 8px;
+    margin-left: auto;
+  }
+
+  .pagination-btn {
+    padding: 6px 12px;
+    border: 1px solid var(--border);
+    background: var(--white);
+    color: var(--text);
+    text-decoration: none;
+    border-radius: 6px;
+    font-size: 13px;
+    transition: all 0.2s;
+  }
+
+  .pagination-btn:hover:not(.disabled) {
+    background: var(--background);
+    border-color: var(--accent);
+  }
+
+  .pagination-btn.current {
+    background: var(--accent);
+    color: var(--white);
+    border-color: var(--accent);
+  }
+
+  .pagination-btn.disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+
+  /* Estados Vazios */
   .empty-state {
     text-align: center;
     padding: 60px 20px;
-    color: #718096;
+    color: var(--muted);
   }
 
   .empty-state h3 {
-    color: #2d3748;
-    margin-bottom: 10px;
+    color: var(--text);
+    margin-bottom: 8px;
+    font-weight: 500;
   }
 
-  /* Responsividade */
+  /* Responsivo */
+  @media (max-width: 1200px) {
+    .filters-row {
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 12px;
+    }
+    
+    .kpis {
+      grid-template-columns: repeat(2, 1fr);
+    }
+  }
+
   @media (max-width: 768px) {
-    .header-section {
+    .atendimentos {
+      padding: 16px;
+    }
+
+    .header-top {
       flex-direction: column;
+      gap: 16px;
       text-align: center;
     }
 
-    .filters-content {
+    .filters-row {
       grid-template-columns: 1fr;
     }
 
-    .stats-row {
+    .kpis {
       grid-template-columns: repeat(2, 1fr);
+      gap: 16px;
     }
 
-    .pagination {
-      justify-content: center;
-      gap: 5px;
+    .table-container {
+      height: 400px;
     }
 
-    .pagination a,
-    .pagination span {
-      padding: 6px 8px;
-      font-size: 0.9em;
+    .table {
+      font-size: 13px;
     }
+
+    .table th,
+    .table td {
+      padding: 8px;
+    }
+
+    .conteudo-preview {
+      max-width: 150px;
+    }
+  }
+
+  /* Melhorias de Performance */
+  .table-container::-webkit-scrollbar {
+    width: 8px;
+  }
+
+  .table-container::-webkit-scrollbar-track {
+    background: #f1f5f9;
+  }
+
+  .table-container::-webkit-scrollbar-thumb {
+    background: #cbd5e0;
+    border-radius: 4px;
+  }
+
+  .table-container::-webkit-scrollbar-thumb:hover {
+    background: #a0aec0;
   }
 </style>
 
-<div class="atendimentos-container">
-  <!-- Header -->
-  <div class="header-section">
-    <h1 class="header-title">📋 Atendimentos</h1>
-    <div>
-      <a href="{{ url_for('novo_atendimento') }}" class="btn btn-primary">
-        ➕ Novo Atendimento
-      </a>
+<div class="atendimentos">
+  <!-- Header com KPIs -->
+  <header class="header">
+    <div class="header-top">
+      <div class="header-content">
+        <h1>Atendimentos</h1>
+        <p>Gerenciamento e acompanhamento de todos os atendimentos</p>
+      </div>
+      <div class="header-actions">
+        <a href="{{ url_for('novo_atendimento') }}" class="btn btn-primary">
+          Novo Atendimento
+        </a>
+        <a href="{{ url_for('dashboard') }}" class="btn">
+          Dashboard
+        </a>
+      </div>
     </div>
-  </div>
 
-  <!-- Filtros -->
-  <div class="filters-section">
-    <div class="filters-header">
-      <h3 class="filters-title">🔍 Filtros</h3>
+    <!-- KPIs Integrados -->
+    <div class="kpis">
+      <div class="kpi">
+        <div class="kpi-value">{{ stats.total_filtrados }}</div>
+        <div class="kpi-label">Total Encontrados</div>
+      </div>
+      <div class="kpi">
+        <div class="kpi-value">{{ stats.pendentes }}</div>
+        <div class="kpi-label">Pendentes</div>
+      </div>
+      <div class="kpi">
+        <div class="kpi-value">{{ stats.classificados }}</div>
+        <div class="kpi-label">Classificados</div>
+      </div>
+      <div class="kpi">
+        <div class="kpi-value">{{ stats.hoje }}</div>
+        <div class="kpi-label">Hoje</div>
+      </div>
     </div>
-    
-    <form method="GET" class="filters-content">
-      <div class="filter-group">
-        <label for="data_inicio">📅 Data Inicial</label>
-        <input type="date" id="data_inicio" name="data_inicio" value="{{ current_filters.data_inicio }}">
+  </header>
+
+  <!-- Filtros Horizontais -->
+  <section class="filters">
+    <form method="GET" class="filters-row">
+      <div class="form-group">
+        <label class="form-label">Data Inicial</label>
+        <input type="date" name="data_inicio" value="{{ current_filters.data_inicio }}" class="form-input">
       </div>
       
-      <div class="filter-group">
-        <label for="data_fim">📅 Data Final</label>
-        <input type="date" id="data_fim" name="data_fim" value="{{ current_filters.data_fim }}">
+      <div class="form-group">
+        <label class="form-label">Data Final</label>
+        <input type="date" name="data_fim" value="{{ current_filters.data_fim }}" class="form-input">
       </div>
       
-      <div class="filter-group">
-        <label for="agente">👤 Agente</label>
-        <select id="agente" name="agente">
+      <div class="form-group">
+        <label class="form-label">Agente</label>
+        <select name="agente" class="form-select">
           <option value="">Todos os agentes</option>
           {% for agente in agentes_dropdown %}
             <option value="{{ agente.id }}" {{ 'selected' if current_filters.agente == agente.id|string }}>
@@ -349,12 +560,26 @@
           {% endfor %}
         </select>
       </div>
+
+      <div class="form-group">
+        <label class="form-label">Status</label>
+        <select name="status" class="form-select">
+          <option value="">Todos</option>
+          <option value="pendente" {{ 'selected' if current_filters.status == 'pendente' }}>Pendente</option>
+          <option value="classificado" {{ 'selected' if current_filters.status == 'classificado' }}>Classificado</option>
+        </select>
+      </div>
       
+      <div class="form-group">
+        <label class="form-label">Buscar</label>
+        <input type="text" name="busca" placeholder="Conteúdo..." value="{{ current_filters.busca }}" class="form-input">
+      </div>
+
       {% if current_user.tipo in ['admin', 'coordenadora'] %}
-      <div class="filter-group">
-        <label for="supervisor">👥 Supervisor</label>
-        <select id="supervisor" name="supervisor">
-          <option value="">Todos os supervisores</option>
+      <div class="form-group">
+        <label class="form-label">Supervisor</label>
+        <select name="supervisor" class="form-select">
+          <option value="">Todos</option>
           {% for supervisor in supervisores_dropdown %}
             <option value="{{ supervisor.id }}" {{ 'selected' if current_filters.supervisor == supervisor.id|string }}>
               {{ supervisor.nome }}
@@ -364,94 +589,72 @@
       </div>
       {% endif %}
       
-      <div class="filter-group">
-        <label for="status">📊 Status</label>
-        <select id="status" name="status">
-          <option value="">Todos os status</option>
-          <option value="pendente" {{ 'selected' if current_filters.status == 'pendente' }}>Pendente</option>
-          <option value="classificado" {{ 'selected' if current_filters.status == 'classificado' }}>Classificado</option>
-        </select>
-      </div>
-      
-      <div class="filter-group">
-        <label for="busca">🔎 Buscar</label>
-        <input type="text" id="busca" name="busca" placeholder="Buscar no conteúdo..." value="{{ current_filters.busca }}">
-      </div>
-      
-      <div class="filter-group">
-        <label>&nbsp;</label>
-        <div style="display: flex; gap: 10px;">
-          <button type="submit" class="btn btn-success btn-sm">🔍 Filtrar</button>
-          <a href="{{ url_for('atendimentos') }}" class="btn btn-info btn-sm">🔄 Limpar</a>
-        </div>
+      <div class="filter-actions">
+        <button type="submit" class="btn btn-success">Filtrar</button>
+        <a href="{{ url_for('atendimentos') }}" class="btn">Limpar</a>
       </div>
     </form>
-  </div>
+  </section>
 
-  <!-- Estatísticas -->
-  <div class="stats-row">
-    <div class="stat-card">
-      <div class="stat-number">{{ stats.total_filtrados }}</div>
-      <div class="stat-label">Total Encontrados</div>
-    </div>
-    <div class="stat-card">
-      <div class="stat-number">{{ stats.pendentes }}</div>
-      <div class="stat-label">Pendentes</div>
-    </div>
-    <div class="stat-card">
-      <div class="stat-number">{{ stats.classificados }}</div>
-      <div class="stat-label">Classificados</div>
-    </div>
-    <div class="stat-card">
-      <div class="stat-number">{{ stats.hoje }}</div>
-      <div class="stat-label">Hoje</div>
-    </div>
-  </div>
-
-  <!-- Tabela -->
-  <div class="table-container">
+  <!-- Tabela Principal -->
+  <section class="data-table">
     <div class="table-header">
-      <h3 class="table-title">📋 Lista de Atendimentos</h3>
+      <div>
+        <div class="table-title">Lista de Atendimentos</div>
+        <div class="table-subtitle">
+          Mostrando {{ atendimentos_paginated.per_page * (atendimentos_paginated.page - 1) + 1 }} 
+          a {{ atendimentos_paginated.per_page * (atendimentos_paginated.page - 1) + atendimentos|length }} 
+          de {{ atendimentos_paginated.total }} atendimentos
+        </div>
+      </div>
     </div>
     
-    <div class="table-responsive">
+    <div class="table-container">
       <table class="table">
         <thead>
           <tr>
-            <th>ID</th>
-            <th>📅 Data/Hora</th>
-            <th>👤 Agente</th>
+            <th style="width: 80px;">ID</th>
+            <th style="width: 120px;">Data/Hora</th>
+            <th style="width: 150px;">Agente</th>
             {% if current_user.tipo in ['admin', 'coordenadora'] %}
-              <th>👥 Supervisor</th>
+            <th style="width: 120px;">Supervisor</th>
             {% endif %}
-            <th>📝 Conteúdo</th>
-            <th>🏷️ Classificação</th>
-            <th>📊 Status</th>
-            <th>⚙️ Ações</th>
+            <th>Conteúdo</th>
+            <th style="width: 100px;">Classificação</th>
+            <th style="width: 100px;">Status</th>
+            <th style="width: 120px;">Ações</th>
           </tr>
         </thead>
         <tbody>
           {% for atendimento in atendimentos %}
             <tr>
-              <td><strong>#{{ atendimento.id }}</strong></td>
               <td>
-                {{ atendimento.data_hora.strftime('%d/%m/%Y') }}<br>
-                <small>{{ atendimento.data_hora.strftime('%H:%M') }}</small>
+                <span class="atendimento-id">#{{ atendimento.id }}</span>
               </td>
-              <td><strong>{{ atendimento.agente_rel.nome }}</strong></td>
+              <td>
+                <div class="date-cell">{{ atendimento.data_hora.strftime('%d/%m/%Y') }}</div>
+                <div class="time-cell">{{ atendimento.data_hora.strftime('%H:%M') }}</div>
+              </td>
+              <td>
+                <div class="agente-name">{{ atendimento.agente_rel.nome }}</div>
+              </td>
               {% if current_user.tipo in ['admin', 'coordenadora'] %}
-                <td>{{ atendimento.supervisor.nome }}</td>
+              <td>
+                <div class="supervisor-name">{{ atendimento.supervisor.nome }}</div>
+              </td>
               {% endif %}
               <td>
                 <div class="conteudo-preview" title="{{ atendimento.conteudo }}">
-                  {{ atendimento.conteudo[:80] }}{% if atendimento.conteudo|length > 80 %}...{% endif %}
+                  {{ atendimento.conteudo }}
                 </div>
               </td>
               <td>
                 {% if atendimento.classificacao %}
-                  <span style="color: #28a745; font-weight: 600;">{{ atendimento.classificacao }}</span>
+                  <span class="classificacao-badge classificacao-{{ atendimento.classificacao }}">
+                    {{ atendimento.classificacao }}
+                  </span>
                 {% else %}
-                  <span style="color: #6c757d;">Não classificado</span>
+                  <span class="classificacao-badge classificacao-sem">—</span>
                 {% endif %}
               </td>
               <td>
@@ -460,15 +663,15 @@
                 </span>
               </td>
               <td>
-                <div style="display: flex; gap: 5px;">
+                <div class="actions-cell">
                   <a href="{{ url_for('editar_atendimento', atendimento_id=atendimento.id) }}" 
-                     class="btn btn-info btn-sm" title="Editar">
-                    ✏️
+                     class="btn btn-sm" title="Editar">
+                    Editar
                   </a>
                   <a href="{{ url_for('excluir_atendimento', atendimento_id=atendimento.id) }}" 
                      onclick="return confirm('Confirma exclusão do atendimento #{{ atendimento.id }}?');" 
-                     class="btn btn-danger btn-sm" title="Excluir">
-                    🗑️
+                     class="btn btn-sm btn-danger" title="Excluir">
+                    Excluir
                   </a>
                 </div>
               </td>
@@ -476,10 +679,10 @@
           {% else %}
             <tr>
               <td colspan="8" class="empty-state">
-                <h3>📭 Nenhum atendimento encontrado</h3>
+                <h3>Nenhum atendimento encontrado</h3>
                 <p>Não há atendimentos para os critérios selecionados.</p>
-                <a href="{{ url_for('novo_atendimento') }}" class="btn btn-success">
-                  ➕ Criar Primeiro Atendimento
+                <a href="{{ url_for('novo_atendimento') }}" class="btn btn-primary" style="margin-top: 16px;">
+                  Criar Primeiro Atendimento
                 </a>
               </td>
             </tr>
@@ -487,62 +690,82 @@
         </tbody>
       </table>
     </div>
-  </div>
+  </section>
 
-  <!-- Paginação -->
+  <!-- Paginação Simples -->
   {% if atendimentos_paginated.pages > 1 %}
-  <div class="pagination-container">
+  <nav class="pagination">
     <div class="pagination-info">
-      Mostrando {{ atendimentos_paginated.per_page * (atendimentos_paginated.page - 1) + 1 }} 
-      a {{ atendimentos_paginated.per_page * (atendimentos_paginated.page - 1) + atendimentos|length }} 
-      de {{ atendimentos_paginated.total }} atendimentos
+      Página {{ atendimentos_paginated.page }} de {{ atendimentos_paginated.pages }}
     </div>
     
-    <div class="pagination">
-      <!-- Primeira página -->
+    <div class="pagination-controls">
       {% if atendimentos_paginated.has_prev %}
-        <a href="{{ url_for('atendimentos', page=1, **current_filters) }}">« Primeira</a>
-        <a href="{{ url_for('atendimentos', page=atendimentos_paginated.prev_num, **current_filters) }}">‹ Anterior</a>
+        <a href="{{ url_for('atendimentos', page=1, **current_filters) }}" class="pagination-btn">
+          Primeira
+        </a>
+        <a href="{{ url_for('atendimentos', page=atendimentos_paginated.prev_num, **current_filters) }}" class="pagination-btn">
+          Anterior
+        </a>
       {% else %}
-        <span class="disabled">« Primeira</span>
-        <span class="disabled">‹ Anterior</span>
+        <span class="pagination-btn disabled">Primeira</span>
+        <span class="pagination-btn disabled">Anterior</span>
       {% endif %}
 
-      <!-- Páginas numeradas -->
-      {% for page_num in atendimentos_paginated.iter_pages() %}
+      {% for page_num in atendimentos_paginated.iter_pages(left_edge=1, right_edge=1, left_current=1, right_current=1) %}
         {% if page_num %}
           {% if page_num != atendimentos_paginated.page %}
-            <a href="{{ url_for('atendimentos', page=page_num, **current_filters) }}">{{ page_num }}</a>
+            <a href="{{ url_for('atendimentos', page=page_num, **current_filters) }}" class="pagination-btn">{{ page_num }}</a>
           {% else %}
-            <span class="current">{{ page_num }}</span>
+            <span class="pagination-btn current">{{ page_num }}</span>
           {% endif %}
         {% else %}
-          <span>…</span>
+          <span class="pagination-btn disabled">…</span>
         {% endif %}
       {% endfor %}
 
-      <!-- Última página -->
       {% if atendimentos_paginated.has_next %}
-        <a href="{{ url_for('atendimentos', page=atendimentos_paginated.next_num, **current_filters) }}">Próxima ›</a>
-        <a href="{{ url_for('atendimentos', page=atendimentos_paginated.pages, **current_filters) }}">Última »</a>
+        <a href="{{ url_for('atendimentos', page=atendimentos_paginated.next_num, **current_filters) }}" class="pagination-btn">
+          Próxima
+        </a>
+        <a href="{{ url_for('atendimentos', page=atendimentos_paginated.pages, **current_filters) }}" class="pagination-btn">
+          Última
+        </a>
       {% else %}
-        <span class="disabled">Próxima ›</span>
-        <span class="disabled">Última »</span>
+        <span class="pagination-btn disabled">Próxima</span>
+        <span class="pagination-btn disabled">Última</span>
       {% endif %}
     </div>
-  </div>
+  </nav>
   {% endif %}
 </div>
 
 <script>
   // Validação de filtros
   document.querySelector('form').addEventListener('submit', function(e) {
-    const inicio = document.getElementById('data_inicio').value;
-    const fim = document.getElementById('data_fim').value;
+    const inicio = document.querySelector('[name="data_inicio"]').value;
+    const fim = document.querySelector('[name="data_fim"]').value;
     
     if (inicio && fim && inicio > fim) {
       e.preventDefault();
-      alert('⚠️ A data inicial não pode ser maior que a data final.');
+      alert('A data inicial não pode ser maior que a data final.');
+    }
+  });
+
+  // Auto-submit em mudanças de select (opcional)
+  document.querySelectorAll('.form-select').forEach(select => {
+    select.addEventListener('change', function() {
+      // Se quiser auto-submit, descomente a linha abaixo
+      // this.form.submit();
+    });
+  });
+
+  // Confirmar exclusões
+  document.addEventListener('click', function(e) {
+    if (e.target.textContent === 'Excluir' && e.target.classList.contains('btn-danger')) {
+      if (!confirm('Tem certeza que deseja excluir este atendimento?')) {
+        e.preventDefault();
+      }
     }
   });
 </script>

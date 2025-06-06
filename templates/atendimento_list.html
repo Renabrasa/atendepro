@@ -570,7 +570,6 @@
         </select>
       </div>
       
-      {% if current_user.tipo in ['admin', 'coordenadora'] %}
       <div class="form-group">
         <label class="form-label">Atendido Por</label>
         <select name="atendido_por" class="form-select">
@@ -582,7 +581,6 @@
           {% endfor %}
         </select>
       </div>
-      {% endif %}
       
       <div class="form-group">
         <label class="form-label">Buscar</label>
@@ -616,10 +614,7 @@
             <th style="width: 80px;">ID</th>
             <th style="width: 120px;">Data/Hora</th>
             <th style="width: 150px;">Agente</th>
-            {% if current_user.tipo in ['admin', 'coordenadora'] %}
-            <th style="width: 120px;">Sup. Agente</th>
-            <th style="width: 120px;">Atendido Por</th>
-            {% endif %}
+            <th style="width: 130px;">Atendido Por</th>
             <th>Conteúdo</th>
             <th style="width: 100px;">Classificação</th>
             <th style="width: 100px;">Status</th>
@@ -638,24 +633,13 @@
               </td>
               <td>
                 <div class="agente-name">{{ atendimento.agente_rel.nome }}</div>
-                <div class="supervisor-name">Equipe: {{ atendimento.agente_rel.supervisor.nome }}</div>
-              </td>
-              {% if current_user.tipo in ['admin', 'coordenadora'] %}
-              <td>
-                <div class="supervisor-name">{{ atendimento.agente_rel.supervisor.nome }}</div>
               </td>
               <td>
-                <div class="supervisor-name">
-                  {{ atendimento.supervisor.nome }}
-                  {% if atendimento.supervisor.id != atendimento.agente_rel.supervisor_id %}
-                    <span style="color: var(--warning); font-weight: 600;">*</span>
-                  {% endif %}
-                </div>
+                <div class="supervisor-name">{{ atendimento.supervisor.nome }}</div>
                 {% if atendimento.supervisor.tipo == 'coordenadora' %}
-                  <div style="font-size: 10px; color: var(--accent); font-weight: 600;">COORD</div>
+                  <div style="font-size: 10px; color: var(--accent); font-weight: 600;">COORDENADORA</div>
                 {% endif %}
               </td>
-              {% endif %}
               <td>
                 <div class="conteudo-preview" title="{{ atendimento.conteudo }}">
                   {{ atendimento.conteudo }}
@@ -691,7 +675,7 @@
             </tr>
           {% else %}
             <tr>
-              <td colspan="9" class="empty-state">
+              <td colspan="8" class="empty-state">
                 <h3>Nenhum atendimento encontrado</h3>
                 <p>Não há atendimentos para os critérios selecionados.</p>
                 <a href="{{ url_for('novo_atendimento') }}" class="btn btn-primary" style="margin-top: 16px;">

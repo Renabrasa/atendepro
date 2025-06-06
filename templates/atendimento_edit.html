@@ -2,127 +2,237 @@
 {% block title %}Editar Atendimento{% endblock %}
 {% block content %}
 <style>
+  /* Variáveis Profissionais */
+  :root {
+    --primary: #1e293b;
+    --secondary: #475569;
+    --accent: #3b82f6;
+    --background: #f8fafc;
+    --white: #ffffff;
+    --border: #e2e8f0;
+    --text: #334155;
+    --muted: #64748b;
+    --success: #059669;
+    --warning: #d97706;
+    --danger: #dc2626;
+  }
+
+  * {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+  }
+
+  body {
+    background: var(--background);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    line-height: 1.5;
+  }
+
   .form-container {
     max-width: 800px;
     margin: 0 auto;
-    padding: 20px;
+    padding: 24px;
   }
 
-  .header-section {
-    background: linear-gradient(135deg, #003366, #0056b3);
-    color: white;
-    padding: 25px;
-    border-radius: 12px;
-    margin-bottom: 30px;
+  /* Header */
+  .header {
+    background: var(--white);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 24px 32px;
+    margin-bottom: 24px;
     display: flex;
     justify-content: space-between;
     align-items: center;
-    flex-wrap: wrap;
-    gap: 15px;
   }
 
-  .header-title {
-    font-size: 2em;
-    font-weight: 700;
-    margin: 0;
+  .header-content h1 {
+    font-size: 24px;
+    font-weight: 600;
+    color: var(--primary);
+    margin-bottom: 4px;
   }
 
-  .header-subtitle {
-    font-size: 1em;
-    opacity: 0.9;
-    margin: 5px 0 0 0;
+  .header-content p {
+    color: var(--muted);
+    font-size: 14px;
+  }
+
+  .header-actions {
+    display: flex;
+    gap: 12px;
   }
 
   .btn {
-    padding: 10px 20px;
-    border: none;
-    border-radius: 8px;
+    padding: 8px 16px;
+    border-radius: 6px;
+    border: 1px solid var(--border);
+    background: var(--white);
+    color: var(--text);
     text-decoration: none;
-    font-weight: 600;
-    cursor: pointer;
-    transition: all 0.3s ease;
+    font-size: 14px;
+    font-weight: 500;
+    transition: all 0.2s;
     display: inline-flex;
     align-items: center;
     gap: 8px;
+    cursor: pointer;
   }
 
-  .btn-secondary {
-    background: rgba(255,255,255,0.2);
-    color: white;
-    border: 2px solid rgba(255,255,255,0.3);
+  .btn:hover {
+    background: var(--background);
+    border-color: var(--accent);
   }
 
-  .btn-secondary:hover {
-    background: rgba(255,255,255,0.3);
-    transform: translateY(-2px);
+  .btn-primary {
+    background: var(--accent);
+    color: var(--white);
+    border-color: var(--accent);
+    padding: 12px 24px;
+    font-size: 15px;
+    font-weight: 600;
   }
 
-  .form-section {
-    background: white;
-    padding: 30px;
-    border-radius: 12px;
-    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-    margin-bottom: 25px;
+  .btn-primary:hover {
+    background: #2563eb;
   }
 
-  .form-header {
-    background: linear-gradient(135deg, #003366, #0056b3);
-    color: white;
-    padding: 20px 25px;
-    margin: -30px -30px 25px -30px;
-    border-radius: 12px 12px 0 0;
+  .btn-danger {
+    background: var(--danger);
+    color: var(--white);
+    border-color: var(--danger);
+  }
+
+  .btn-danger:hover {
+    background: #b91c1c;
+  }
+
+  /* Info Card */
+  .info-card {
+    background: var(--white);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 20px 24px;
+    margin-bottom: 24px;
+  }
+
+  .info-title {
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--primary);
+    margin-bottom: 16px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .info-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 16px;
+  }
+
+  .info-item {
     display: flex;
-    align-items: center;
-    gap: 10px;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .info-label {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  .info-value {
+    font-size: 14px;
+    color: var(--text);
+    font-weight: 500;
+  }
+
+  .status-badge {
+    display: inline-block;
+    padding: 4px 8px;
+    border-radius: 12px;
+    font-size: 11px;
+    font-weight: 500;
+    text-transform: uppercase;
+  }
+
+  .status-pendente {
+    background: #fef3c7;
+    color: #92400e;
+  }
+
+  .status-classificado {
+    background: #dcfce7;
+    color: #166534;
+  }
+
+  /* Formulário */
+  .form-section {
+    background: var(--white);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 32px;
   }
 
   .form-title {
-    font-size: 1.3em;
+    font-size: 18px;
     font-weight: 600;
-    margin: 0;
+    color: var(--primary);
+    margin-bottom: 24px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .form-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 24px;
+    margin-bottom: 24px;
   }
 
   .form-group {
-    margin-bottom: 25px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .form-group.full-width {
+    grid-column: 1 / -1;
   }
 
   .form-label {
-    display: block;
+    font-size: 14px;
     font-weight: 600;
-    color: #003366;
-    margin-bottom: 8px;
-    font-size: 1em;
+    color: var(--text);
+    display: flex;
+    align-items: center;
+    gap: 4px;
   }
 
-  .form-label .required {
-    color: #dc3545;
-    margin-left: 4px;
+  .required {
+    color: var(--danger);
   }
 
-  .form-control {
-    width: 100%;
-    padding: 12px 15px;
-    border: 2px solid #e2e8f0;
-    border-radius: 8px;
-    font-size: 1em;
-    transition: all 0.3s ease;
-    box-sizing: border-box;
+  .form-input, .form-select, .form-textarea {
+    padding: 12px 16px;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    font-size: 14px;
     font-family: inherit;
+    transition: all 0.2s;
+    background: var(--white);
   }
 
-  .form-control:focus {
-    border-color: #003366;
+  .form-input:focus, .form-select:focus, .form-textarea:focus {
     outline: none;
-    box-shadow: 0 0 0 3px rgba(0, 51, 102, 0.1);
-  }
-
-  .form-control:hover {
-    border-color: #cbd5e0;
-  }
-
-  .form-textarea {
-    resize: vertical;
-    min-height: 120px;
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
   }
 
   .form-select {
@@ -134,383 +244,528 @@
     appearance: none;
   }
 
-  .form-actions {
-    display: flex;
-    gap: 15px;
-    align-items: center;
-    flex-wrap: wrap;
-    margin-top: 30px;
-    padding-top: 25px;
-    border-top: 2px solid #f1f5f9;
-  }
-
-  .btn-primary {
-    background: linear-gradient(135deg, #003366, #0056b3);
-    color: white;
-    border: none;
-    padding: 12px 30px;
-    font-size: 1.1em;
-    font-weight: 600;
-  }
-
-  .btn-primary:hover {
-    background: linear-gradient(135deg, #002244, #004499);
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(0, 51, 102, 0.3);
-  }
-
-  .btn-outline {
-    background: transparent;
-    color: #6c757d;
-    border: 2px solid #dee2e6;
-    padding: 10px 25px;
-  }
-
-  .btn-outline:hover {
-    background: #f8f9fa;
-    border-color: #adb5bd;
-    transform: translateY(-1px);
+  .form-textarea {
+    min-height: 120px;
+    resize: vertical;
+    font-family: inherit;
   }
 
   .help-text {
-    font-size: 0.9em;
-    color: #6c757d;
-    margin-top: 5px;
-    display: flex;
-    align-items: center;
-    gap: 5px;
+    font-size: 12px;
+    color: var(--muted);
+    margin-top: 4px;
   }
 
-  .classification-options {
+  /* Classificação com Radio Cards */
+  .classification-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
-    gap: 15px;
-    margin-top: 10px;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 12px;
+    margin-top: 8px;
   }
 
-  .classification-card {
-    border: 2px solid #e2e8f0;
-    border-radius: 8px;
-    padding: 15px;
-    text-align: center;
-    cursor: pointer;
-    transition: all 0.3s ease;
+  .classification-option {
     position: relative;
   }
 
-  .classification-card:hover {
-    border-color: #003366;
-    background: #f8fafc;
-  }
-
-  .classification-card.selected {
-    border-color: #003366;
-    background: linear-gradient(135deg, #003366, #0056b3);
-    color: white;
-  }
-
-  .classification-card input[type="radio"] {
+  .classification-radio {
     position: absolute;
     opacity: 0;
     pointer-events: none;
   }
 
+  .classification-card {
+    padding: 16px 12px;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.2s;
+    background: var(--white);
+  }
+
+  .classification-card:hover {
+    border-color: var(--accent);
+    background: #f8fafc;
+  }
+
+  .classification-radio:checked + .classification-card {
+    border-color: var(--accent);
+    background: #eff6ff;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+  }
+
   .classification-title {
+    font-size: 13px;
     font-weight: 600;
-    margin-bottom: 5px;
+    color: var(--text);
+    margin-bottom: 4px;
   }
 
   .classification-desc {
-    font-size: 0.8em;
-    opacity: 0.8;
+    font-size: 11px;
+    color: var(--muted);
   }
 
-  .info-card {
-    background: linear-gradient(135deg, #e3f2fd, #f3e5f5);
-    border: 2px solid #e1bee7;
-    border-radius: 12px;
-    padding: 20px;
-    margin-bottom: 25px;
-  }
-
-  .info-card h3 {
-    color: #003366;
-    margin: 0 0 10px 0;
-    font-size: 1.1em;
-    font-weight: 600;
-  }
-
-  .info-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-    gap: 15px;
-  }
-
-  .info-item {
+  /* Actions */
+  .form-actions {
     display: flex;
-    align-items: center;
-    gap: 8px;
-    color: #444;
+    gap: 12px;
+    justify-content: space-between;
+    margin-top: 32px;
+    padding-top: 24px;
+    border-top: 1px solid var(--border);
   }
 
-  .info-label {
-    font-weight: 600;
-    color: #003366;
+  .actions-left {
+    display: flex;
+    gap: 12px;
   }
 
-  /* Responsividade */
+  .actions-right {
+    display: flex;
+    gap: 12px;
+  }
+
+  /* Contador de caracteres */
+  .char-counter {
+    text-align: right;
+    font-size: 11px;
+    color: var(--muted);
+    margin-top: 4px;
+  }
+
+  .char-counter.approaching {
+    color: var(--warning);
+  }
+
+  .char-counter.limit {
+    color: var(--danger);
+  }
+
+  /* Indicador de mudanças */
+  .form-input.changed, .form-select.changed, .form-textarea.changed {
+    border-color: var(--warning);
+    background: #fffbeb;
+  }
+
+  /* Loading state */
+  .btn-primary.loading {
+    opacity: 0.7;
+    cursor: not-allowed;
+    position: relative;
+  }
+
+  .btn-primary.loading::after {
+    content: '';
+    position: absolute;
+    width: 16px;
+    height: 16px;
+    border: 2px solid transparent;
+    border-top: 2px solid currentColor;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    margin-left: 8px;
+  }
+
+  @keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+  }
+
+  /* Estados de validação */
+  .form-group.error .form-input,
+  .form-group.error .form-select,
+  .form-group.error .form-textarea {
+    border-color: var(--danger);
+    box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.1);
+  }
+
+  .error-message {
+    font-size: 12px;
+    color: var(--danger);
+    margin-top: 4px;
+    display: none;
+  }
+
+  .form-group.error .error-message {
+    display: block;
+  }
+
+  /* Responsivo */
   @media (max-width: 768px) {
     .form-container {
-      padding: 15px;
+      padding: 16px;
     }
 
-    .header-section {
+    .header {
       flex-direction: column;
+      gap: 16px;
       text-align: center;
     }
 
-    .form-section {
-      padding: 20px;
+    .form-section, .info-card {
+      padding: 24px 20px;
     }
 
-    .form-header {
-      margin: -20px -20px 20px -20px;
+    .form-grid {
+      grid-template-columns: 1fr;
+      gap: 20px;
+    }
+
+    .classification-grid {
+      grid-template-columns: 1fr 1fr;
     }
 
     .form-actions {
       flex-direction: column;
     }
 
-    .btn {
-      width: 100%;
+    .actions-left, .actions-right {
       justify-content: center;
     }
 
-    .classification-options {
-      grid-template-columns: 1fr;
+    .btn {
+      justify-content: center;
     }
-
-    .info-grid {
-      grid-template-columns: 1fr;
-    }
-  }
-
-  /* Animações */
-  @keyframes slideIn {
-    from {
-      opacity: 0;
-      transform: translateY(20px);
-    }
-    to {
-      opacity: 1;
-      transform: translateY(0);
-    }
-  }
-
-  .form-section, .info-card {
-    animation: slideIn 0.5s ease-out;
   }
 </style>
 
 <div class="form-container">
   <!-- Header -->
-  <div class="header-section">
-    <div>
-      <h1 class="header-title">✏️ Editar Atendimento</h1>
-      <p class="header-subtitle">Atendimento #{{ atendimento.id }}</p>
+  <header class="header">
+    <div class="header-content">
+      <h1>Editar Atendimento</h1>
+      <p>Atendimento #{{ atendimento.id }} - Modificar informações</p>
     </div>
-    <div>
-      <a href="{{ url_for('atendimentos') }}" class="btn btn-secondary">
-        ← Voltar à Lista
+    <div class="header-actions">
+      <a href="{{ url_for('atendimentos') }}" class="btn">
+        Voltar à Lista
       </a>
     </div>
-  </div>
+  </header>
 
-  <!-- Informações do Atendimento -->
-  <div class="info-card">
-    <h3>📋 Informações Atuais</h3>
+  <!-- Informações Atuais -->
+  <section class="info-card">
+    <h3 class="info-title">Informações Atuais</h3>
     <div class="info-grid">
       <div class="info-item">
-        <span>🆔</span>
-        <span class="info-label">ID:</span>
-        <span>#{{ atendimento.id }}</span>
+        <div class="info-label">ID</div>
+        <div class="info-value">#{{ atendimento.id }}</div>
       </div>
       <div class="info-item">
-        <span>📅</span>
-        <span class="info-label">Data:</span>
-        <span>{{ atendimento.data_hora.strftime('%d/%m/%Y às %H:%M') }}</span>
+        <div class="info-label">Data de Criação</div>
+        <div class="info-value">{{ atendimento.data_hora.strftime('%d/%m/%Y às %H:%M') }}</div>
       </div>
       <div class="info-item">
-        <span>📊</span>
-        <span class="info-label">Status:</span>
-        <span>{{ atendimento.status or 'Pendente' }}</span>
-      </div>
-      {% if atendimento.supervisor %}
-      <div class="info-item">
-        <span>👥</span>
-        <span class="info-label">Supervisor:</span>
-        <span>{{ atendimento.supervisor.nome }}</span>
-      </div>
-      {% endif %}
-    </div>
-  </div>
-
-  <!-- Formulário -->
-  <div class="form-section">
-    <div class="form-header">
-      <span>🔧</span>
-      <h2 class="form-title">Editar Informações</h2>
-    </div>
-
-    <form method="post">
-      <div class="form-group">
-        <label for="agente_id" class="form-label">
-          👤 Agente Responsável
-          <span class="required">*</span>
-        </label>
-        <select id="agente_id" name="agente_id" required class="form-control form-select">
-          {% for agente in agentes %}
-          <option value="{{ agente.id }}" {% if agente.id == atendimento.agente_id %}selected{% endif %}>
-            {{ agente.nome }}
-          </option>
-          {% endfor %}
-        </select>
-        <div class="help-text">
-          ℹ️ Agente que realizou o atendimento
+        <div class="info-label">Status Atual</div>
+        <div class="info-value">
+          <span class="status-badge status-{{ atendimento.status or 'pendente' }}">
+            {{ atendimento.status or 'pendente' }}
+          </span>
         </div>
       </div>
+      <div class="info-item">
+        <div class="info-label">Atendido Por</div>
+        <div class="info-value">{{ atendimento.supervisor.nome }}</div>
+      </div>
+    </div>
+  </section>
 
-      <div class="form-group">
+  <!-- Formulário -->
+  <section class="form-section">
+    <h2 class="form-title">Editar Informações</h2>
+
+    <form method="post" id="atendimentoForm">
+      <div class="form-grid">
+        <!-- Agente -->
+        <div class="form-group">
+          <label for="agente_id" class="form-label">
+            Agente Responsável
+            <span class="required">*</span>
+          </label>
+          <select id="agente_id" name="agente_id" required class="form-select">
+            {% for agente in agentes %}
+            <option value="{{ agente.id }}" {% if agente.id == atendimento.agente_id %}selected{% endif %}>
+              {{ agente.nome }}
+            </option>
+            {% endfor %}
+          </select>
+          <div class="help-text">Agente que será atendido</div>
+          <div class="error-message" id="agente-error">Por favor, selecione um agente</div>
+        </div>
+
+        <!-- Espaço para equilibrar o grid -->
+        <div></div>
+      </div>
+
+      <!-- Conteúdo -->
+      <div class="form-group full-width">
         <label for="conteudo" class="form-label">
-          📝 Descrição do Atendimento
+          Descrição do Atendimento
           <span class="required">*</span>
         </label>
         <textarea 
           id="conteudo" 
           name="conteudo" 
           required 
-          class="form-control form-textarea"
-          placeholder="Descreva detalhadamente o atendimento realizado..."
+          class="form-textarea"
+          placeholder="Descreva detalhadamente o atendimento prestado..."
+          maxlength="1000"
         >{{ atendimento.conteudo }}</textarea>
-        <div class="help-text">
-          💡 Seja específico e inclua todas as informações relevantes do atendimento
-        </div>
+        <div class="help-text">Seja específico e inclua todas as informações relevantes</div>
+        <div class="char-counter" id="char-counter">{{ atendimento.conteudo|length }} / 1000 caracteres</div>
+        <div class="error-message" id="conteudo-error">A descrição é obrigatória</div>
       </div>
 
-      <div class="form-group">
-        <label class="form-label">
-          🏷️ Classificação do Atendimento
-        </label>
-        
-        <div class="classification-options">
-          <div class="classification-card {% if not atendimento.classificacao %}selected{% endif %}" onclick="selectClassification(this, '')">
-            <input type="radio" name="classificacao" value="" {% if not atendimento.classificacao %}checked{% endif %}>
-            <div class="classification-title">⏳ Não Definido</div>
-            <div class="classification-desc">Classificar depois</div>
+      <!-- Classificação -->
+      <div class="form-group full-width">
+        <label class="form-label">Classificação do Atendimento</label>
+        <div class="classification-grid">
+          <div class="classification-option">
+            <input type="radio" name="classificacao" value="" id="class-none" class="classification-radio" 
+                   {% if not atendimento.classificacao %}checked{% endif %}>
+            <label for="class-none" class="classification-card">
+              <div class="classification-title">Não Definido</div>
+              <div class="classification-desc">Classificar depois</div>
+            </label>
           </div>
           
-          <div class="classification-card {% if atendimento.classificacao == 'básico' %}selected{% endif %}" onclick="selectClassification(this, 'básico')">
-            <input type="radio" name="classificacao" value="básico" {% if atendimento.classificacao == 'básico' %}checked{% endif %}>
-            <div class="classification-title">🟢 Básico</div>
-            <div class="classification-desc">Atendimento simples</div>
+          <div class="classification-option">
+            <input type="radio" name="classificacao" value="básico" id="class-basico" class="classification-radio"
+                   {% if atendimento.classificacao == 'básico' %}checked{% endif %}>
+            <label for="class-basico" class="classification-card">
+              <div class="classification-title">Básico</div>
+              <div class="classification-desc">Atendimento simples</div>
+            </label>
           </div>
           
-          <div class="classification-card {% if atendimento.classificacao == 'médio' %}selected{% endif %}" onclick="selectClassification(this, 'médio')">
-            <input type="radio" name="classificacao" value="médio" {% if atendimento.classificacao == 'médio' %}checked{% endif %}>
-            <div class="classification-title">🟡 Médio</div>
-            <div class="classification-desc">Complexidade moderada</div>
+          <div class="classification-option">
+            <input type="radio" name="classificacao" value="médio" id="class-medio" class="classification-radio"
+                   {% if atendimento.classificacao == 'médio' %}checked{% endif %}>
+            <label for="class-medio" class="classification-card">
+              <div class="classification-title">Médio</div>
+              <div class="classification-desc">Complexidade moderada</div>
+            </label>
           </div>
           
-          <div class="classification-card {% if atendimento.classificacao == 'complexo' %}selected{% endif %}" onclick="selectClassification(this, 'complexo')">
-            <input type="radio" name="classificacao" value="complexo" {% if atendimento.classificacao == 'complexo' %}checked{% endif %}>
-            <div class="classification-title">🔴 Complexo</div>
-            <div class="classification-desc">Alta complexidade</div>
+          <div class="classification-option">
+            <input type="radio" name="classificacao" value="complexo" id="class-complexo" class="classification-radio"
+                   {% if atendimento.classificacao == 'complexo' %}checked{% endif %}>
+            <label for="class-complexo" class="classification-card">
+              <div class="classification-title">Complexo</div>
+              <div class="classification-desc">Alta complexidade</div>
+            </label>
           </div>
         </div>
-        
-        <div class="help-text">
-          📊 A classificação ajuda na organização e análise dos atendimentos
-        </div>
+        <div class="help-text">A classificação ajuda na organização e análise dos atendimentos</div>
       </div>
 
+      <!-- Ações -->
       <div class="form-actions">
-        <button type="submit" class="btn btn-primary">
-          💾 Salvar Alterações
-        </button>
-        <a href="{{ url_for('atendimentos') }}" class="btn btn-outline">
-          ❌ Cancelar
-        </a>
+        <div class="actions-left">
+          <a href="{{ url_for('excluir_atendimento', atendimento_id=atendimento.id) }}" 
+             onclick="return confirm('Tem certeza que deseja excluir este atendimento? Esta ação não pode ser desfeita.');" 
+             class="btn btn-danger">
+            Excluir Atendimento
+          </a>
+        </div>
+        <div class="actions-right">
+          <a href="{{ url_for('atendimentos') }}" class="btn">
+            Cancelar
+          </a>
+          <button type="submit" class="btn btn-primary" id="submitBtn">
+            Salvar Alterações
+          </button>
+        </div>
       </div>
     </form>
-  </div>
+  </section>
 </div>
 
 <script>
-  function selectClassification(card, value) {
-    // Remove seleção anterior
-    document.querySelectorAll('.classification-card').forEach(c => {
-      c.classList.remove('selected');
-    });
+  // Elementos do formulário
+  const form = document.getElementById('atendimentoForm');
+  const agenteSelect = document.getElementById('agente_id');
+  const conteudoTextarea = document.getElementById('conteudo');
+  const charCounter = document.getElementById('char-counter');
+  const submitBtn = document.getElementById('submitBtn');
+
+  // Valores originais para detecção de mudanças
+  const originalValues = {
+    agente: agenteSelect.value,
+    conteudo: conteudoTextarea.value,
+    classificacao: document.querySelector('input[name="classificacao"]:checked')?.value || ''
+  };
+
+  // Contador de caracteres
+  function updateCharCounter() {
+    const length = conteudoTextarea.value.length;
+    const maxLength = 1000;
     
-    // Adiciona seleção na nova opção
-    card.classList.add('selected');
+    charCounter.textContent = `${length} / ${maxLength} caracteres`;
     
-    // Atualiza o radio button
-    const radio = card.querySelector('input[type="radio"]');
-    radio.checked = true;
+    // Mudança de cor baseada na proximidade do limite
+    charCounter.className = 'char-counter';
+    if (length > maxLength * 0.9) {
+      charCounter.classList.add('limit');
+    } else if (length > maxLength * 0.8) {
+      charCounter.classList.add('approaching');
+    }
   }
 
-  // Validação do formulário
-  document.querySelector('form').addEventListener('submit', function(e) {
-    const agente = document.getElementById('agente_id').value;
-    const conteudo = document.getElementById('conteudo').value.trim();
-    
-    if (!agente) {
-      e.preventDefault();
-      alert('⚠️ Por favor, selecione um agente responsável.');
-      document.getElementById('agente_id').focus();
-      return;
-    }
-    
-    if (!conteudo) {
-      e.preventDefault();
-      alert('⚠️ Por favor, descreva o atendimento realizado.');
-      document.getElementById('conteudo').focus();
-      return;
-    }
-    
-    if (conteudo.length < 10) {
-      e.preventDefault();
-      alert('⚠️ A descrição deve ter pelo menos 10 caracteres.');
-      document.getElementById('conteudo').focus();
-      return;
-    }
-  });
+  conteudoTextarea.addEventListener('input', updateCharCounter);
 
-  // Contador de caracteres para textarea
-  const textarea = document.getElementById('conteudo');
-  const helpText = textarea.nextElementSibling;
-  
-  textarea.addEventListener('input', function() {
-    const length = this.value.length;
-    const originalText = helpText.textContent;
+  // Atualizar contador inicial
+  updateCharCounter();
+
+  // Detecção de mudanças
+  function checkForChanges() {
+    const currentClassificacao = document.querySelector('input[name="classificacao"]:checked')?.value || '';
     
-    if (length > 0) {
-      helpText.innerHTML = `💡 Seja específico e inclua todas as informações relevantes do atendimento <span style="float: right; color: #003366; font-weight: 600;">${length} caracteres</span>`;
+    // Marcar campos alterados
+    if (agenteSelect.value !== originalValues.agente) {
+      agenteSelect.classList.add('changed');
     } else {
-      helpText.textContent = originalText;
+      agenteSelect.classList.remove('changed');
+    }
+
+    if (conteudoTextarea.value !== originalValues.conteudo) {
+      conteudoTextarea.classList.add('changed');
+    } else {
+      conteudoTextarea.classList.remove('changed');
+    }
+
+    // Atualizar texto do botão se há mudanças
+    const hasChanges = agenteSelect.value !== originalValues.agente ||
+                      conteudoTextarea.value !== originalValues.conteudo ||
+                      currentClassificacao !== originalValues.classificacao;
+
+    if (hasChanges) {
+      submitBtn.textContent = 'Salvar Alterações';
+      submitBtn.style.background = 'var(--warning)';
+    } else {
+      submitBtn.textContent = 'Nenhuma Alteração';
+      submitBtn.style.background = 'var(--muted)';
+    }
+  }
+
+  // Listeners para detecção de mudanças
+  agenteSelect.addEventListener('change', checkForChanges);
+  conteudoTextarea.addEventListener('input', checkForChanges);
+  document.querySelectorAll('input[name="classificacao"]').forEach(radio => {
+    radio.addEventListener('change', checkForChanges);
+  });
+
+  // Validação em tempo real
+  function validateField(field, errorId, condition, message) {
+    const errorElement = document.getElementById(errorId);
+    const formGroup = field.closest('.form-group');
+    
+    if (condition) {
+      formGroup.classList.remove('error');
+      return true;
+    } else {
+      formGroup.classList.add('error');
+      errorElement.textContent = message;
+      return false;
+    }
+  }
+
+  // Validação do agente
+  agenteSelect.addEventListener('change', function() {
+    validateField(
+      this, 
+      'agente-error', 
+      this.value !== '', 
+      'Por favor, selecione um agente'
+    );
+  });
+
+  // Validação do conteúdo
+  conteudoTextarea.addEventListener('blur', function() {
+    const content = this.value.trim();
+    validateField(
+      this, 
+      'conteudo-error', 
+      content.length >= 10, 
+      content.length === 0 ? 'A descrição é obrigatória' : 'A descrição deve ter pelo menos 10 caracteres'
+    );
+  });
+
+  // Remove erros quando o usuário digita
+  conteudoTextarea.addEventListener('input', function() {
+    if (this.value.trim().length >= 10) {
+      this.closest('.form-group').classList.remove('error');
     }
   });
 
-  // Inicializa contador de caracteres na carga da página
-  document.addEventListener('DOMContentLoaded', function() {
-    const textarea = document.getElementById('conteudo');
-    const helpText = textarea.nextElementSibling;
-    const length = textarea.value.length;
+  // Submissão do formulário
+  form.addEventListener('submit', function(e) {
+    let isValid = true;
     
-    if (length > 0) {
-      helpText.innerHTML = `💡 Seja específico e inclua todas as informações relevantes do atendimento <span style="float: right; color: #003366; font-weight: 600;">${length} caracteres</span>`;
+    // Validar agente
+    if (!validateField(agenteSelect, 'agente-error', agenteSelect.value !== '', 'Por favor, selecione um agente')) {
+      isValid = false;
     }
+    
+    // Validar conteúdo
+    const content = conteudoTextarea.value.trim();
+    if (!validateField(conteudoTextarea, 'conteudo-error', content.length >= 10, 
+        content.length === 0 ? 'A descrição é obrigatória' : 'A descrição deve ter pelo menos 10 caracteres')) {
+      isValid = false;
+    }
+    
+    if (!isValid) {
+      e.preventDefault();
+      
+      // Focar no primeiro campo com erro
+      const firstError = document.querySelector('.form-group.error input, .form-group.error select, .form-group.error textarea');
+      if (firstError) {
+        firstError.focus();
+      }
+      return;
+    }
+    
+    // Loading state
+    submitBtn.classList.add('loading');
+    submitBtn.textContent = 'Salvando...';
+    submitBtn.disabled = true;
+  });
+
+  // Verificar mudanças na inicialização
+  document.addEventListener('DOMContentLoaded', function() {
+    checkForChanges();
+  });
+
+  // Confirmar saída se há mudanças não salvas
+  let formChanged = false;
+  
+  form.addEventListener('input', function() {
+    formChanged = true;
+  });
+
+  form.addEventListener('change', function() {
+    formChanged = true;
+  });
+
+  window.addEventListener('beforeunload', function(e) {
+    if (formChanged) {
+      const currentClassificacao = document.querySelector('input[name="classificacao"]:checked')?.value || '';
+      const hasChanges = agenteSelect.value !== originalValues.agente ||
+                        conteudoTextarea.value !== originalValues.conteudo ||
+                        currentClassificacao !== originalValues.classificacao;
+      
+      if (hasChanges) {
+        e.preventDefault();
+        e.returnValue = '';
+      }
+    }
+  });
+
+  // Limpar flag quando form é submetido
+  form.addEventListener('submit', function() {
+    formChanged = false;
   });
 </script>
 

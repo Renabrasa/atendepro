@@ -2,121 +2,164 @@
 {% block title %}Novo Atendimento{% endblock %}
 {% block content %}
 <style>
+  /* Variáveis Profissionais */
+  :root {
+    --primary: #1e293b;
+    --secondary: #475569;
+    --accent: #3b82f6;
+    --background: #f8fafc;
+    --white: #ffffff;
+    --border: #e2e8f0;
+    --text: #334155;
+    --muted: #64748b;
+    --success: #059669;
+    --warning: #d97706;
+    --danger: #dc2626;
+  }
+
+  * {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+  }
+
+  body {
+    background: var(--background);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    line-height: 1.5;
+  }
+
   .form-container {
     max-width: 800px;
     margin: 0 auto;
-    padding: 20px;
+    padding: 24px;
   }
 
-  .header-section {
-    background: linear-gradient(135deg, #003366, #0056b3);
-    color: white;
-    padding: 25px;
-    border-radius: 12px;
-    margin-bottom: 30px;
+  /* Header */
+  .header {
+    background: var(--white);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 24px 32px;
+    margin-bottom: 24px;
     display: flex;
     justify-content: space-between;
     align-items: center;
-    flex-wrap: wrap;
-    gap: 15px;
   }
 
-  .header-title {
-    font-size: 2em;
-    font-weight: 700;
-    margin: 0;
+  .header-content h1 {
+    font-size: 24px;
+    font-weight: 600;
+    color: var(--primary);
+    margin-bottom: 4px;
+  }
+
+  .header-content p {
+    color: var(--muted);
+    font-size: 14px;
+  }
+
+  .header-actions {
+    display: flex;
+    gap: 12px;
   }
 
   .btn {
-    padding: 10px 20px;
-    border: none;
-    border-radius: 8px;
+    padding: 8px 16px;
+    border-radius: 6px;
+    border: 1px solid var(--border);
+    background: var(--white);
+    color: var(--text);
     text-decoration: none;
-    font-weight: 600;
-    cursor: pointer;
-    transition: all 0.3s ease;
+    font-size: 14px;
+    font-weight: 500;
+    transition: all 0.2s;
     display: inline-flex;
     align-items: center;
     gap: 8px;
+    cursor: pointer;
   }
 
-  .btn-secondary {
-    background: rgba(255,255,255,0.2);
-    color: white;
-    border: 2px solid rgba(255,255,255,0.3);
+  .btn:hover {
+    background: var(--background);
+    border-color: var(--accent);
   }
 
-  .btn-secondary:hover {
-    background: rgba(255,255,255,0.3);
-    transform: translateY(-2px);
+  .btn-primary {
+    background: var(--accent);
+    color: var(--white);
+    border-color: var(--accent);
+    padding: 12px 24px;
+    font-size: 15px;
+    font-weight: 600;
   }
 
+  .btn-primary:hover {
+    background: #2563eb;
+  }
+
+  /* Formulário */
   .form-section {
-    background: white;
-    padding: 30px;
-    border-radius: 12px;
-    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-    margin-bottom: 25px;
-  }
-
-  .form-header {
-    background: linear-gradient(135deg, #003366, #0056b3);
-    color: white;
-    padding: 20px 25px;
-    margin: -30px -30px 25px -30px;
-    border-radius: 12px 12px 0 0;
-    display: flex;
-    align-items: center;
-    gap: 10px;
+    background: var(--white);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 32px;
   }
 
   .form-title {
-    font-size: 1.3em;
+    font-size: 18px;
     font-weight: 600;
-    margin: 0;
+    color: var(--primary);
+    margin-bottom: 24px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .form-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 24px;
+    margin-bottom: 24px;
   }
 
   .form-group {
-    margin-bottom: 25px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .form-group.full-width {
+    grid-column: 1 / -1;
   }
 
   .form-label {
-    display: block;
+    font-size: 14px;
     font-weight: 600;
-    color: #003366;
-    margin-bottom: 8px;
-    font-size: 1em;
+    color: var(--text);
+    display: flex;
+    align-items: center;
+    gap: 4px;
   }
 
-  .form-label .required {
-    color: #dc3545;
-    margin-left: 4px;
+  .required {
+    color: var(--danger);
   }
 
-  .form-control {
-    width: 100%;
-    padding: 12px 15px;
-    border: 2px solid #e2e8f0;
-    border-radius: 8px;
-    font-size: 1em;
-    transition: all 0.3s ease;
-    box-sizing: border-box;
+  .form-input, .form-select, .form-textarea {
+    padding: 12px 16px;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    font-size: 14px;
     font-family: inherit;
+    transition: all 0.2s;
+    background: var(--white);
   }
 
-  .form-control:focus {
-    border-color: #003366;
+  .form-input:focus, .form-select:focus, .form-textarea:focus {
     outline: none;
-    box-shadow: 0 0 0 3px rgba(0, 51, 102, 0.1);
-  }
-
-  .form-control:hover {
-    border-color: #cbd5e0;
-  }
-
-  .form-textarea {
-    resize: vertical;
-    min-height: 120px;
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
   }
 
   .form-select {
@@ -128,114 +171,118 @@
     appearance: none;
   }
 
-  .form-actions {
-    display: flex;
-    gap: 15px;
-    align-items: center;
-    flex-wrap: wrap;
-    margin-top: 30px;
-    padding-top: 25px;
-    border-top: 2px solid #f1f5f9;
-  }
-
-  .btn-primary {
-    background: linear-gradient(135deg, #003366, #0056b3);
-    color: white;
-    border: none;
-    padding: 12px 30px;
-    font-size: 1.1em;
-    font-weight: 600;
-  }
-
-  .btn-primary:hover {
-    background: linear-gradient(135deg, #002244, #004499);
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(0, 51, 102, 0.3);
-  }
-
-  .btn-outline {
-    background: transparent;
-    color: #6c757d;
-    border: 2px solid #dee2e6;
-    padding: 10px 25px;
-  }
-
-  .btn-outline:hover {
-    background: #f8f9fa;
-    border-color: #adb5bd;
-    transform: translateY(-1px);
+  .form-textarea {
+    min-height: 120px;
+    resize: vertical;
+    font-family: inherit;
   }
 
   .help-text {
-    font-size: 0.9em;
-    color: #6c757d;
-    margin-top: 5px;
-    display: flex;
-    align-items: center;
-    gap: 5px;
+    font-size: 12px;
+    color: var(--muted);
+    margin-top: 4px;
   }
 
-  .classification-options {
+  /* Classificação com Radio Cards */
+  .classification-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
-    gap: 15px;
-    margin-top: 10px;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 12px;
+    margin-top: 8px;
   }
 
-  .classification-card {
-    border: 2px solid #e2e8f0;
-    border-radius: 8px;
-    padding: 15px;
-    text-align: center;
-    cursor: pointer;
-    transition: all 0.3s ease;
+  .classification-option {
     position: relative;
   }
 
-  .classification-card:hover {
-    border-color: #003366;
-    background: #f8fafc;
-  }
-
-  .classification-card.selected {
-    border-color: #003366;
-    background: linear-gradient(135deg, #003366, #0056b3);
-    color: white;
-  }
-
-  .classification-card input[type="radio"] {
+  .classification-radio {
     position: absolute;
     opacity: 0;
     pointer-events: none;
   }
 
+  .classification-card {
+    padding: 16px 12px;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.2s;
+    background: var(--white);
+  }
+
+  .classification-card:hover {
+    border-color: var(--accent);
+    background: #f8fafc;
+  }
+
+  .classification-radio:checked + .classification-card {
+    border-color: var(--accent);
+    background: #eff6ff;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+  }
+
   .classification-title {
+    font-size: 13px;
     font-weight: 600;
-    margin-bottom: 5px;
+    color: var(--text);
+    margin-bottom: 4px;
   }
 
   .classification-desc {
-    font-size: 0.8em;
-    opacity: 0.8;
+    font-size: 11px;
+    color: var(--muted);
   }
 
-  /* Responsividade */
+  /* Actions */
+  .form-actions {
+    display: flex;
+    gap: 12px;
+    justify-content: flex-end;
+    margin-top: 32px;
+    padding-top: 24px;
+    border-top: 1px solid var(--border);
+  }
+
+  /* Contador de caracteres */
+  .char-counter {
+    text-align: right;
+    font-size: 11px;
+    color: var(--muted);
+    margin-top: 4px;
+  }
+
+  .char-counter.approaching {
+    color: var(--warning);
+  }
+
+  .char-counter.limit {
+    color: var(--danger);
+  }
+
+  /* Responsivo */
   @media (max-width: 768px) {
     .form-container {
-      padding: 15px;
+      padding: 16px;
     }
 
-    .header-section {
+    .header {
       flex-direction: column;
+      gap: 16px;
       text-align: center;
     }
 
     .form-section {
-      padding: 20px;
+      padding: 24px 20px;
     }
 
-    .form-header {
-      margin: -20px -20px 20px -20px;
+    .form-grid {
+      grid-template-columns: 1fr;
+      gap: 20px;
+    }
+
+    .classification-grid {
+      grid-template-columns: 1fr 1fr;
     }
 
     .form-actions {
@@ -243,193 +290,287 @@
     }
 
     .btn {
-      width: 100%;
       justify-content: center;
     }
-
-    .classification-options {
-      grid-template-columns: 1fr;
-    }
   }
 
-  /* Animações */
-  @keyframes slideIn {
-    from {
-      opacity: 0;
-      transform: translateY(20px);
-    }
-    to {
-      opacity: 1;
-      transform: translateY(0);
-    }
+  /* Estados de validação */
+  .form-group.error .form-input,
+  .form-group.error .form-select,
+  .form-group.error .form-textarea {
+    border-color: var(--danger);
+    box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.1);
   }
 
-  .form-section {
-    animation: slideIn 0.5s ease-out;
+  .error-message {
+    font-size: 12px;
+    color: var(--danger);
+    margin-top: 4px;
+    display: none;
+  }
+
+  .form-group.error .error-message {
+    display: block;
+  }
+
+  /* Loading state */
+  .btn-primary.loading {
+    opacity: 0.7;
+    cursor: not-allowed;
+    position: relative;
+  }
+
+  .btn-primary.loading::after {
+    content: '';
+    position: absolute;
+    width: 16px;
+    height: 16px;
+    border: 2px solid transparent;
+    border-top: 2px solid currentColor;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    margin-left: 8px;
+  }
+
+  @keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
   }
 </style>
 
 <div class="form-container">
   <!-- Header -->
-  <div class="header-section">
-    <h1 class="header-title">➕ Novo Atendimento</h1>
-    <div>
-      <a href="{{ url_for('atendimentos') }}" class="btn btn-secondary">
-        ← Voltar à Lista
+  <header class="header">
+    <div class="header-content">
+      <h1>Novo Atendimento</h1>
+      <p>Registrar um novo atendimento no sistema</p>
+    </div>
+    <div class="header-actions">
+      <a href="{{ url_for('atendimentos') }}" class="btn">
+        Voltar à Lista
       </a>
     </div>
-  </div>
+  </header>
 
   <!-- Formulário -->
-  <div class="form-section">
-    <div class="form-header">
-      <span>📝</span>
-      <h2 class="form-title">Informações do Atendimento</h2>
-    </div>
+  <section class="form-section">
+    <h2 class="form-title">Informações do Atendimento</h2>
 
-    <form method="post">
-      <div class="form-group">
-        <label for="agente_id" class="form-label">
-          👤 Agente Responsável
-          <span class="required">*</span>
-        </label>
-        <select id="agente_id" name="agente_id" required class="form-control form-select">
-          <option value="">-- Selecione um agente --</option>
-          {% for agente in agentes %}
-          <option value="{{ agente.id }}">{{ agente.nome }}</option>
-          {% endfor %}
-        </select>
-        <div class="help-text">
-          ℹ️ Escolha o agente que realizou o atendimento
+    <form method="post" id="atendimentoForm">
+      <div class="form-grid">
+        <!-- Agente -->
+        <div class="form-group">
+          <label for="agente_id" class="form-label">
+            Agente Responsável
+            <span class="required">*</span>
+          </label>
+          <select id="agente_id" name="agente_id" required class="form-select">
+            <option value="">Selecione um agente</option>
+            {% for agente in agentes %}
+            <option value="{{ agente.id }}">{{ agente.nome }}</option>
+            {% endfor %}
+          </select>
+          <div class="help-text">Escolha o agente que será atendido</div>
+          <div class="error-message" id="agente-error">Por favor, selecione um agente</div>
         </div>
+
+        <!-- Espaço para equilibrar o grid -->
+        <div></div>
       </div>
 
-      <div class="form-group">
+      <!-- Conteúdo -->
+      <div class="form-group full-width">
         <label for="conteudo" class="form-label">
-          📝 Descrição do Atendimento
+          Descrição do Atendimento
           <span class="required">*</span>
         </label>
         <textarea 
           id="conteudo" 
           name="conteudo" 
           required 
-          class="form-control form-textarea"
-          placeholder="Descreva detalhadamente o atendimento realizado..."
+          class="form-textarea"
+          placeholder="Descreva detalhadamente o atendimento prestado..."
+          maxlength="1000"
         ></textarea>
-        <div class="help-text">
-          💡 Seja específico e inclua todas as informações relevantes do atendimento
-        </div>
+        <div class="help-text">Seja específico e inclua todas as informações relevantes</div>
+        <div class="char-counter" id="char-counter">0 / 1000 caracteres</div>
+        <div class="error-message" id="conteudo-error">A descrição é obrigatória</div>
       </div>
 
-      <div class="form-group">
-        <label class="form-label">
-          🏷️ Classificação do Atendimento
-        </label>
-        
-        <div class="classification-options">
-          <div class="classification-card" onclick="selectClassification(this, '')">
-            <input type="radio" name="classificacao" value="" checked>
-            <div class="classification-title">⏳ Não Definido</div>
-            <div class="classification-desc">Classificar depois</div>
+      <!-- Classificação -->
+      <div class="form-group full-width">
+        <label class="form-label">Classificação do Atendimento</label>
+        <div class="classification-grid">
+          <div class="classification-option">
+            <input type="radio" name="classificacao" value="" id="class-none" class="classification-radio" checked>
+            <label for="class-none" class="classification-card">
+              <div class="classification-title">Não Definido</div>
+              <div class="classification-desc">Classificar depois</div>
+            </label>
           </div>
           
-          <div class="classification-card" onclick="selectClassification(this, 'básico')">
-            <input type="radio" name="classificacao" value="básico">
-            <div class="classification-title">🟢 Básico</div>
-            <div class="classification-desc">Atendimento simples</div>
+          <div class="classification-option">
+            <input type="radio" name="classificacao" value="básico" id="class-basico" class="classification-radio">
+            <label for="class-basico" class="classification-card">
+              <div class="classification-title">Básico</div>
+              <div class="classification-desc">Atendimento simples</div>
+            </label>
           </div>
           
-          <div class="classification-card" onclick="selectClassification(this, 'médio')">
-            <input type="radio" name="classificacao" value="médio">
-            <div class="classification-title">🟡 Médio</div>
-            <div class="classification-desc">Complexidade moderada</div>
+          <div class="classification-option">
+            <input type="radio" name="classificacao" value="médio" id="class-medio" class="classification-radio">
+            <label for="class-medio" class="classification-card">
+              <div class="classification-title">Médio</div>
+              <div class="classification-desc">Complexidade moderada</div>
+            </label>
           </div>
           
-          <div class="classification-card" onclick="selectClassification(this, 'complexo')">
-            <input type="radio" name="classificacao" value="complexo">
-            <div class="classification-title">🔴 Complexo</div>
-            <div class="classification-desc">Alta complexidade</div>
+          <div class="classification-option">
+            <input type="radio" name="classificacao" value="complexo" id="class-complexo" class="classification-radio">
+            <label for="class-complexo" class="classification-card">
+              <div class="classification-title">Complexo</div>
+              <div class="classification-desc">Alta complexidade</div>
+            </label>
           </div>
         </div>
-        
-        <div class="help-text">
-          📊 A classificação ajuda na organização e análise dos atendimentos
-        </div>
+        <div class="help-text">A classificação ajuda na organização e análise dos atendimentos</div>
       </div>
 
+      <!-- Ações -->
       <div class="form-actions">
-        <button type="submit" class="btn btn-primary">
-          💾 Salvar Atendimento
-        </button>
-        <a href="{{ url_for('atendimentos') }}" class="btn btn-outline">
-          ❌ Cancelar
+        <a href="{{ url_for('atendimentos') }}" class="btn">
+          Cancelar
         </a>
+        <button type="submit" class="btn btn-primary" id="submitBtn">
+          Salvar Atendimento
+        </button>
       </div>
     </form>
-  </div>
+  </section>
 </div>
 
 <script>
-  function selectClassification(card, value) {
-    // Remove seleção anterior
-    document.querySelectorAll('.classification-card').forEach(c => {
-      c.classList.remove('selected');
-    });
+  // Elementos do formulário
+  const form = document.getElementById('atendimentoForm');
+  const agenteSelect = document.getElementById('agente_id');
+  const conteudoTextarea = document.getElementById('conteudo');
+  const charCounter = document.getElementById('char-counter');
+  const submitBtn = document.getElementById('submitBtn');
+
+  // Contador de caracteres
+  conteudoTextarea.addEventListener('input', function() {
+    const length = this.value.length;
+    const maxLength = 1000;
     
-    // Adiciona seleção na nova opção
-    card.classList.add('selected');
+    charCounter.textContent = `${length} / ${maxLength} caracteres`;
     
-    // Atualiza o radio button
-    const radio = card.querySelector('input[type="radio"]');
-    radio.checked = true;
+    // Mudança de cor baseada na proximidade do limite
+    charCounter.className = 'char-counter';
+    if (length > maxLength * 0.9) {
+      charCounter.classList.add('limit');
+    } else if (length > maxLength * 0.8) {
+      charCounter.classList.add('approaching');
+    }
+  });
+
+  // Validação em tempo real
+  function validateField(field, errorId, condition, message) {
+    const errorElement = document.getElementById(errorId);
+    const formGroup = field.closest('.form-group');
+    
+    if (condition) {
+      formGroup.classList.remove('error');
+      return true;
+    } else {
+      formGroup.classList.add('error');
+      errorElement.textContent = message;
+      return false;
+    }
   }
 
-  // Inicializa a primeira opção como selecionada
+  // Validação do agente
+  agenteSelect.addEventListener('change', function() {
+    validateField(
+      this, 
+      'agente-error', 
+      this.value !== '', 
+      'Por favor, selecione um agente'
+    );
+  });
+
+  // Validação do conteúdo
+  conteudoTextarea.addEventListener('blur', function() {
+    const content = this.value.trim();
+    validateField(
+      this, 
+      'conteudo-error', 
+      content.length >= 10, 
+      content.length === 0 ? 'A descrição é obrigatória' : 'A descrição deve ter pelo menos 10 caracteres'
+    );
+  });
+
+  // Remove erros quando o usuário digita
+  conteudoTextarea.addEventListener('input', function() {
+    if (this.value.trim().length >= 10) {
+      this.closest('.form-group').classList.remove('error');
+    }
+  });
+
+  // Submissão do formulário
+  form.addEventListener('submit', function(e) {
+    let isValid = true;
+    
+    // Validar agente
+    if (!validateField(agenteSelect, 'agente-error', agenteSelect.value !== '', 'Por favor, selecione um agente')) {
+      isValid = false;
+    }
+    
+    // Validar conteúdo
+    const content = conteudoTextarea.value.trim();
+    if (!validateField(conteudoTextarea, 'conteudo-error', content.length >= 10, 
+        content.length === 0 ? 'A descrição é obrigatória' : 'A descrição deve ter pelo menos 10 caracteres')) {
+      isValid = false;
+    }
+    
+    if (!isValid) {
+      e.preventDefault();
+      
+      // Focar no primeiro campo com erro
+      const firstError = document.querySelector('.form-group.error input, .form-group.error select, .form-group.error textarea');
+      if (firstError) {
+        firstError.focus();
+      }
+      return;
+    }
+    
+    // Loading state
+    submitBtn.classList.add('loading');
+    submitBtn.textContent = 'Salvando...';
+    submitBtn.disabled = true;
+  });
+
+  // Auto-focus no primeiro campo
   document.addEventListener('DOMContentLoaded', function() {
-    const firstCard = document.querySelector('.classification-card');
-    firstCard.classList.add('selected');
+    agenteSelect.focus();
   });
 
-  // Validação do formulário
-  document.querySelector('form').addEventListener('submit', function(e) {
-    const agente = document.getElementById('agente_id').value;
-    const conteudo = document.getElementById('conteudo').value.trim();
-    
-    if (!agente) {
-      e.preventDefault();
-      alert('⚠️ Por favor, selecione um agente responsável.');
-      document.getElementById('agente_id').focus();
-      return;
-    }
-    
-    if (!conteudo) {
-      e.preventDefault();
-      alert('⚠️ Por favor, descreva o atendimento realizado.');
-      document.getElementById('conteudo').focus();
-      return;
-    }
-    
-    if (conteudo.length < 10) {
-      e.preventDefault();
-      alert('⚠️ A descrição deve ter pelo menos 10 caracteres.');
-      document.getElementById('conteudo').focus();
-      return;
-    }
-  });
-
-  // Contador de caracteres para textarea
-  const textarea = document.getElementById('conteudo');
-  const helpText = textarea.nextElementSibling;
+  // Confirmar saída se há dados não salvos
+  let formChanged = false;
   
-  textarea.addEventListener('input', function() {
-    const length = this.value.length;
-    const originalText = helpText.textContent;
-    
-    if (length > 0) {
-      helpText.innerHTML = `💡 Seja específico e inclua todas as informações relevantes do atendimento <span style="float: right; color: #003366; font-weight: 600;">${length} caracteres</span>`;
-    } else {
-      helpText.textContent = originalText;
+  form.addEventListener('input', function() {
+    formChanged = true;
+  });
+
+  window.addEventListener('beforeunload', function(e) {
+    if (formChanged && (agenteSelect.value || conteudoTextarea.value.trim())) {
+      e.preventDefault();
+      e.returnValue = '';
     }
+  });
+
+  // Limpar flag quando form é submetido
+  form.addEventListener('submit', function() {
+    formChanged = false;
   });
 </script>
 

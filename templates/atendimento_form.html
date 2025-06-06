@@ -30,8 +30,8 @@
     line-height: 1.5;
   }
 
-  .form-container {
-    max-width: 800px;
+  .atendimento-form {
+    max-width: 1400px;
     margin: 0 auto;
     padding: 24px;
   }
@@ -99,7 +99,15 @@
     background: #2563eb;
   }
 
-  /* Formulário */
+  /* Layout Principal - Duas Colunas */
+  .form-layout {
+    display: grid;
+    grid-template-columns: 1fr 400px;
+    gap: 24px;
+    align-items: start;
+  }
+
+  /* Formulário Principal */
   .form-section {
     background: var(--white);
     border: 1px solid var(--border);
@@ -116,21 +124,11 @@
     border-bottom: 1px solid var(--border);
   }
 
-  .form-grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 24px;
-    margin-bottom: 24px;
-  }
-
   .form-group {
     display: flex;
     flex-direction: column;
     gap: 8px;
-  }
-
-  .form-group.full-width {
-    grid-column: 1 / -1;
+    margin-bottom: 24px;
   }
 
   .form-label {
@@ -172,7 +170,7 @@
   }
 
   .form-textarea {
-    min-height: 120px;
+    min-height: 160px;
     resize: vertical;
     font-family: inherit;
   }
@@ -183,68 +181,6 @@
     margin-top: 4px;
   }
 
-  /* Classificação com Radio Cards */
-  .classification-grid {
-    display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    gap: 12px;
-    margin-top: 8px;
-  }
-
-  .classification-option {
-    position: relative;
-  }
-
-  .classification-radio {
-    position: absolute;
-    opacity: 0;
-    pointer-events: none;
-  }
-
-  .classification-card {
-    padding: 16px 12px;
-    border: 1px solid var(--border);
-    border-radius: 6px;
-    text-align: center;
-    cursor: pointer;
-    transition: all 0.2s;
-    background: var(--white);
-  }
-
-  .classification-card:hover {
-    border-color: var(--accent);
-    background: #f8fafc;
-  }
-
-  .classification-radio:checked + .classification-card {
-    border-color: var(--accent);
-    background: #eff6ff;
-    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
-  }
-
-  .classification-title {
-    font-size: 13px;
-    font-weight: 600;
-    color: var(--text);
-    margin-bottom: 4px;
-  }
-
-  .classification-desc {
-    font-size: 11px;
-    color: var(--muted);
-  }
-
-  /* Actions */
-  .form-actions {
-    display: flex;
-    gap: 12px;
-    justify-content: flex-end;
-    margin-top: 32px;
-    padding-top: 24px;
-    border-top: 1px solid var(--border);
-  }
-
-  /* Contador de caracteres */
   .char-counter {
     text-align: right;
     font-size: 11px;
@@ -260,38 +196,118 @@
     color: var(--danger);
   }
 
-  /* Responsivo */
-  @media (max-width: 768px) {
-    .form-container {
-      padding: 16px;
-    }
+  /* Sidebar - Classificação */
+  .sidebar {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+  }
 
-    .header {
-      flex-direction: column;
-      gap: 16px;
-      text-align: center;
-    }
+  .classification-card {
+    background: var(--white);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 24px;
+  }
 
-    .form-section {
-      padding: 24px 20px;
-    }
+  .classification-title {
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--primary);
+    margin-bottom: 16px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
 
-    .form-grid {
-      grid-template-columns: 1fr;
-      gap: 20px;
-    }
+  .classification-subtitle {
+    font-size: 12px;
+    color: var(--muted);
+    margin-bottom: 20px;
+  }
 
-    .classification-grid {
-      grid-template-columns: 1fr 1fr;
-    }
+  .classification-options {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
 
-    .form-actions {
-      flex-direction: column;
-    }
+  .classification-option {
+    position: relative;
+  }
 
-    .btn {
-      justify-content: center;
-    }
+  .classification-radio {
+    position: absolute;
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  .classification-item {
+    padding: 16px;
+    border: 2px solid var(--border);
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s;
+    background: var(--white);
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .classification-item:hover {
+    border-color: var(--accent);
+    background: #f8fafc;
+  }
+
+  .classification-radio:checked + .classification-item {
+    border-color: var(--accent);
+    background: #eff6ff;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+  }
+
+  .classification-item-title {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text);
+  }
+
+  .classification-item-desc {
+    font-size: 12px;
+    color: var(--muted);
+    line-height: 1.4;
+  }
+
+  /* Info Card */
+  .info-card {
+    background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
+    border: 1px solid #bfdbfe;
+    border-radius: 8px;
+    padding: 20px;
+  }
+
+  .info-card h3 {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--primary);
+    margin-bottom: 8px;
+  }
+
+  .info-card p {
+    font-size: 12px;
+    color: var(--muted);
+    line-height: 1.5;
+  }
+
+  /* Actions */
+  .form-actions {
+    background: var(--white);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 24px 32px;
+    display: flex;
+    gap: 12px;
+    justify-content: flex-end;
+    margin-top: 24px;
   }
 
   /* Estados de validação */
@@ -336,9 +352,60 @@
     0% { transform: rotate(0deg); }
     100% { transform: rotate(360deg); }
   }
+
+  /* Responsivo */
+  @media (max-width: 1200px) {
+    .form-layout {
+      grid-template-columns: 1fr 350px;
+    }
+  }
+
+  @media (max-width: 968px) {
+    .form-layout {
+      grid-template-columns: 1fr;
+    }
+    
+    .sidebar {
+      order: -1;
+    }
+    
+    .classification-options {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 12px;
+    }
+  }
+
+  @media (max-width: 768px) {
+    .atendimento-form {
+      padding: 16px;
+    }
+
+    .header {
+      flex-direction: column;
+      gap: 16px;
+      text-align: center;
+    }
+
+    .form-section, .classification-card, .form-actions {
+      padding: 24px 20px;
+    }
+
+    .classification-options {
+      grid-template-columns: 1fr;
+    }
+
+    .form-actions {
+      flex-direction: column;
+    }
+
+    .btn {
+      justify-content: center;
+    }
+  }
 </style>
 
-<div class="form-container">
+<div class="atendimento-form">
   <!-- Header -->
   <header class="header">
     <div class="header-content">
@@ -347,105 +414,122 @@
     </div>
     <div class="header-actions">
       <a href="{{ url_for('atendimentos') }}" class="btn">
-        Voltar à Lista
+        ← Voltar à Lista
       </a>
     </div>
   </header>
 
-  <!-- Formulário -->
-  <section class="form-section">
-    <h2 class="form-title">Informações do Atendimento</h2>
+  <!-- Layout Principal -->
+  <div class="form-layout">
+    <!-- Formulário Principal -->
+    <div class="form-main">
+      <section class="form-section">
+        <h2 class="form-title">Informações do Atendimento</h2>
 
-    <form method="post" id="atendimentoForm">
-      <div class="form-grid">
-        <!-- Agente -->
-        <div class="form-group">
-          <label for="agente_id" class="form-label">
-            Agente Responsável
-            <span class="required">*</span>
-          </label>
-          <select id="agente_id" name="agente_id" required class="form-select">
-            <option value="">Selecione um agente</option>
-            {% for agente in agentes %}
-            <option value="{{ agente.id }}">{{ agente.nome }}</option>
-            {% endfor %}
-          </select>
-          <div class="help-text">Escolha o agente que será atendido</div>
-          <div class="error-message" id="agente-error">Por favor, selecione um agente</div>
-        </div>
+        <form method="post" id="atendimentoForm">
+          <!-- Agente -->
+          <div class="form-group">
+            <label for="agente_id" class="form-label">
+              Agente Responsável
+              <span class="required">*</span>
+            </label>
+            <select id="agente_id" name="agente_id" required class="form-select">
+              <option value="">Selecione um agente</option>
+              {% for agente in agentes %}
+              <option value="{{ agente.id }}">{{ agente.nome }}</option>
+              {% endfor %}
+            </select>
+            <div class="help-text">Escolha o agente que será atendido</div>
+            <div class="error-message" id="agente-error">Por favor, selecione um agente</div>
+          </div>
 
-        <!-- Espaço para equilibrar o grid -->
-        <div></div>
-      </div>
+          <!-- Conteúdo -->
+          <div class="form-group">
+            <label for="conteudo" class="form-label">
+              Descrição do Atendimento
+              <span class="required">*</span>
+            </label>
+            <textarea 
+              id="conteudo" 
+              name="conteudo" 
+              required 
+              class="form-textarea"
+              placeholder="Descreva detalhadamente o atendimento prestado..."
+              maxlength="1000"
+            ></textarea>
+            <div class="help-text">Seja específico e inclua todas as informações relevantes</div>
+            <div class="char-counter" id="char-counter">0 / 1000 caracteres</div>
+            <div class="error-message" id="conteudo-error">A descrição é obrigatória</div>
+          </div>
+        </form>
+      </section>
+    </div>
 
-      <!-- Conteúdo -->
-      <div class="form-group full-width">
-        <label for="conteudo" class="form-label">
-          Descrição do Atendimento
-          <span class="required">*</span>
-        </label>
-        <textarea 
-          id="conteudo" 
-          name="conteudo" 
-          required 
-          class="form-textarea"
-          placeholder="Descreva detalhadamente o atendimento prestado..."
-          maxlength="1000"
-        ></textarea>
-        <div class="help-text">Seja específico e inclua todas as informações relevantes</div>
-        <div class="char-counter" id="char-counter">0 / 1000 caracteres</div>
-        <div class="error-message" id="conteudo-error">A descrição é obrigatória</div>
-      </div>
-
+    <!-- Sidebar -->
+    <div class="sidebar">
       <!-- Classificação -->
-      <div class="form-group full-width">
-        <label class="form-label">Classificação do Atendimento</label>
-        <div class="classification-grid">
+      <div class="classification-card">
+        <h3 class="classification-title">
+          📋 Classificação
+        </h3>
+        <p class="classification-subtitle">
+          Selecione a complexidade do atendimento para melhor organização
+        </p>
+        
+        <div class="classification-options">
           <div class="classification-option">
-            <input type="radio" name="classificacao" value="" id="class-none" class="classification-radio" checked>
-            <label for="class-none" class="classification-card">
-              <div class="classification-title">Não Definido</div>
-              <div class="classification-desc">Classificar depois</div>
+            <input type="radio" name="classificacao" value="" id="class-none" class="classification-radio" checked form="atendimentoForm">
+            <label for="class-none" class="classification-item">
+              <div class="classification-item-title">🔄 Não Definido</div>
+              <div class="classification-item-desc">Classificar posteriormente</div>
             </label>
           </div>
           
           <div class="classification-option">
-            <input type="radio" name="classificacao" value="básico" id="class-basico" class="classification-radio">
-            <label for="class-basico" class="classification-card">
-              <div class="classification-title">Básico</div>
-              <div class="classification-desc">Atendimento simples</div>
+            <input type="radio" name="classificacao" value="básico" id="class-basico" class="classification-radio" form="atendimentoForm">
+            <label for="class-basico" class="classification-item">
+              <div class="classification-item-title">🟢 Básico</div>
+              <div class="classification-item-desc">Atendimento simples e com dica no bimer/ajuda</div>
             </label>
           </div>
           
           <div class="classification-option">
-            <input type="radio" name="classificacao" value="médio" id="class-medio" class="classification-radio">
-            <label for="class-medio" class="classification-card">
-              <div class="classification-title">Médio</div>
-              <div class="classification-desc">Complexidade moderada</div>
+            <input type="radio" name="classificacao" value="médio" id="class-medio" class="classification-radio" form="atendimentoForm">
+            <label for="class-medio" class="classification-item">
+              <div class="classification-item-title">🟡 Médio</div>
+              <div class="classification-item-desc">Complexidade moderada</div>
             </label>
           </div>
           
           <div class="classification-option">
-            <input type="radio" name="classificacao" value="complexo" id="class-complexo" class="classification-radio">
-            <label for="class-complexo" class="classification-card">
-              <div class="classification-title">Complexo</div>
-              <div class="classification-desc">Alta complexidade</div>
+            <input type="radio" name="classificacao" value="complexo" id="class-complexo" class="classification-radio" form="atendimentoForm">
+            <label for="class-complexo" class="classification-item">
+              <div class="classification-item-title">🔴 Complexo</div>
+              <div class="classification-item-desc">Alta complexidade técnica</div>
             </label>
           </div>
         </div>
-        <div class="help-text">A classificação ajuda na organização e análise dos atendimentos</div>
       </div>
 
-      <!-- Ações -->
-      <div class="form-actions">
-        <a href="{{ url_for('atendimentos') }}" class="btn">
-          Cancelar
-        </a>
-        <button type="submit" class="btn btn-primary" id="submitBtn">
-          Salvar Atendimento
-        </button>
+      <!-- Info Card -->
+      <div class="info-card">
+        <h3>💡 Dica</h3>
+        <p>
+          A classificação do atendimento ajuda na análise de produtividade e identificação de padrões. 
+          Você pode alterá-la posteriormente se necessário.
+        </p>
       </div>
-    </form>
+    </div>
+  </div>
+
+  <!-- Ações -->
+  <section class="form-actions">
+    <a href="{{ url_for('atendimentos') }}" class="btn">
+      Cancelar
+    </a>
+    <button type="submit" class="btn btn-primary" id="submitBtn" form="atendimentoForm">
+      💾 Salvar Atendimento
+    </button>
   </section>
 </div>
 

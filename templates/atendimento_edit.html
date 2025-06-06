@@ -30,8 +30,8 @@
     line-height: 1.5;
   }
 
-  .form-container {
-    max-width: 800px;
+  .atendimento-edit {
+    max-width: 1400px;
     margin: 0 auto;
     padding: 24px;
   }
@@ -109,13 +109,122 @@
     background: #b91c1c;
   }
 
+  /* Layout Principal - Duas Colunas */
+  .form-layout {
+    display: grid;
+    grid-template-columns: 1fr 400px;
+    gap: 24px;
+    align-items: start;
+  }
+
+  /* Formulário Principal */
+  .form-section {
+    background: var(--white);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 32px;
+  }
+
+  .form-title {
+    font-size: 18px;
+    font-weight: 600;
+    color: var(--primary);
+    margin-bottom: 24px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-bottom: 24px;
+  }
+
+  .form-label {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text);
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+
+  .required {
+    color: var(--danger);
+  }
+
+  .form-input, .form-select, .form-textarea {
+    padding: 12px 16px;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    font-size: 14px;
+    font-family: inherit;
+    transition: all 0.2s;
+    background: var(--white);
+  }
+
+  .form-input:focus, .form-select:focus, .form-textarea:focus {
+    outline: none;
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+  }
+
+  .form-select {
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='m6 8 4 4 4-4'/%3e%3c/svg%3e");
+    background-position: right 12px center;
+    background-repeat: no-repeat;
+    background-size: 16px;
+    padding-right: 40px;
+    appearance: none;
+  }
+
+  .form-textarea {
+    min-height: 160px;
+    resize: vertical;
+    font-family: inherit;
+  }
+
+  .help-text {
+    font-size: 12px;
+    color: var(--muted);
+    margin-top: 4px;
+  }
+
+  .char-counter {
+    text-align: right;
+    font-size: 11px;
+    color: var(--muted);
+    margin-top: 4px;
+  }
+
+  .char-counter.approaching {
+    color: var(--warning);
+  }
+
+  .char-counter.limit {
+    color: var(--danger);
+  }
+
+  /* Indicador de mudanças */
+  .form-input.changed, .form-select.changed, .form-textarea.changed {
+    border-color: var(--warning);
+    background: #fffbeb;
+  }
+
+  /* Sidebar */
+  .sidebar {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+  }
+
   /* Info Card */
   .info-card {
     background: var(--white);
     border: 1px solid var(--border);
     border-radius: 8px;
-    padding: 20px 24px;
-    margin-bottom: 24px;
+    padding: 24px;
   }
 
   .info-title {
@@ -129,7 +238,7 @@
 
   .info-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    grid-template-columns: 1fr;
     gap: 16px;
   }
 
@@ -172,96 +281,34 @@
     color: #166534;
   }
 
-  /* Formulário */
-  .form-section {
+  /* Classificação */
+  .classification-card {
     background: var(--white);
     border: 1px solid var(--border);
     border-radius: 8px;
-    padding: 32px;
+    padding: 24px;
   }
 
-  .form-title {
-    font-size: 18px;
+  .classification-title {
+    font-size: 16px;
     font-weight: 600;
     color: var(--primary);
-    margin-bottom: 24px;
-    padding-bottom: 12px;
-    border-bottom: 1px solid var(--border);
-  }
-
-  .form-grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 24px;
-    margin-bottom: 24px;
-  }
-
-  .form-group {
+    margin-bottom: 16px;
     display: flex;
-    flex-direction: column;
+    align-items: center;
     gap: 8px;
   }
 
-  .form-group.full-width {
-    grid-column: 1 / -1;
-  }
-
-  .form-label {
-    font-size: 14px;
-    font-weight: 600;
-    color: var(--text);
-    display: flex;
-    align-items: center;
-    gap: 4px;
-  }
-
-  .required {
-    color: var(--danger);
-  }
-
-  .form-input, .form-select, .form-textarea {
-    padding: 12px 16px;
-    border: 1px solid var(--border);
-    border-radius: 6px;
-    font-size: 14px;
-    font-family: inherit;
-    transition: all 0.2s;
-    background: var(--white);
-  }
-
-  .form-input:focus, .form-select:focus, .form-textarea:focus {
-    outline: none;
-    border-color: var(--accent);
-    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
-  }
-
-  .form-select {
-    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='m6 8 4 4 4-4'/%3e%3c/svg%3e");
-    background-position: right 12px center;
-    background-repeat: no-repeat;
-    background-size: 16px;
-    padding-right: 40px;
-    appearance: none;
-  }
-
-  .form-textarea {
-    min-height: 120px;
-    resize: vertical;
-    font-family: inherit;
-  }
-
-  .help-text {
+  .classification-subtitle {
     font-size: 12px;
     color: var(--muted);
-    margin-top: 4px;
+    margin-bottom: 20px;
   }
 
-  /* Classificação com Radio Cards */
-  .classification-grid {
-    display: grid;
-    grid-template-columns: repeat(4, 1fr);
+  .classification-options {
+    display: flex;
+    flex-direction: column;
     gap: 12px;
-    margin-top: 8px;
   }
 
   .classification-option {
@@ -274,47 +321,75 @@
     pointer-events: none;
   }
 
-  .classification-card {
-    padding: 16px 12px;
-    border: 1px solid var(--border);
-    border-radius: 6px;
-    text-align: center;
+  .classification-item {
+    padding: 16px;
+    border: 2px solid var(--border);
+    border-radius: 8px;
     cursor: pointer;
     transition: all 0.2s;
     background: var(--white);
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
   }
 
-  .classification-card:hover {
+  .classification-item:hover {
     border-color: var(--accent);
     background: #f8fafc;
   }
 
-  .classification-radio:checked + .classification-card {
+  .classification-radio:checked + .classification-item {
     border-color: var(--accent);
     background: #eff6ff;
     box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
   }
 
-  .classification-title {
-    font-size: 13px;
+  .classification-item-title {
+    font-size: 14px;
     font-weight: 600;
     color: var(--text);
-    margin-bottom: 4px;
   }
 
-  .classification-desc {
-    font-size: 11px;
+  .classification-item-desc {
+    font-size: 12px;
     color: var(--muted);
+    line-height: 1.4;
+  }
+
+  /* Warning Card */
+  .warning-card {
+    background: linear-gradient(135deg, #fef3c7 0%, #fed7aa 100%);
+    border: 1px solid #f59e0b;
+    border-radius: 8px;
+    padding: 20px;
+  }
+
+  .warning-card h3 {
+    font-size: 14px;
+    font-weight: 600;
+    color: #92400e;
+    margin-bottom: 8px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .warning-card p {
+    font-size: 12px;
+    color: #78350f;
+    line-height: 1.5;
   }
 
   /* Actions */
   .form-actions {
+    background: var(--white);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 24px 32px;
     display: flex;
     gap: 12px;
     justify-content: space-between;
-    margin-top: 32px;
-    padding-top: 24px;
-    border-top: 1px solid var(--border);
+    margin-top: 24px;
   }
 
   .actions-left {
@@ -327,26 +402,23 @@
     gap: 12px;
   }
 
-  /* Contador de caracteres */
-  .char-counter {
-    text-align: right;
-    font-size: 11px;
-    color: var(--muted);
-    margin-top: 4px;
+  /* Estados de validação */
+  .form-group.error .form-input,
+  .form-group.error .form-select,
+  .form-group.error .form-textarea {
+    border-color: var(--danger);
+    box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.1);
   }
 
-  .char-counter.approaching {
-    color: var(--warning);
-  }
-
-  .char-counter.limit {
+  .error-message {
+    font-size: 12px;
     color: var(--danger);
+    margin-top: 4px;
+    display: none;
   }
 
-  /* Indicador de mudanças */
-  .form-input.changed, .form-select.changed, .form-textarea.changed {
-    border-color: var(--warning);
-    background: #fffbeb;
+  .form-group.error .error-message {
+    display: block;
   }
 
   /* Loading state */
@@ -373,28 +445,31 @@
     100% { transform: rotate(360deg); }
   }
 
-  /* Estados de validação */
-  .form-group.error .form-input,
-  .form-group.error .form-select,
-  .form-group.error .form-textarea {
-    border-color: var(--danger);
-    box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.1);
-  }
-
-  .error-message {
-    font-size: 12px;
-    color: var(--danger);
-    margin-top: 4px;
-    display: none;
-  }
-
-  .form-group.error .error-message {
-    display: block;
-  }
-
   /* Responsivo */
+  @media (max-width: 1200px) {
+    .form-layout {
+      grid-template-columns: 1fr 350px;
+    }
+  }
+
+  @media (max-width: 968px) {
+    .form-layout {
+      grid-template-columns: 1fr;
+    }
+    
+    .sidebar {
+      order: -1;
+    }
+    
+    .classification-options {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 12px;
+    }
+  }
+
   @media (max-width: 768px) {
-    .form-container {
+    .atendimento-edit {
       padding: 16px;
     }
 
@@ -404,17 +479,12 @@
       text-align: center;
     }
 
-    .form-section, .info-card {
+    .form-section, .info-card, .classification-card, .form-actions {
       padding: 24px 20px;
     }
 
-    .form-grid {
+    .classification-options {
       grid-template-columns: 1fr;
-      gap: 20px;
-    }
-
-    .classification-grid {
-      grid-template-columns: 1fr 1fr;
     }
 
     .form-actions {
@@ -431,7 +501,7 @@
   }
 </style>
 
-<div class="form-container">
+<div class="atendimento-edit">
   <!-- Header -->
   <header class="header">
     <div class="header-content">
@@ -440,146 +510,163 @@
     </div>
     <div class="header-actions">
       <a href="{{ url_for('atendimentos') }}" class="btn">
-        Voltar à Lista
+        ← Voltar à Lista
       </a>
     </div>
   </header>
 
-  <!-- Informações Atuais -->
-  <section class="info-card">
-    <h3 class="info-title">Informações Atuais</h3>
-    <div class="info-grid">
-      <div class="info-item">
-        <div class="info-label">ID</div>
-        <div class="info-value">#{{ atendimento.id }}</div>
-      </div>
-      <div class="info-item">
-        <div class="info-label">Data de Criação</div>
-        <div class="info-value">{{ atendimento.data_hora.strftime('%d/%m/%Y às %H:%M') }}</div>
-      </div>
-      <div class="info-item">
-        <div class="info-label">Status Atual</div>
-        <div class="info-value">
-          <span class="status-badge status-{{ atendimento.status or 'pendente' }}">
-            {{ atendimento.status or 'pendente' }}
-          </span>
-        </div>
-      </div>
-      <div class="info-item">
-        <div class="info-label">Atendido Por</div>
-        <div class="info-value">{{ atendimento.supervisor.nome }}</div>
-      </div>
+  <!-- Layout Principal -->
+  <div class="form-layout">
+    <!-- Formulário Principal -->
+    <div class="form-main">
+      <section class="form-section">
+        <h2 class="form-title">Editar Informações</h2>
+
+        <form method="post" id="atendimentoForm">
+          <!-- Agente -->
+          <div class="form-group">
+            <label for="agente_id" class="form-label">
+              Agente Responsável
+              <span class="required">*</span>
+            </label>
+            <select id="agente_id" name="agente_id" required class="form-select">
+              {% for agente in agentes %}
+              <option value="{{ agente.id }}" {% if agente.id == atendimento.agente_id %}selected{% endif %}>
+                {{ agente.nome }}
+              </option>
+              {% endfor %}
+            </select>
+            <div class="help-text">Agente que será atendido</div>
+            <div class="error-message" id="agente-error">Por favor, selecione um agente</div>
+          </div>
+
+          <!-- Conteúdo -->
+          <div class="form-group">
+            <label for="conteudo" class="form-label">
+              Descrição do Atendimento
+              <span class="required">*</span>
+            </label>
+            <textarea 
+              id="conteudo" 
+              name="conteudo" 
+              required 
+              class="form-textarea"
+              placeholder="Descreva detalhadamente o atendimento prestado..."
+              maxlength="1000"
+            >{{ atendimento.conteudo }}</textarea>
+            <div class="help-text">Seja específico e inclua todas as informações relevantes</div>
+            <div class="char-counter" id="char-counter">{{ atendimento.conteudo|length }} / 1000 caracteres</div>
+            <div class="error-message" id="conteudo-error">A descrição é obrigatória</div>
+          </div>
+        </form>
+      </section>
     </div>
-  </section>
 
-  <!-- Formulário -->
-  <section class="form-section">
-    <h2 class="form-title">Editar Informações</h2>
-
-    <form method="post" id="atendimentoForm">
-      <div class="form-grid">
-        <!-- Agente -->
-        <div class="form-group">
-          <label for="agente_id" class="form-label">
-            Agente Responsável
-            <span class="required">*</span>
-          </label>
-          <select id="agente_id" name="agente_id" required class="form-select">
-            {% for agente in agentes %}
-            <option value="{{ agente.id }}" {% if agente.id == atendimento.agente_id %}selected{% endif %}>
-              {{ agente.nome }}
-            </option>
-            {% endfor %}
-          </select>
-          <div class="help-text">Agente que será atendido</div>
-          <div class="error-message" id="agente-error">Por favor, selecione um agente</div>
+    <!-- Sidebar -->
+    <div class="sidebar">
+      <!-- Informações Atuais -->
+      <div class="info-card">
+        <h3 class="info-title">📊 Informações Atuais</h3>
+        <div class="info-grid">
+          <div class="info-item">
+            <div class="info-label">ID</div>
+            <div class="info-value">#{{ atendimento.id }}</div>
+          </div>
+          <div class="info-item">
+            <div class="info-label">Data de Criação</div>
+            <div class="info-value">{{ atendimento.data_hora.strftime('%d/%m/%Y às %H:%M') }}</div>
+          </div>
+          <div class="info-item">
+            <div class="info-label">Status Atual</div>
+            <div class="info-value">
+              <span class="status-badge status-{{ atendimento.status or 'pendente' }}">
+                {{ atendimento.status or 'pendente' }}
+              </span>
+            </div>
+          </div>
+          <div class="info-item">
+            <div class="info-label">Atendido Por</div>
+            <div class="info-value">{{ atendimento.supervisor.nome }}</div>
+          </div>
         </div>
-
-        <!-- Espaço para equilibrar o grid -->
-        <div></div>
-      </div>
-
-      <!-- Conteúdo -->
-      <div class="form-group full-width">
-        <label for="conteudo" class="form-label">
-          Descrição do Atendimento
-          <span class="required">*</span>
-        </label>
-        <textarea 
-          id="conteudo" 
-          name="conteudo" 
-          required 
-          class="form-textarea"
-          placeholder="Descreva detalhadamente o atendimento prestado..."
-          maxlength="1000"
-        >{{ atendimento.conteudo }}</textarea>
-        <div class="help-text">Seja específico e inclua todas as informações relevantes</div>
-        <div class="char-counter" id="char-counter">{{ atendimento.conteudo|length }} / 1000 caracteres</div>
-        <div class="error-message" id="conteudo-error">A descrição é obrigatória</div>
       </div>
 
       <!-- Classificação -->
-      <div class="form-group full-width">
-        <label class="form-label">Classificação do Atendimento</label>
-        <div class="classification-grid">
+      <div class="classification-card">
+        <h3 class="classification-title">
+          📋 Classificação
+        </h3>
+        <p class="classification-subtitle">
+          Atualize a complexidade do atendimento conforme necessário
+        </p>
+        
+        <div class="classification-options">
           <div class="classification-option">
             <input type="radio" name="classificacao" value="" id="class-none" class="classification-radio" 
-                   {% if not atendimento.classificacao %}checked{% endif %}>
-            <label for="class-none" class="classification-card">
-              <div class="classification-title">Não Definido</div>
-              <div class="classification-desc">Classificar depois</div>
+                   {% if not atendimento.classificacao %}checked{% endif %} form="atendimentoForm">
+            <label for="class-none" class="classification-item">
+              <div class="classification-item-title">🔄 Não Definido</div>
+              <div class="classification-item-desc">Classificar posteriormente</div>
             </label>
           </div>
           
           <div class="classification-option">
             <input type="radio" name="classificacao" value="básico" id="class-basico" class="classification-radio"
-                   {% if atendimento.classificacao == 'básico' %}checked{% endif %}>
-            <label for="class-basico" class="classification-card">
-              <div class="classification-title">Básico</div>
-              <div class="classification-desc">Atendimento simples</div>
+                   {% if atendimento.classificacao == 'básico' %}checked{% endif %} form="atendimentoForm">
+            <label for="class-basico" class="classification-item">
+              <div class="classification-item-title">🟢 Básico</div>
+              <div class="classification-item-desc">Atendimento simples e direto</div>
             </label>
           </div>
           
           <div class="classification-option">
             <input type="radio" name="classificacao" value="médio" id="class-medio" class="classification-radio"
-                   {% if atendimento.classificacao == 'médio' %}checked{% endif %}>
-            <label for="class-medio" class="classification-card">
-              <div class="classification-title">Médio</div>
-              <div class="classification-desc">Complexidade moderada</div>
+                   {% if atendimento.classificacao == 'médio' %}checked{% endif %} form="atendimentoForm">
+            <label for="class-medio" class="classification-item">
+              <div class="classification-item-title">🟡 Médio</div>
+              <div class="classification-item-desc">Complexidade moderada</div>
             </label>
           </div>
           
           <div class="classification-option">
             <input type="radio" name="classificacao" value="complexo" id="class-complexo" class="classification-radio"
-                   {% if atendimento.classificacao == 'complexo' %}checked{% endif %}>
-            <label for="class-complexo" class="classification-card">
-              <div class="classification-title">Complexo</div>
-              <div class="classification-desc">Alta complexidade</div>
+                   {% if atendimento.classificacao == 'complexo' %}checked{% endif %} form="atendimentoForm">
+            <label for="class-complexo" class="classification-item">
+              <div class="classification-item-title">🔴 Complexo</div>
+              <div class="classification-item-desc">Alta complexidade técnica</div>
             </label>
           </div>
         </div>
-        <div class="help-text">A classificação ajuda na organização e análise dos atendimentos</div>
       </div>
 
-      <!-- Ações -->
-      <div class="form-actions">
-        <div class="actions-left">
-          <a href="{{ url_for('excluir_atendimento', atendimento_id=atendimento.id) }}" 
-             onclick="return confirm('Tem certeza que deseja excluir este atendimento? Esta ação não pode ser desfeita.');" 
-             class="btn btn-danger">
-            Excluir Atendimento
-          </a>
-        </div>
-        <div class="actions-right">
-          <a href="{{ url_for('atendimentos') }}" class="btn">
-            Cancelar
-          </a>
-          <button type="submit" class="btn btn-primary" id="submitBtn">
-            Salvar Alterações
-          </button>
-        </div>
+      <!-- Warning Card -->
+      <div class="warning-card">
+        <h3>⚠️ Atenção</h3>
+        <p>
+          As alterações feitas serão registradas no histórico do atendimento. 
+          Certifique-se de que todas as informações estão corretas antes de salvar.
+        </p>
       </div>
-    </form>
+    </div>
+  </div>
+
+  <!-- Ações -->
+  <section class="form-actions">
+    <div class="actions-left">
+      <a href="{{ url_for('excluir_atendimento', atendimento_id=atendimento.id) }}" 
+         onclick="return confirm('Tem certeza que deseja excluir este atendimento? Esta ação não pode ser desfeita.');" 
+         class="btn btn-danger">
+        🗑️ Excluir Atendimento
+      </a>
+    </div>
+    <div class="actions-right">
+      <a href="{{ url_for('atendimentos') }}" class="btn">
+        Cancelar
+      </a>
+      <button type="submit" class="btn btn-primary" id="submitBtn" form="atendimentoForm">
+        💾 Salvar Alterações
+      </button>
+    </div>
   </section>
 </div>
 
@@ -642,10 +729,10 @@
                       currentClassificacao !== originalValues.classificacao;
 
     if (hasChanges) {
-      submitBtn.textContent = 'Salvar Alterações';
+      submitBtn.textContent = '💾 Salvar Alterações';
       submitBtn.style.background = 'var(--warning)';
     } else {
-      submitBtn.textContent = 'Nenhuma Alteração';
+      submitBtn.textContent = '💾 Nenhuma Alteração';
       submitBtn.style.background = 'var(--muted)';
     }
   }

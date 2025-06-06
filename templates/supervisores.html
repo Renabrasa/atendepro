@@ -1,69 +1,818 @@
 {% extends 'base.html' %}
 {% block title %}Supervisores{% endblock %}
 {% block content %}
-<h2>Supervisores</h2>
+<style>
+  /* Variáveis Profissionais */
+  :root {
+    --primary: #1e293b;
+    --secondary: #475569;
+    --accent: #3b82f6;
+    --background: #f8fafc;
+    --white: #ffffff;
+    --border: #e2e8f0;
+    --text: #334155;
+    --muted: #64748b;
+    --success: #059669;
+    --warning: #d97706;
+    --danger: #dc2626;
+  }
 
-<form method="post" style="max-width: 600px; margin-bottom: 30px; padding: 20px; border: 1px solid #ddd; border-radius: 8px;">
-    <h3>Novo Supervisor</h3>
+  * {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+  }
+
+  body {
+    background: var(--background);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    line-height: 1.5;
+  }
+
+  .supervisores {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 24px;
+  }
+
+  /* Header */
+  .header {
+    background: var(--white);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 24px 32px;
+    margin-bottom: 24px;
+  }
+
+  .header-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+  }
+
+  .header-content h1 {
+    font-size: 24px;
+    font-weight: 600;
+    color: var(--primary);
+    margin-bottom: 4px;
+  }
+
+  .header-content p {
+    color: var(--muted);
+    font-size: 14px;
+  }
+
+  .header-actions {
+    display: flex;
+    gap: 12px;
+  }
+
+  .btn {
+    padding: 8px 16px;
+    border-radius: 6px;
+    border: 1px solid var(--border);
+    background: var(--white);
+    color: var(--text);
+    text-decoration: none;
+    font-size: 14px;
+    font-weight: 500;
+    transition: all 0.2s;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+  }
+
+  .btn:hover {
+    background: var(--background);
+    border-color: var(--accent);
+  }
+
+  .btn-primary {
+    background: var(--accent);
+    color: var(--white);
+    border-color: var(--accent);
+  }
+
+  .btn-primary:hover {
+    background: #2563eb;
+  }
+
+  .btn-success {
+    background: var(--success);
+    color: var(--white);
+    border-color: var(--success);
+  }
+
+  .btn-success:hover {
+    background: #047857;
+  }
+
+  .btn-sm {
+    padding: 4px 8px;
+    font-size: 12px;
+  }
+
+  .btn-danger {
+    background: var(--danger);
+    color: var(--white);
+    border-color: var(--danger);
+  }
+
+  .btn-danger:hover {
+    background: #b91c1c;
+  }
+
+  /* KPIs Compactos */
+  .kpis {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 24px;
+  }
+
+  .kpi {
+    text-align: center;
+  }
+
+  .kpi-value {
+    font-size: 28px;
+    font-weight: 700;
+    color: var(--primary);
+    line-height: 1;
+    margin-bottom: 6px;
+  }
+
+  .kpi-label {
+    font-size: 12px;
+    color: var(--muted);
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  /* Formulário de Novo Supervisor */
+  .form-section {
+    background: var(--white);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 32px;
+    margin-bottom: 24px;
+  }
+
+  .form-title {
+    font-size: 18px;
+    font-weight: 600;
+    color: var(--primary);
+    margin-bottom: 24px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .form-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 24px;
+    margin-bottom: 24px;
+  }
+
+  .form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .form-group.full-width {
+    grid-column: 1 / -1;
+  }
+
+  .form-label {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text);
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+
+  .required {
+    color: var(--danger);
+  }
+
+  .form-input, .form-select {
+    padding: 12px 16px;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    font-size: 14px;
+    font-family: inherit;
+    transition: all 0.2s;
+    background: var(--white);
+  }
+
+  .form-input:focus, .form-select:focus {
+    outline: none;
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+  }
+
+  .help-text {
+    font-size: 12px;
+    color: var(--muted);
+    margin-top: 4px;
+  }
+
+  .form-actions {
+    display: flex;
+    gap: 12px;
+    justify-content: flex-end;
+    margin-top: 24px;
+    padding-top: 24px;
+    border-top: 1px solid var(--border);
+  }
+
+  /* Tabela Principal */
+  .data-table {
+    background: var(--white);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    overflow: hidden;
+    margin-bottom: 24px;
+  }
+
+  .table-header {
+    padding: 16px 20px;
+    border-bottom: 1px solid var(--border);
+    background: #fafbfc;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .table-title {
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--primary);
+  }
+
+  .table-subtitle {
+    font-size: 12px;
+    color: var(--muted);
+  }
+
+  .table-container {
+    max-height: 500px;
+    overflow-y: auto;
+  }
+
+  .table {
+    width: 100%;
+    border-collapse: collapse;
+  }
+
+  .table th {
+    background: #fafbfc;
+    padding: 12px 16px;
+    text-align: left;
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    border-bottom: 1px solid var(--border);
+    position: sticky;
+    top: 0;
+    z-index: 10;
+  }
+
+  .table td {
+    padding: 16px;
+    border-bottom: 1px solid #f1f5f9;
+    font-size: 14px;
+    vertical-align: middle;
+  }
+
+  .table tr:hover {
+    background: #fafbfc;
+  }
+
+  .supervisor-id {
+    font-weight: 600;
+    color: var(--accent);
+    font-family: monospace;
+  }
+
+  .supervisor-name {
+    font-weight: 600;
+    color: var(--primary);
+  }
+
+  .supervisor-email {
+    color: var(--muted);
+    font-size: 13px;
+  }
+
+  .status-badge {
+    padding: 4px 8px;
+    border-radius: 12px;
+    font-size: 11px;
+    font-weight: 500;
+    text-transform: uppercase;
+  }
+
+  .status-configurado {
+    background: #dcfce7;
+    color: #166534;
+  }
+
+  .status-nao-configurado {
+    background: #fecaca;
+    color: #991b1b;
+  }
+
+  .servidores-info {
+    font-size: 12px;
+    color: var(--muted);
+    font-style: italic;
+  }
+
+  .actions-cell {
+    display: flex;
+    gap: 4px;
+  }
+
+  /* Estados Vazios */
+  .empty-state {
+    text-align: center;
+    padding: 60px 20px;
+    color: var(--muted);
+  }
+
+  .empty-state h3 {
+    color: var(--text);
+    margin-bottom: 8px;
+    font-weight: 500;
+  }
+
+  /* Toggle para formulário */
+  .toggle-form {
+    margin-bottom: 24px;
+  }
+
+  .form-section.collapsed {
+    display: none;
+  }
+
+  /* Estados de validação */
+  .form-group.error .form-input,
+  .form-group.error .form-select {
+    border-color: var(--danger);
+    box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.1);
+  }
+
+  .error-message {
+    font-size: 12px;
+    color: var(--danger);
+    margin-top: 4px;
+    display: none;
+  }
+
+  .form-group.error .error-message {
+    display: block;
+  }
+
+  /* Loading state */
+  .btn.loading {
+    opacity: 0.7;
+    cursor: not-allowed;
+    position: relative;
+  }
+
+  .btn.loading::after {
+    content: '';
+    position: absolute;
+    width: 16px;
+    height: 16px;
+    border: 2px solid transparent;
+    border-top: 2px solid currentColor;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    margin-left: 8px;
+  }
+
+  @keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+  }
+
+  /* Responsivo */
+  @media (max-width: 1200px) {
+    .form-grid {
+      grid-template-columns: 1fr;
+    }
     
-    <label for="nome" style="font-weight: 600; margin-top: 10px; display: block;">Nome</label>
-    <input type="text" id="nome" name="nome" required style="width: 100%; padding: 8px; margin-top: 4px; border: 1px solid #ccc; border-radius: 4px;">
+    .kpis {
+      grid-template-columns: repeat(2, 1fr);
+    }
+  }
 
-    <label for="email" style="font-weight: 600; margin-top: 15px; display: block;">Email</label>
-    <input type="email" id="email" name="email" required style="width: 100%; padding: 8px; margin-top: 4px; border: 1px solid #ccc; border-radius: 4px;">
+  @media (max-width: 768px) {
+    .supervisores {
+      padding: 16px;
+    }
 
-    <label for="discord_id" style="font-weight: 600; margin-top: 15px; display: block;">Discord ID (pessoal)</label>
-    <input type="text" id="discord_id" name="discord_id" placeholder="123456789012345678" style="width: 100%; padding: 8px; margin-top: 4px; border: 1px solid #ccc; border-radius: 4px;">
-    <small style="color: #666;">ID do Discord pessoal do supervisor para receber notificações</small>
+    .header-top {
+      flex-direction: column;
+      gap: 16px;
+      text-align: center;
+    }
 
-    <label for="servidor_discord_id" style="font-weight: 600; margin-top: 15px; display: block;">Servidor(es) Discord</label>
-    <input type="text" id="servidor_discord_id" name="servidor_discord_id" placeholder="123456789012345678, 987654321098765432" style="width: 100%; padding: 8px; margin-top: 4px; border: 1px solid #ccc; border-radius: 4px;">
-    <small style="color: #666;">ID(s) do(s) servidor(es) que este supervisor atende. Separe múltiplos IDs com vírgula</small>
+    .kpis {
+      grid-template-columns: repeat(2, 1fr);
+      gap: 16px;
+    }
 
-    <label for="senha" style="font-weight: 600; margin-top: 15px; display: block;">Senha</label>
-    <input type="password" id="senha" name="senha" required style="width: 100%; padding: 8px; margin-top: 4px; border: 1px solid #ccc; border-radius: 4px;">
+    .table-container {
+      max-height: 400px;
+    }
 
-    <button type="submit" style="margin-top: 20px; background-color: #003366; color: white; padding: 10px 20px; border: none; border-radius: 5px; cursor: pointer;">Criar Supervisor</button>
-</form>
+    .table {
+      font-size: 13px;
+    }
 
-<table style="width:100%; border-collapse: collapse;">
-    <thead style="background-color:#f0f0f0; color:#333;">
-        <tr>
-            <th style="padding:10px; border: 1px solid #ccc;">ID</th>
-            <th style="padding:10px; border: 1px solid #ccc;">Nome</th>
-            <th style="padding:10px; border: 1px solid #ccc;">Email</th>
-            <th style="padding:10px; border: 1px solid #ccc;">Discord ID</th>
-            <th style="padding:10px; border: 1px solid #ccc;">Servidores</th>
-            <th style="padding:10px; border: 1px solid #ccc;">Ações</th>
-        </tr>
-    </thead>
-    <tbody>
-        {% for supervisor in supervisores %}
-        <tr>
-            <td style="padding:8px; border: 1px solid #ccc; text-align:center;">{{ supervisor.id }}</td>
-            <td style="padding:8px; border: 1px solid #ccc;">{{ supervisor.nome }}</td>
-            <td style="padding:8px; border: 1px solid #ccc;">{{ supervisor.email }}</td>
-            <td style="padding:8px; border: 1px solid #ccc;">{{ supervisor.discord_id or '-' }}</td>
-            <td style="padding:8px; border: 1px solid #ccc;">
-                {% if supervisor.servidor_discord_id %}
-                    {% if supervisor.servidor_discord_id.startswith('[') %}
-                        <span style="font-size: 0.9em; color: #666;">Múltiplos servidores</span>
-                    {% else %}
-                        {{ supervisor.servidor_discord_id }}
-                    {% endif %}
-                {% else %}
-                    <span style="color: #999;">Não configurado</span>
+    .table th,
+    .table td {
+      padding: 8px;
+    }
+  }
+
+  /* Melhorias de Performance */
+  .table-container::-webkit-scrollbar {
+    width: 8px;
+  }
+
+  .table-container::-webkit-scrollbar-track {
+    background: #f1f5f9;
+  }
+
+  .table-container::-webkit-scrollbar-thumb {
+    background: #cbd5e0;
+    border-radius: 4px;
+  }
+
+  .table-container::-webkit-scrollbar-thumb:hover {
+    background: #a0aec0;
+  }
+</style>
+
+<div class="supervisores">
+  <!-- Header com KPIs -->
+  <header class="header">
+    <div class="header-top">
+      <div class="header-content">
+        <h1>👥 Supervisores</h1>
+        <p>Gerenciamento de supervisores e coordenadores do sistema</p>
+      </div>
+      <div class="header-actions">
+        <button type="button" onclick="toggleForm()" class="btn btn-primary" id="toggleFormBtn">
+          ➕ Novo Supervisor
+        </button>
+        <a href="{{ url_for('dashboard') }}" class="btn">
+          📊 Dashboard
+        </a>
+      </div>
+    </div>
+
+    <!-- KPIs Integrados -->
+    <div class="kpis">
+      <div class="kpi">
+        <div class="kpi-value">{{ supervisores|length }}</div>
+        <div class="kpi-label">Total</div>
+      </div>
+      <div class="kpi">
+        <div class="kpi-value">{{ supervisores|selectattr('discord_id')|list|length }}</div>
+        <div class="kpi-label">Com Discord</div>
+      </div>
+      <div class="kpi">
+        <div class="kpi-value">{{ supervisores|selectattr('servidor_discord_id')|list|length }}</div>
+        <div class="kpi-label">Com Servidores</div>
+      </div>
+      <div class="kpi">
+        <div class="kpi-value">{{ supervisores|selectattr('equipes')|list|length }}</div>
+        <div class="kpi-label">Com Equipes</div>
+      </div>
+    </div>
+  </header>
+
+  <!-- Formulário de Novo Supervisor -->
+  <section class="form-section collapsed" id="formSection">
+    <h2 class="form-title">➕ Cadastrar Novo Supervisor</h2>
+
+    <form method="post" id="supervisorForm">
+      <div class="form-grid">
+        <!-- Nome -->
+        <div class="form-group">
+          <label for="nome" class="form-label">
+            Nome Completo
+            <span class="required">*</span>
+          </label>
+          <input type="text" id="nome" name="nome" required class="form-input" 
+                 placeholder="Nome do supervisor">
+          <div class="help-text">Nome completo do supervisor</div>
+          <div class="error-message" id="nome-error">O nome é obrigatório</div>
+        </div>
+
+        <!-- Email -->
+        <div class="form-group">
+          <label for="email" class="form-label">
+            Email
+            <span class="required">*</span>
+          </label>
+          <input type="email" id="email" name="email" required class="form-input" 
+                 placeholder="email@exemplo.com">
+          <div class="help-text">Email para acesso ao sistema</div>
+          <div class="error-message" id="email-error">Email válido é obrigatório</div>
+        </div>
+
+        <!-- Discord ID Pessoal -->
+        <div class="form-group">
+          <label for="discord_id" class="form-label">
+            Discord ID (Pessoal)
+          </label>
+          <input type="text" id="discord_id" name="discord_id" class="form-input" 
+                 placeholder="123456789012345678">
+          <div class="help-text">ID do Discord pessoal para notificações</div>
+        </div>
+
+        <!-- Servidores Discord -->
+        <div class="form-group">
+          <label for="servidor_discord_id" class="form-label">
+            Servidor(es) Discord
+          </label>
+          <input type="text" id="servidor_discord_id" name="servidor_discord_id" class="form-input" 
+                 placeholder="123456789012345678, 987654321098765432">
+          <div class="help-text">ID(s) dos servidores. Separe múltiplos IDs com vírgula</div>
+        </div>
+
+        <!-- Senha -->
+        <div class="form-group full-width">
+          <label for="senha" class="form-label">
+            Senha
+            <span class="required">*</span>
+          </label>
+          <input type="password" id="senha" name="senha" required class="form-input" 
+                 placeholder="Senha de acesso ao sistema">
+          <div class="help-text">Senha deve ter pelo menos 6 caracteres</div>
+          <div class="error-message" id="senha-error">Senha é obrigatória</div>
+        </div>
+      </div>
+
+      <!-- Ações -->
+      <div class="form-actions">
+        <button type="button" onclick="toggleForm()" class="btn">
+          Cancelar
+        </button>
+        <button type="submit" class="btn btn-success" id="submitBtn">
+          💾 Criar Supervisor
+        </button>
+      </div>
+    </form>
+  </section>
+
+  <!-- Tabela Principal -->
+  <section class="data-table">
+    <div class="table-header">
+      <div>
+        <div class="table-title">Lista de Supervisores</div>
+        <div class="table-subtitle">
+          Total: {{ supervisores|length }} supervisor(es) cadastrado(s)
+        </div>
+      </div>
+    </div>
+    
+    <div class="table-container">
+      <table class="table">
+        <thead>
+          <tr>
+            <th style="width: 80px;">ID</th>
+            <th style="width: 200px;">Nome</th>
+            <th style="width: 200px;">Email</th>
+            <th style="width: 120px;">Discord</th>
+            <th style="width: 150px;">Servidores</th>
+            <th style="width: 100px;">Equipes</th>
+            <th style="width: 120px;">Ações</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for supervisor in supervisores %}
+            <tr>
+              <td>
+                <span class="supervisor-id">#{{ supervisor.id }}</span>
+              </td>
+              <td>
+                <div class="supervisor-name">{{ supervisor.nome }}</div>
+                {% if supervisor.tipo == 'coordenadora' %}
+                  <div style="font-size: 10px; color: var(--accent); font-weight: 600;">COORDENADORA</div>
                 {% endif %}
-            </td>
-            <td style="padding:8px; border: 1px solid #ccc; text-align:center;">
-                <a href="{{ url_for('editar_supervisor', supervisor_id=supervisor.id) }}" style="color:#003366; text-decoration:none;">Editar</a>
-            </td>
-        </tr>
-        {% else %}
-        <tr>
-            <td colspan="6" style="padding:20px; text-align:center; color:#666;">Nenhum supervisor encontrado.</td>
-        </tr>
-        {% endfor %}
-    </tbody>
-</table>
+              </td>
+              <td>
+                <div class="supervisor-email">{{ supervisor.email }}</div>
+              </td>
+              <td>
+                {% if supervisor.discord_id %}
+                  <span class="status-badge status-configurado">✅ Configurado</span>
+                {% else %}
+                  <span class="status-badge status-nao-configurado">❌ Não config.</span>
+                {% endif %}
+              </td>
+              <td>
+                {% if supervisor.servidor_discord_id %}
+                  {% if supervisor.servidor_discord_id.startswith('[') %}
+                    <div class="servidores-info">Múltiplos servidores</div>
+                  {% else %}
+                    <div style="font-family: monospace; font-size: 12px;">{{ supervisor.servidor_discord_id[:12] }}...</div>
+                  {% endif %}
+                {% else %}
+                  <span class="servidores-info">Não configurado</span>
+                {% endif %}
+              </td>
+              <td>
+                <div style="font-weight: 600; color: var(--primary);">
+                  {{ supervisor.equipes|length if supervisor.equipes else 0 }}
+                </div>
+                <div style="font-size: 11px; color: var(--muted);">equipe(s)</div>
+              </td>
+              <td>
+                <div class="actions-cell">
+                  <a href="{{ url_for('editar_supervisor', supervisor_id=supervisor.id) }}" 
+                     class="btn btn-sm" title="Editar">
+                    ✏️ Editar
+                  </a>
+                </div>
+              </td>
+            </tr>
+          {% else %}
+            <tr>
+              <td colspan="7" class="empty-state">
+                <h3>Nenhum supervisor cadastrado</h3>
+                <p>Comece criando o primeiro supervisor do sistema.</p>
+                <button onclick="toggleForm()" class="btn btn-primary" style="margin-top: 16px;">
+                  ➕ Criar Primeiro Supervisor
+                </button>
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </section>
+</div>
+
+<script>
+  // Toggle do formulário
+  function toggleForm() {
+    const formSection = document.getElementById('formSection');
+    const toggleBtn = document.getElementById('toggleFormBtn');
+    
+    if (formSection.classList.contains('collapsed')) {
+      formSection.classList.remove('collapsed');
+      toggleBtn.textContent = '❌ Cancelar';
+      toggleBtn.classList.remove('btn-primary');
+      toggleBtn.classList.add('btn-danger');
+      
+      // Focus no primeiro campo
+      document.getElementById('nome').focus();
+    } else {
+      formSection.classList.add('collapsed');
+      toggleBtn.textContent = '➕ Novo Supervisor';
+      toggleBtn.classList.remove('btn-danger');
+      toggleBtn.classList.add('btn-primary');
+      
+      // Limpar formulário
+      document.getElementById('supervisorForm').reset();
+      clearErrors();
+    }
+  }
+
+  // Limpar erros
+  function clearErrors() {
+    document.querySelectorAll('.form-group.error').forEach(group => {
+      group.classList.remove('error');
+    });
+  }
+
+  // Validação em tempo real
+  function validateField(field, errorId, condition, message) {
+    const errorElement = document.getElementById(errorId);
+    const formGroup = field.closest('.form-group');
+    
+    if (condition) {
+      formGroup.classList.remove('error');
+      return true;
+    } else {
+      formGroup.classList.add('error');
+      errorElement.textContent = message;
+      return false;
+    }
+  }
+
+  // Elementos do formulário
+  const form = document.getElementById('supervisorForm');
+  const nomeInput = document.getElementById('nome');
+  const emailInput = document.getElementById('email');
+  const senhaInput = document.getElementById('senha');
+  const submitBtn = document.getElementById('submitBtn');
+
+  // Validações
+  nomeInput.addEventListener('blur', function() {
+    validateField(
+      this, 
+      'nome-error', 
+      this.value.trim().length >= 2, 
+      'Nome deve ter pelo menos 2 caracteres'
+    );
+  });
+
+  emailInput.addEventListener('blur', function() {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    validateField(
+      this, 
+      'email-error', 
+      emailRegex.test(this.value), 
+      'Digite um email válido'
+    );
+  });
+
+  senhaInput.addEventListener('blur', function() {
+    validateField(
+      this, 
+      'senha-error', 
+      this.value.length >= 6, 
+      'Senha deve ter pelo menos 6 caracteres'
+    );
+  });
+
+  // Remove erros quando o usuário digita
+  [nomeInput, emailInput, senhaInput].forEach(input => {
+    input.addEventListener('input', function() {
+      if (this.closest('.form-group').classList.contains('error')) {
+        this.closest('.form-group').classList.remove('error');
+      }
+    });
+  });
+
+  // Submissão do formulário
+  form.addEventListener('submit', function(e) {
+    let isValid = true;
+    
+    // Validar nome
+    if (!validateField(nomeInput, 'nome-error', nomeInput.value.trim().length >= 2, 'Nome deve ter pelo menos 2 caracteres')) {
+      isValid = false;
+    }
+    
+    // Validar email
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!validateField(emailInput, 'email-error', emailRegex.test(emailInput.value), 'Digite um email válido')) {
+      isValid = false;
+    }
+    
+    // Validar senha
+    if (!validateField(senhaInput, 'senha-error', senhaInput.value.length >= 6, 'Senha deve ter pelo menos 6 caracteres')) {
+      isValid = false;
+    }
+    
+    if (!isValid) {
+      e.preventDefault();
+      
+      // Focar no primeiro campo com erro
+      const firstError = document.querySelector('.form-group.error input');
+      if (firstError) {
+        firstError.focus();
+      }
+      return;
+    }
+    
+    // Loading state
+    submitBtn.classList.add('loading');
+    submitBtn.textContent = 'Criando...';
+    submitBtn.disabled = true;
+  });
+
+  // Atalhos de teclado
+  document.addEventListener('keydown', function(e) {
+    // ESC para fechar formulário
+    if (e.key === 'Escape' && !document.getElementById('formSection').classList.contains('collapsed')) {
+      toggleForm();
+    }
+    
+    // Ctrl/Cmd + N para novo supervisor
+    if ((e.ctrlKey || e.metaKey) && e.key === 'n') {
+      e.preventDefault();
+      if (document.getElementById('formSection').classList.contains('collapsed')) {
+        toggleForm();
+      }
+    }
+  });
+</script>
+
 {% endblock %}

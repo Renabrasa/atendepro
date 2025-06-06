@@ -2,219 +2,675 @@
 {% block title %}Dashboard Executivo{% endblock %}
 {% block content %}
 <style>
-  /* Estilos semelhantes aos que enviei para base e formulários */
-  .stats-container {
-    display: flex;
-    gap: 20px;
-    margin-bottom: 30px;
-  }
-  .stat-card {
-    flex: 1;
-    background-color: #003366;
-    color: white;
+  .dashboard-container {
+    max-width: 1400px;
+    margin: 0 auto;
     padding: 20px;
-    border-radius: 10px;
-    text-align: center;
+  }
+
+  .header-section {
+    background: linear-gradient(135deg, #003366, #0056b3);
+    color: white;
+    padding: 25px;
+    border-radius: 12px;
+    margin-bottom: 30px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 15px;
+  }
+
+  .header-title {
+    font-size: 2em;
     font-weight: 700;
-    font-size: 1.8em;
-    box-shadow: 0 0 10px rgba(0,0,0,0.2);
+    margin: 0;
   }
-  .stat-label {
-    font-weight: 400;
+
+  .header-subtitle {
     font-size: 1em;
-    margin-top: 8px;
+    opacity: 0.9;
+    margin: 5px 0 0 0;
   }
+
+  .btn {
+    padding: 10px 20px;
+    border: none;
+    border-radius: 8px;
+    text-decoration: none;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .btn-primary {
+    background: rgba(255,255,255,0.2);
+    color: white;
+    border: 2px solid rgba(255,255,255,0.3);
+  }
+
+  .btn-primary:hover {
+    background: rgba(255,255,255,0.3);
+    transform: translateY(-2px);
+  }
+
+  /* Seção de Filtros */
+  .filters-section {
+    background: white;
+    padding: 25px;
+    border-radius: 12px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    margin-bottom: 25px;
+  }
+
+  .filters-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+  }
+
+  .filters-title {
+    font-size: 1.2em;
+    font-weight: 600;
+    color: #003366;
+    margin: 0;
+  }
+
+  .filters-content {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 20px;
+    align-items: end;
+  }
+
+  .filter-group {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+  }
+
+  .filter-group label {
+    font-weight: 600;
+    color: #003366;
+    font-size: 0.9em;
+  }
+
+  .filter-group input {
+    padding: 10px;
+    border: 2px solid #e2e8f0;
+    border-radius: 8px;
+    font-size: 1em;
+    transition: border-color 0.3s ease;
+  }
+
+  .filter-group input:focus {
+    border-color: #003366;
+    outline: none;
+  }
+
+  .btn-success {
+    background: linear-gradient(135deg, #28a745, #20c997);
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    font-weight: 600;
+  }
+
+  .btn-success:hover {
+    background: linear-gradient(135deg, #218838, #1ca085);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(40, 167, 69, 0.3);
+  }
+
+  .btn-info {
+    background: linear-gradient(135deg, #17a2b8, #6610f2);
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    font-weight: 600;
+  }
+
+  .btn-info:hover {
+    background: linear-gradient(135deg, #138496, #5a0fcf);
+    transform: translateY(-2px);
+  }
+
+  /* Cards de Estatísticas */
+  .stats-row {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 20px;
+    margin-bottom: 25px;
+  }
+
+  .stat-card {
+    background: white;
+    padding: 25px;
+    border-radius: 12px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    text-align: center;
+    border-left: 4px solid #003366;
+    transition: all 0.3s ease;
+  }
+
+  .stat-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+  }
+
+  .stat-number {
+    font-size: 2.5em;
+    font-weight: 700;
+    color: #003366;
+    margin-bottom: 5px;
+    line-height: 1;
+  }
+
+  .stat-label {
+    color: #718096;
+    font-weight: 600;
+    text-transform: uppercase;
+    font-size: 0.85em;
+    margin: 0;
+  }
+
+  /* Board estilo Trello */
+  .board-container {
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    overflow: hidden;
+    margin-bottom: 25px;
+  }
+
+  .board-header {
+    background: linear-gradient(135deg, #f093fb, #f5576c);
+    color: white;
+    padding: 20px 25px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .board-title {
+    font-size: 1.3em;
+    font-weight: 600;
+    margin: 0;
+  }
+
   .trello-board {
     display: flex;
     gap: 25px;
     overflow-x: auto;
-    min-height: 400px;
+    padding: 25px;
+    min-height: 500px;
   }
+
   .column {
-    background: #f9fafb;
-    border-radius: 10px;
+    background: #f8fafc;
+    border-radius: 12px;
     padding: 20px;
     min-width: 320px;
     max-height: 70vh;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.08);
     display: flex;
     flex-direction: column;
+    border: 2px solid #e2e8f0;
+    transition: all 0.3s ease;
   }
+
+  .column:hover {
+    border-color: #003366;
+    box-shadow: 0 6px 20px rgba(0,0,0,0.12);
+  }
+
   .column-header {
-    font-size: 1.3em;
+    font-size: 1.2em;
     font-weight: 700;
     color: #003366;
     margin-bottom: 15px;
-    border-bottom: 2px solid #e2e8f0;
+    border-bottom: 3px solid #e2e8f0;
     padding-bottom: 10px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
   }
-  .card {
+
+  .column-stats {
     background: white;
     border-radius: 8px;
-    padding: 14px;
+    padding: 15px;
+    margin-bottom: 15px;
+    border-left: 4px solid #003366;
+  }
+
+  .column-stats div {
+    margin-bottom: 8px;
+    font-size: 0.9em;
+    color: #4a5568;
+  }
+
+  .column-stats div:last-child {
+    margin-bottom: 0;
+  }
+
+  .column-stats strong {
+    color: #003366;
+    font-weight: 600;
+  }
+
+  .card {
+    background: white;
+    border-radius: 10px;
+    padding: 15px;
     margin-bottom: 15px;
     box-shadow: 0 2px 8px rgba(0,0,0,0.1);
     cursor: pointer;
+    transition: all 0.3s ease;
+    border: 1px solid #e2e8f0;
   }
+
   .card:hover {
-    box-shadow: 0 4px 16px rgba(0,0,0,0.15);
+    box-shadow: 0 6px 20px rgba(0,0,0,0.15);
+    transform: translateY(-2px);
+    border-color: #003366;
   }
+
   .card-header {
     font-weight: 600;
     color: #2d3748;
-    margin-bottom: 8px;
+    margin-bottom: 10px;
     display: flex;
     justify-content: space-between;
+    align-items: center;
   }
+
   .card-badge {
-    background: #667eea;
+    background: linear-gradient(135deg, #667eea, #764ba2);
     color: white;
     font-size: 0.75em;
-    padding: 4px 8px;
+    padding: 4px 10px;
     border-radius: 12px;
     font-weight: 700;
   }
+
   .atendimentos-list {
     font-size: 0.85em;
-    margin-top: 10px;
-    max-height: 180px;
+    margin-top: 12px;
+    max-height: 200px;
     overflow-y: auto;
+    border-top: 1px solid #e2e8f0;
+    padding-top: 10px;
   }
+
   .atendimento-item {
-    border-bottom: 1px solid #e2e8f0;
-    padding: 8px 0;
+    border-bottom: 1px solid #f1f5f9;
+    padding: 10px 0;
+    transition: background 0.2s ease;
   }
+
+  .atendimento-item:hover {
+    background: #f8fafc;
+    border-radius: 6px;
+    padding: 10px;
+    margin: 0 -10px;
+  }
+
   .atendimento-item:last-child {
     border-bottom: none;
   }
+
   .atendimento-id {
     font-weight: 700;
     color: #667eea;
   }
+
   .atendimento-date {
     color: #a0aec0;
     font-size: 0.75em;
   }
 
-  /* Filtro de data */
-  #filtro-data {
-    margin-bottom: 30px;
-    display: flex;
-    gap: 15px;
-    align-items: flex-end;
-    flex-wrap: wrap;
-    max-width: 600px;
+  .atendimento-content {
+    margin-top: 5px;
+    color: #4a5568;
+    line-height: 1.4;
   }
-  #filtro-data > div {
-    display: flex;
-    flex-direction: column;
-  }
-  #filtro-data label {
+
+  .classificacao-tag {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 12px;
+    font-size: 0.7em;
     font-weight: 600;
-    color: #003366;
+    text-transform: uppercase;
+    margin-top: 5px;
   }
-  #filtro-data input[type="date"] {
-    padding: 8px;
-    border-radius: 6px;
-    border: 1px solid #ccc;
+
+  .classificacao-basico {
+    background: #d4edda;
+    color: #155724;
   }
-  #filtro-data button {
-    background-color: #003366;
-    color: white;
-    border: none;
-    padding: 10px 20px;
-    border-radius: 6px;
-    cursor: pointer;
-    height: 40px;
+
+  .classificacao-medio {
+    background: #fff3cd;
+    color: #856404;
   }
-  #filtro-data button:hover {
-    background-color: #002244;
+
+  .classificacao-complexo {
+    background: #f8d7da;
+    color: #721c24;
+  }
+
+  .classificacao-sem {
+    background: #e2e8f0;
+    color: #718096;
+  }
+
+  .empty-state {
+    text-align: center;
+    padding: 40px;
+    color: #718096;
+    font-style: italic;
+    background: white;
+    border-radius: 8px;
+    border: 2px dashed #e2e8f0;
+    margin: 20px 0;
+  }
+
+  .empty-state h4 {
+    color: #4a5568;
+    margin-bottom: 10px;
+  }
+
+  /* Responsividade */
+  @media (max-width: 768px) {
+    .dashboard-container {
+      padding: 15px;
+    }
+
+    .header-section {
+      flex-direction: column;
+      text-align: center;
+    }
+
+    .filters-content {
+      grid-template-columns: 1fr;
+    }
+
+    .stats-row {
+      grid-template-columns: repeat(2, 1fr);
+    }
+
+    .trello-board {
+      flex-direction: column;
+      padding: 15px;
+    }
+
+    .column {
+      min-width: auto;
+      max-height: none;
+    }
+  }
+
+  /* Animações */
+  @keyframes slideIn {
+    from {
+      opacity: 0;
+      transform: translateY(20px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  .filters-section,
+  .stat-card,
+  .board-container {
+    animation: slideIn 0.5s ease-out;
+  }
+
+  .column {
+    animation: slideIn 0.6s ease-out;
+  }
+
+  /* Scrollbar personalizada para listas de atendimentos */
+  .atendimentos-list::-webkit-scrollbar {
+    width: 6px;
+  }
+
+  .atendimentos-list::-webkit-scrollbar-track {
+    background: #f1f5f9;
+    border-radius: 3px;
+  }
+
+  .atendimentos-list::-webkit-scrollbar-thumb {
+    background: #cbd5e0;
+    border-radius: 3px;
+  }
+
+  .atendimentos-list::-webkit-scrollbar-thumb:hover {
+    background: #a0aec0;
   }
 </style>
 
-<h1>Dashboard</h1>
+<div class="dashboard-container">
+  <!-- Header -->
+  <div class="header-section">
+    <div>
+      <h1 class="header-title">📊 Dashboard Executivo</h1>
+      <p class="header-subtitle">Visão geral dos atendimentos e equipes</p>
+    </div>
+    <div>
+      <a href="{{ url_for('atendimentos') }}" class="btn btn-primary">
+        📋 Ver Todos os Atendimentos
+      </a>
+    </div>
+  </div>
 
-<form id="filtro-data" method="GET">
-  <div>
-    <label for="data_inicio">Data Inicial</label>
-    <input type="date" id="data_inicio" name="data_inicio" value="{{ data_inicio }}" />
+  <!-- Filtros -->
+  <div class="filters-section">
+    <div class="filters-header">
+      <h3 class="filters-title">🔍 Filtros de Período</h3>
+    </div>
+    
+    <form method="GET" class="filters-content">
+      <div class="filter-group">
+        <label for="data_inicio">📅 Data Inicial</label>
+        <input type="date" id="data_inicio" name="data_inicio" value="{{ data_inicio }}">
+      </div>
+      
+      <div class="filter-group">
+        <label for="data_fim">📅 Data Final</label>
+        <input type="date" id="data_fim" name="data_fim" value="{{ data_fim }}">
+      </div>
+      
+      <div class="filter-group">
+        <label>&nbsp;</label>
+        <div style="display: flex; gap: 10px;">
+          <button type="submit" class="btn btn-success">🔍 Aplicar Filtro</button>
+          <a href="{{ url_for('dashboard') }}" class="btn btn-info">🔄 Limpar</a>
+        </div>
+      </div>
+    </form>
   </div>
-  <div>
-    <label for="data_fim">Data Final</label>
-    <input type="date" id="data_fim" name="data_fim" value="{{ data_fim }}" />
-  </div>
-  <button type="submit">Aplicar filtro</button>
-</form>
 
-<div class="stats-container">
-  <div class="stat-card">
-    {{ total_supervisores }}
-    <div class="stat-label">Supervisores</div>
+  <!-- Estatísticas Gerais -->
+  <div class="stats-row">
+    <div class="stat-card">
+      <div class="stat-number">{{ total_supervisores }}</div>
+      <div class="stat-label">
+        {% if current_user.tipo in ['admin', 'coordenadora'] %}
+          Supervisores
+        {% else %}
+          Minha Equipe
+        {% endif %}
+      </div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-number">{{ total_agentes }}</div>
+      <div class="stat-label">Total de Agentes</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-number">{{ total_atendimentos }}</div>
+      <div class="stat-label">Total Atendimentos</div>
+    </div>
+    {% if media_por_agente %}
+    <div class="stat-card">
+      <div class="stat-number">{{ media_por_agente }}</div>
+      <div class="stat-label">Média por Agente</div>
+    </div>
+    {% endif %}
   </div>
-  <div class="stat-card">
-    {{ total_agentes }}
-    <div class="stat-label">Agentes</div>
-  </div>
-  <div class="stat-card">
-    {{ total_atendimentos }}
-    <div class="stat-label">Atendimentos</div>
-  </div>
-</div>
 
-<div class="trello-board">
-  {% for bloco in data %}
-    <div class="column">
-      <div class="column-header">{{ bloco.supervisor.nome }}</div>
-      <div><strong>Total Atendimentos:</strong> {{ bloco.total_chamados }}</div>
-      <div><strong>Melhor Agente:</strong> {{ bloco.agente_top or '-' }} ({{ bloco.qtd_top }})</div>
-
-      {% for agente in bloco.agentes %}
-        <div class="card" onclick="toggleAtendimentos('atendimentos-{{ agente.nome|replace(' ', '-') }}')">
-          <div class="card-header">
-            <span>{{ agente.nome }}</span>
-            <span class="card-badge">{{ agente.qtd_chamados }}</span>
-          </div>
-          <div id="atendimentos-{{ agente.nome|replace(' ', '-') }}" class="atendimentos-list" style="display:none;">
-            {% for a in agente.chamados %}
-              <div class="atendimento-item">
-                <div><span class="atendimento-id">#{{ a.id }}</span> <span class="atendimento-date">{{ a.data_hora.strftime('%d/%m/%Y %H:%M') }}</span></div>
-                <div><strong>{{ a.classificacao or 'Sem classificação' }}</strong> — {{ a.status }}</div>
-                <div>{{ a.conteudo[:80] }}{% if a.conteudo|length > 80 %}...{% endif %}</div>
-              </div>
+  <!-- Board de Supervisores/Equipes -->
+  <div class="board-container">
+    <div class="board-header">
+      <h3 class="board-title">👥 Equipes e Atendimentos</h3>
+    </div>
+    
+    <div class="trello-board">
+      {% for bloco in data %}
+        <div class="column">
+          <div class="column-header">
+            {% if bloco.supervisor.tipo == 'coordenadora' %}
+              👩‍💼 {{ bloco.supervisor.nome }}
+              <span style="background: #f093fb; color: white; padding: 2px 8px; border-radius: 12px; font-size: 0.7em;">COORDENADORA</span>
             {% else %}
-              <div style="font-style: italic; color: #a0aec0;">Sem atendimentos registrados</div>
-            {% endfor %}
+              👤 {{ bloco.supervisor.nome }}
+              <span style="background: #003366; color: white; padding: 2px 8px; border-radius: 12px; font-size: 0.7em;">SUPERVISOR</span>
+            {% endif %}
           </div>
+          
+          <div class="column-stats">
+            <div><strong>📊 Total de Atendimentos:</strong> {{ bloco.total_chamados }}</div>
+            {% if bloco.agente_top %}
+              <div><strong>🏆 Melhor Agente:</strong> {{ bloco.agente_top }} ({{ bloco.qtd_top }})</div>
+            {% else %}
+              <div><strong>🏆 Melhor Agente:</strong> -</div>
+            {% endif %}
+            <div><strong>👥 Agentes Ativos:</strong> {{ bloco.num_agentes }}</div>
+          </div>
+
+          {% for agente in bloco.agentes %}
+            <div class="card" onclick="toggleAtendimentos('atendimentos-{{ loop.parent.loop.index0 }}-{{ loop.index0 }}')">
+              <div class="card-header">
+                <span>{{ agente.nome }}</span>
+                <span class="card-badge">{{ agente.qtd_chamados }}</span>
+              </div>
+              <div id="atendimentos-{{ loop.parent.loop.index0 }}-{{ loop.index0 }}" class="atendimentos-list" style="display:none;">
+                {% for a in agente.chamados %}
+                  <div class="atendimento-item">
+                    <div>
+                      <span class="atendimento-id">#{{ a.id }}</span> 
+                      <span class="atendimento-date">{{ a.data_hora.strftime('%d/%m/%Y %H:%M') }}</span>
+                    </div>
+                    <div class="atendimento-content">
+                      {{ a.conteudo[:100] }}{% if a.conteudo|length > 100 %}...{% endif %}
+                    </div>
+                    <div>
+                      {% if a.classificacao %}
+                        <span class="classificacao-tag classificacao-{{ a.classificacao }}">{{ a.classificacao }}</span>
+                      {% else %}
+                        <span class="classificacao-tag classificacao-sem">Sem classificação</span>
+                      {% endif %}
+                      <span style="font-size: 0.8em; color: #6c757d; margin-left: 10px;">{{ a.status or 'pendente' }}</span>
+                    </div>
+                  </div>
+                {% else %}
+                  <div class="empty-state">
+                    <h4>📭 Sem atendimentos</h4>
+                    <p>Nenhum atendimento registrado no período</p>
+                  </div>
+                {% endfor %}
+              </div>
+            </div>
+          {% else %}
+            <div class="empty-state">
+              <h4>👤 Sem agentes</h4>
+              <p>Nenhum agente cadastrado para este supervisor</p>
+            </div>
+          {% endfor %}
         </div>
       {% else %}
-        <div style="font-style: italic; color: #a0aec0;">Nenhum agente cadastrado</div>
+        <div class="empty-state" style="width: 100%; margin: 50px;">
+          <h3>📊 Nenhum supervisor encontrado</h3>
+          <p>Não há dados para exibir no dashboard.</p>
+          {% if current_user.tipo in ['admin', 'coordenadora'] %}
+            <a href="{{ url_for('supervisores') }}" class="btn btn-primary" style="margin-top: 15px;">
+              ➕ Cadastrar Supervisor
+            </a>
+          {% endif %}
+        </div>
       {% endfor %}
     </div>
-  {% else %}
-    <div style="text-align:center; color:#718096; margin-top:50px;">
-      Nenhum supervisor encontrado.
+  </div>
+
+  {% if top_5_agentes %}
+  <!-- Top 5 Agentes -->
+  <div class="board-container">
+    <div class="board-header">
+      <h3 class="board-title">🏆 Top 5 Agentes (Período Filtrado)</h3>
     </div>
-  {% endfor %}
+    
+    <div style="padding: 25px;">
+      <div class="stats-row">
+        {% for agente in top_5_agentes[:5] %}
+          <div class="stat-card">
+            <div class="stat-number">{{ agente.qtd_chamados }}</div>
+            <div class="stat-label">{{ agente.nome }}</div>
+            <div style="font-size: 0.8em; color: #6c757d; margin-top: 5px;">
+              {{ agente.supervisor_nome }}
+            </div>
+          </div>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+  {% endif %}
 </div>
 
 <script>
-  document.getElementById('filtro-data').addEventListener('submit', function(e) {
+  // Validação de filtros
+  document.querySelector('form').addEventListener('submit', function(e) {
     const inicio = document.getElementById('data_inicio').value;
     const fim = document.getElementById('data_fim').value;
+    
     if (inicio && fim && inicio > fim) {
       e.preventDefault();
-      alert('A data inicial não pode ser maior que a data final.');
+      alert('⚠️ A data inicial não pode ser maior que a data final.');
     }
   });
 
+  // Toggle de atendimentos
   function toggleAtendimentos(id) {
     const el = document.getElementById(id);
     if (el.style.display === 'none' || el.style.display === '') {
       el.style.display = 'block';
+      // Animação suave
+      el.style.opacity = '0';
+      el.style.maxHeight = '0';
+      setTimeout(() => {
+        el.style.transition = 'all 0.3s ease';
+        el.style.opacity = '1';
+        el.style.maxHeight = '300px';
+      }, 10);
     } else {
-      el.style.display = 'none';
+      el.style.transition = 'all 0.3s ease';
+      el.style.opacity = '0';
+      el.style.maxHeight = '0';
+      setTimeout(() => {
+        el.style.display = 'none';
+      }, 300);
     }
   }
+
+  // Auto-refresh a cada 5 minutos (opcional)
+  // setTimeout(() => location.reload(), 300000);
 </script>
 
 {% endblock %}

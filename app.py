@@ -90,11 +90,8 @@ def dashboard():
 
     # CORREÇÃO AQUI:
     if current_user.tipo in ['admin', 'coordenadora']:
-        # Admin e Coordenadora veem todos os supervisores
-        supervisores = User.query.filter_by(tipo='supervisor').all()
-        
-        if current_user.tipo == 'coordenadora':
-           supervisores.append(current_user)
+        # Admin e Coordenadora veem todos os supervisores E coordenadores
+        supervisores = User.query.filter(User.tipo.in_(['supervisor', 'coordenadora'])).all()
     else:
         # Supervisor vê apenas a si mesmo
         supervisores = [current_user]

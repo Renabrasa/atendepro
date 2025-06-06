@@ -1,28 +1,517 @@
 {% extends 'base.html' %}
 {% block title %}Editar Atendimento{% endblock %}
 {% block content %}
-<h2>Editar Atendimento</h2>
+<style>
+  .form-container {
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 20px;
+  }
 
-<form method="post" style="max-width: 600px;">
-    <label for="agente_id" style="font-weight: 600; margin-top: 10px; display: block;">Agente</label>
-    <select id="agente_id" name="agente_id" required style="width: 100%; padding: 8px; margin-top: 4px; border: 1px solid #ccc; border-radius: 4px;">
-        {% for agente in agentes %}
-        <option value="{{ agente.id }}" {% if agente.id == atendimento.agente_id %}selected{% endif %}>{{ agente.nome }}</option>
-        {% endfor %}
-    </select>
+  .header-section {
+    background: linear-gradient(135deg, #003366, #0056b3);
+    color: white;
+    padding: 25px;
+    border-radius: 12px;
+    margin-bottom: 30px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 15px;
+  }
 
-    <label for="conteudo" style="font-weight: 600; margin-top: 15px; display: block;">Descrição do Atendimento</label>
-    <textarea id="conteudo" name="conteudo" rows="6" required style="width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px;">{{ atendimento.conteudo }}</textarea>
+  .header-title {
+    font-size: 2em;
+    font-weight: 700;
+    margin: 0;
+  }
 
-    <label for="classificacao" style="font-weight: 600; margin-top: 15px; display: block;">Classificação</label>
-    <select id="classificacao" name="classificacao" style="width: 100%; padding: 8px; margin-top: 4px; border: 1px solid #ccc; border-radius: 4px;">
-        <option value="" {% if not atendimento.classificacao %}selected{% endif %}>-- Selecione --</option>
-        <option value="básico" {% if atendimento.classificacao == 'básico' %}selected{% endif %}>Básico</option>
-        <option value="médio" {% if atendimento.classificacao == 'médio' %}selected{% endif %}>Médio</option>
-        <option value="complexo" {% if atendimento.classificacao == 'complexo' %}selected{% endif %}>Complexo</option>
-    </select>
+  .header-subtitle {
+    font-size: 1em;
+    opacity: 0.9;
+    margin: 5px 0 0 0;
+  }
 
-    <button type="submit" style="margin-top: 20px; background-color: #003366; color: white; padding: 10px 20px; border: none; border-radius: 5px; cursor: pointer;">Salvar</button>
-    <a href="{{ url_for('atendimentos') }}" style="margin-left: 15px; color: #555; text-decoration: none;">Cancelar</a>
-</form>
+  .btn {
+    padding: 10px 20px;
+    border: none;
+    border-radius: 8px;
+    text-decoration: none;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .btn-secondary {
+    background: rgba(255,255,255,0.2);
+    color: white;
+    border: 2px solid rgba(255,255,255,0.3);
+  }
+
+  .btn-secondary:hover {
+    background: rgba(255,255,255,0.3);
+    transform: translateY(-2px);
+  }
+
+  .form-section {
+    background: white;
+    padding: 30px;
+    border-radius: 12px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    margin-bottom: 25px;
+  }
+
+  .form-header {
+    background: linear-gradient(135deg, #f093fb, #f5576c);
+    color: white;
+    padding: 20px 25px;
+    margin: -30px -30px 25px -30px;
+    border-radius: 12px 12px 0 0;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .form-title {
+    font-size: 1.3em;
+    font-weight: 600;
+    margin: 0;
+  }
+
+  .form-group {
+    margin-bottom: 25px;
+  }
+
+  .form-label {
+    display: block;
+    font-weight: 600;
+    color: #003366;
+    margin-bottom: 8px;
+    font-size: 1em;
+  }
+
+  .form-label .required {
+    color: #dc3545;
+    margin-left: 4px;
+  }
+
+  .form-control {
+    width: 100%;
+    padding: 12px 15px;
+    border: 2px solid #e2e8f0;
+    border-radius: 8px;
+    font-size: 1em;
+    transition: all 0.3s ease;
+    box-sizing: border-box;
+    font-family: inherit;
+  }
+
+  .form-control:focus {
+    border-color: #003366;
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(0, 51, 102, 0.1);
+  }
+
+  .form-control:hover {
+    border-color: #cbd5e0;
+  }
+
+  .form-textarea {
+    resize: vertical;
+    min-height: 120px;
+  }
+
+  .form-select {
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='m6 8 4 4 4-4'/%3e%3c/svg%3e");
+    background-position: right 12px center;
+    background-repeat: no-repeat;
+    background-size: 16px;
+    padding-right: 40px;
+    appearance: none;
+  }
+
+  .form-actions {
+    display: flex;
+    gap: 15px;
+    align-items: center;
+    flex-wrap: wrap;
+    margin-top: 30px;
+    padding-top: 25px;
+    border-top: 2px solid #f1f5f9;
+  }
+
+  .btn-primary {
+    background: linear-gradient(135deg, #003366, #0056b3);
+    color: white;
+    border: none;
+    padding: 12px 30px;
+    font-size: 1.1em;
+    font-weight: 600;
+  }
+
+  .btn-primary:hover {
+    background: linear-gradient(135deg, #002244, #004499);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 51, 102, 0.3);
+  }
+
+  .btn-outline {
+    background: transparent;
+    color: #6c757d;
+    border: 2px solid #dee2e6;
+    padding: 10px 25px;
+  }
+
+  .btn-outline:hover {
+    background: #f8f9fa;
+    border-color: #adb5bd;
+    transform: translateY(-1px);
+  }
+
+  .help-text {
+    font-size: 0.9em;
+    color: #6c757d;
+    margin-top: 5px;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+  }
+
+  .classification-options {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+    gap: 15px;
+    margin-top: 10px;
+  }
+
+  .classification-card {
+    border: 2px solid #e2e8f0;
+    border-radius: 8px;
+    padding: 15px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    position: relative;
+  }
+
+  .classification-card:hover {
+    border-color: #003366;
+    background: #f8fafc;
+  }
+
+  .classification-card.selected {
+    border-color: #003366;
+    background: linear-gradient(135deg, #003366, #0056b3);
+    color: white;
+  }
+
+  .classification-card input[type="radio"] {
+    position: absolute;
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  .classification-title {
+    font-weight: 600;
+    margin-bottom: 5px;
+  }
+
+  .classification-desc {
+    font-size: 0.8em;
+    opacity: 0.8;
+  }
+
+  .info-card {
+    background: linear-gradient(135deg, #e3f2fd, #f3e5f5);
+    border: 2px solid #e1bee7;
+    border-radius: 12px;
+    padding: 20px;
+    margin-bottom: 25px;
+  }
+
+  .info-card h3 {
+    color: #003366;
+    margin: 0 0 10px 0;
+    font-size: 1.1em;
+    font-weight: 600;
+  }
+
+  .info-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 15px;
+  }
+
+  .info-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: #444;
+  }
+
+  .info-label {
+    font-weight: 600;
+    color: #003366;
+  }
+
+  /* Responsividade */
+  @media (max-width: 768px) {
+    .form-container {
+      padding: 15px;
+    }
+
+    .header-section {
+      flex-direction: column;
+      text-align: center;
+    }
+
+    .form-section {
+      padding: 20px;
+    }
+
+    .form-header {
+      margin: -20px -20px 20px -20px;
+    }
+
+    .form-actions {
+      flex-direction: column;
+    }
+
+    .btn {
+      width: 100%;
+      justify-content: center;
+    }
+
+    .classification-options {
+      grid-template-columns: 1fr;
+    }
+
+    .info-grid {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  /* Animações */
+  @keyframes slideIn {
+    from {
+      opacity: 0;
+      transform: translateY(20px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  .form-section, .info-card {
+    animation: slideIn 0.5s ease-out;
+  }
+</style>
+
+<div class="form-container">
+  <!-- Header -->
+  <div class="header-section">
+    <div>
+      <h1 class="header-title">✏️ Editar Atendimento</h1>
+      <p class="header-subtitle">Atendimento #{{ atendimento.id }}</p>
+    </div>
+    <div>
+      <a href="{{ url_for('atendimentos') }}" class="btn btn-secondary">
+        ← Voltar à Lista
+      </a>
+    </div>
+  </div>
+
+  <!-- Informações do Atendimento -->
+  <div class="info-card">
+    <h3>📋 Informações Atuais</h3>
+    <div class="info-grid">
+      <div class="info-item">
+        <span>🆔</span>
+        <span class="info-label">ID:</span>
+        <span>#{{ atendimento.id }}</span>
+      </div>
+      <div class="info-item">
+        <span>📅</span>
+        <span class="info-label">Data:</span>
+        <span>{{ atendimento.data_hora.strftime('%d/%m/%Y às %H:%M') }}</span>
+      </div>
+      <div class="info-item">
+        <span>📊</span>
+        <span class="info-label">Status:</span>
+        <span>{{ atendimento.status or 'Pendente' }}</span>
+      </div>
+      {% if atendimento.supervisor %}
+      <div class="info-item">
+        <span>👥</span>
+        <span class="info-label">Supervisor:</span>
+        <span>{{ atendimento.supervisor.nome }}</span>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- Formulário -->
+  <div class="form-section">
+    <div class="form-header">
+      <span>🔧</span>
+      <h2 class="form-title">Editar Informações</h2>
+    </div>
+
+    <form method="post">
+      <div class="form-group">
+        <label for="agente_id" class="form-label">
+          👤 Agente Responsável
+          <span class="required">*</span>
+        </label>
+        <select id="agente_id" name="agente_id" required class="form-control form-select">
+          {% for agente in agentes %}
+          <option value="{{ agente.id }}" {% if agente.id == atendimento.agente_id %}selected{% endif %}>
+            {{ agente.nome }}
+          </option>
+          {% endfor %}
+        </select>
+        <div class="help-text">
+          ℹ️ Agente que realizou o atendimento
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label for="conteudo" class="form-label">
+          📝 Descrição do Atendimento
+          <span class="required">*</span>
+        </label>
+        <textarea 
+          id="conteudo" 
+          name="conteudo" 
+          required 
+          class="form-control form-textarea"
+          placeholder="Descreva detalhadamente o atendimento realizado..."
+        >{{ atendimento.conteudo }}</textarea>
+        <div class="help-text">
+          💡 Seja específico e inclua todas as informações relevantes do atendimento
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">
+          🏷️ Classificação do Atendimento
+        </label>
+        
+        <div class="classification-options">
+          <div class="classification-card {% if not atendimento.classificacao %}selected{% endif %}" onclick="selectClassification(this, '')">
+            <input type="radio" name="classificacao" value="" {% if not atendimento.classificacao %}checked{% endif %}>
+            <div class="classification-title">⏳ Não Definido</div>
+            <div class="classification-desc">Classificar depois</div>
+          </div>
+          
+          <div class="classification-card {% if atendimento.classificacao == 'básico' %}selected{% endif %}" onclick="selectClassification(this, 'básico')">
+            <input type="radio" name="classificacao" value="básico" {% if atendimento.classificacao == 'básico' %}checked{% endif %}>
+            <div class="classification-title">🟢 Básico</div>
+            <div class="classification-desc">Atendimento simples</div>
+          </div>
+          
+          <div class="classification-card {% if atendimento.classificacao == 'médio' %}selected{% endif %}" onclick="selectClassification(this, 'médio')">
+            <input type="radio" name="classificacao" value="médio" {% if atendimento.classificacao == 'médio' %}checked{% endif %}>
+            <div class="classification-title">🟡 Médio</div>
+            <div class="classification-desc">Complexidade moderada</div>
+          </div>
+          
+          <div class="classification-card {% if atendimento.classificacao == 'complexo' %}selected{% endif %}" onclick="selectClassification(this, 'complexo')">
+            <input type="radio" name="classificacao" value="complexo" {% if atendimento.classificacao == 'complexo' %}checked{% endif %}>
+            <div class="classification-title">🔴 Complexo</div>
+            <div class="classification-desc">Alta complexidade</div>
+          </div>
+        </div>
+        
+        <div class="help-text">
+          📊 A classificação ajuda na organização e análise dos atendimentos
+        </div>
+      </div>
+
+      <div class="form-actions">
+        <button type="submit" class="btn btn-primary">
+          💾 Salvar Alterações
+        </button>
+        <a href="{{ url_for('atendimentos') }}" class="btn btn-outline">
+          ❌ Cancelar
+        </a>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+  function selectClassification(card, value) {
+    // Remove seleção anterior
+    document.querySelectorAll('.classification-card').forEach(c => {
+      c.classList.remove('selected');
+    });
+    
+    // Adiciona seleção na nova opção
+    card.classList.add('selected');
+    
+    // Atualiza o radio button
+    const radio = card.querySelector('input[type="radio"]');
+    radio.checked = true;
+  }
+
+  // Validação do formulário
+  document.querySelector('form').addEventListener('submit', function(e) {
+    const agente = document.getElementById('agente_id').value;
+    const conteudo = document.getElementById('conteudo').value.trim();
+    
+    if (!agente) {
+      e.preventDefault();
+      alert('⚠️ Por favor, selecione um agente responsável.');
+      document.getElementById('agente_id').focus();
+      return;
+    }
+    
+    if (!conteudo) {
+      e.preventDefault();
+      alert('⚠️ Por favor, descreva o atendimento realizado.');
+      document.getElementById('conteudo').focus();
+      return;
+    }
+    
+    if (conteudo.length < 10) {
+      e.preventDefault();
+      alert('⚠️ A descrição deve ter pelo menos 10 caracteres.');
+      document.getElementById('conteudo').focus();
+      return;
+    }
+  });
+
+  // Contador de caracteres para textarea
+  const textarea = document.getElementById('conteudo');
+  const helpText = textarea.nextElementSibling;
+  
+  textarea.addEventListener('input', function() {
+    const length = this.value.length;
+    const originalText = helpText.textContent;
+    
+    if (length > 0) {
+      helpText.innerHTML = `💡 Seja específico e inclua todas as informações relevantes do atendimento <span style="float: right; color: #003366; font-weight: 600;">${length} caracteres</span>`;
+    } else {
+      helpText.textContent = originalText;
+    }
+  });
+
+  // Inicializa contador de caracteres na carga da página
+  document.addEventListener('DOMContentLoaded', function() {
+    const textarea = document.getElementById('conteudo');
+    const helpText = textarea.nextElementSibling;
+    const length = textarea.value.length;
+    
+    if (length > 0) {
+      helpText.innerHTML = `💡 Seja específico e inclua todas as informações relevantes do atendimento <span style="float: right; color: #003366; font-weight: 600;">${length} caracteres</span>`;
+    }
+  });
+</script>
+
 {% endblock %}

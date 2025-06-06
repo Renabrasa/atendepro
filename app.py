@@ -70,110 +70,169 @@ def login():
 
 # Substitua a função dashboard() no app.py
 
+# VERSÃO SEGURA DO DASHBOARD - Use se a versão debug não resolver
+
 @app.route('/dashboard')
 @login_required
 def dashboard():
-    data_inicio_str = request.args.get('data_inicio', '')
-    data_fim_str = request.args.get('data_fim', '')
-
-    data_inicio = None
-    data_fim = None
-
     try:
+        # Filtros de data
+        data_inicio_str = request.args.get('data_inicio', '')
+        data_fim_str = request.args.get('data_fim', '')
+
+        data_inicio = None
+        data_fim = None
+
         if data_inicio_str:
-            data_inicio = datetime.strptime(data_inicio_str, '%Y-%m-%d')
+            try:
+                data_inicio = datetime.strptime(data_inicio_str, '%Y-%m-%d')
+            except:
+                data_inicio_str = ''
+                
         if data_fim_str:
-            data_fim = datetime.strptime(data_fim_str, '%Y-%m-%d') + timedelta(days=1) - timedelta(seconds=1)
-    except ValueError:
-        flash('Formato de data inválido.', 'danger')
-        return redirect(url_for('dashboard'))
+            try:
+                data_fim = datetime.strptime(data_fim_str, '%Y-%m-%d') + timedelta(days=1) - timedelta(seconds=1)
+            except:
+                data_fim_str = ''
 
-    # CORREÇÃO AQUI:
-    if current_user.tipo in ['admin', 'coordenadora']:
-        # Admin e Coordenadora veem todos os supervisores E coordenadores
-        supervisores = User.query.filter(User.tipo.in_(['supervisor', 'coordenadora'])).all()
-    else:
-        # Supervisor vê apenas a si mesmo
-        supervisores = [current_user]
-
-    data = []
-    total_atendimentos = 0
-    total_agentes = 0
-    todos_agentes = []
-
-    for sup in supervisores:
-        query = Atendimento.query.filter_by(supervisor_id=sup.id)
-        if data_inicio:
-            query = query.filter(Atendimento.data_hora >= data_inicio)
-        if data_fim:
-            query = query.filter(Atendimento.data_hora <= data_fim)
-
-        atendimentos = query.order_by(Atendimento.data_hora.desc()).all()
-
-        # Ajusta timezone para cada atendimento
-        for atendimento in atendimentos:
-            if atendimento.data_hora.tzinfo is None:
-                atendimento.data_hora = atendimento.data_hora.replace(tzinfo=pytz.utc)
-            atendimento.data_hora = atendimento.data_hora.astimezone(br_tz)
-
-        total_chamados = len(atendimentos)
-        total_atendimentos += total_chamados
-
-        contador_agentes = defaultdict(list)
-        for a in atendimentos:
-            contador_agentes[a.agente_rel.nome].append(a)
-
-        num_agentes_supervisor = len(contador_agentes)
-        total_agentes += num_agentes_supervisor
-
-        if contador_agentes:
-            agente_top, chamados_top = max(contador_agentes.items(), key=lambda x: len(x[1]))
-            qtd_top = len(chamados_top)
+        # Busca supervisores baseado no tipo de usuário
+        supervisores = []
+        
+        if current_user.tipo == 'admin':
+            # Admin vê todos: supervisores + coordenadores
+            supervisores = User.query.filter(User.tipo.in_(['supervisor', 'coordenadora'])).all()
+        elif current_user.tipo == 'coordenadora':
+            # Coordenadora vê supervisores + ela mesma
+            supervisores = User.query.filter_by(tipo='supervisor').all()
+            supervisores.append(current_user)
         else:
-            agente_top, chamados_top, qtd_top = None, [], 0
+            # Supervisor vê apenas ele mesmo
+            supervisores = [current_user]
 
-        agentes_data = []
-        for agente_nome, chamados in contador_agentes.items():
-            qtd_chamados = len(chamados)
-            agentes_data.append({
-                'nome': agente_nome,
-                'qtd_chamados': qtd_chamados,
-                'chamados': chamados
-            })
-            todos_agentes.append({
-                'nome': agente_nome,
-                'qtd_chamados': qtd_chamados,
-                'supervisor_nome': sup.nome
-            })
+        # Inicializa contadores
+        total_atendimentos = 0
+        total_agentes = 0
+        data = []
 
-        agentes_data.sort(key=lambda x: x['qtd_chamados'], reverse=True)
+        # Processa cada supervisor
+        for supervisor in supervisores:
+            try:
+                # Query básica de atendimentos
+                query = Atendimento.query.filter_by(supervisor_id=supervisor.id)
+                
+                # Aplica filtros de data se existirem
+                if data_inicio:
+                    query = query.filter(Atendimento.data_hora >= data_inicio)
+                if data_fim:
+                    query = query.filter(Atendimento.data_hora <= data_fim)
 
-        data.append({
-            'supervisor': sup,
-            'total_chamados': total_chamados,
-            'agente_top': agente_top,
-            'qtd_top': qtd_top,
-            'agentes': agentes_data,
-            'num_agentes': num_agentes_supervisor
-        })
+                # Busca atendimentos
+                atendimentos = query.order_by(Atendimento.data_hora.desc()).all()
+                
+                # Ajusta timezone de forma segura
+                for atendimento in atendimentos:
+                    try:
+                        if atendimento.data_hora and atendimento.data_hora.tzinfo is None:
+                            atendimento.data_hora = atendimento.data_hora.replace(tzinfo=pytz.utc)
+                            atendimento.data_hora = atendimento.data_hora.astimezone(br_tz)
+                    except:
+                        pass  # Se der erro no timezone, continua
 
-    data.sort(key=lambda x: x['total_chamados'], reverse=True)
-    todos_agentes.sort(key=lambda x: x['qtd_chamados'], reverse=True)
-    top_5_agentes = todos_agentes[:5]
+                total_chamados = len(atendimentos)
+                total_atendimentos += total_chamados
 
-    total_supervisores = len(supervisores)
-    media_por_agente = round(total_atendimentos / total_agentes, 1) if total_agentes > 0 else 0
+                # Agrupa por agente de forma segura
+                contador_agentes = {}
+                for atendimento in atendimentos:
+                    try:
+                        if atendimento.agente_rel and atendimento.agente_rel.nome:
+                            agente_nome = atendimento.agente_rel.nome
+                            if agente_nome not in contador_agentes:
+                                contador_agentes[agente_nome] = []
+                            contador_agentes[agente_nome].append(atendimento)
+                    except:
+                        continue  # Pula atendimentos com problemas
 
-    return render_template('dashboard.html',
-                           data=data,
-                           total_supervisores=total_supervisores,
-                           total_agentes=total_agentes,
-                           total_atendimentos=total_atendimentos,
-                           media_por_agente=media_por_agente,
-                           top_5_agentes=top_5_agentes,
-                           data_inicio=data_inicio_str,
-                           data_fim=data_fim_str)
+                num_agentes = len(contador_agentes)
+                total_agentes += num_agentes
 
+                # Encontra melhor agente
+                agente_top = None
+                qtd_top = 0
+                if contador_agentes:
+                    melhor = max(contador_agentes.items(), key=lambda x: len(x[1]))
+                    agente_top = melhor[0]
+                    qtd_top = len(melhor[1])
+
+                # Prepara dados dos agentes
+                agentes_data = []
+                for nome_agente, lista_atendimentos in contador_agentes.items():
+                    agentes_data.append({
+                        'nome': nome_agente,
+                        'qtd_chamados': len(lista_atendimentos),
+                        'chamados': lista_atendimentos
+                    })
+
+                # Ordena agentes por quantidade
+                agentes_data.sort(key=lambda x: x['qtd_chamados'], reverse=True)
+
+                # Adiciona aos dados do supervisor
+                data.append({
+                    'supervisor': supervisor,
+                    'total_chamados': total_chamados,
+                    'agente_top': agente_top,
+                    'qtd_top': qtd_top,
+                    'agentes': agentes_data,
+                    'num_agentes': num_agentes
+                })
+
+            except Exception as e:
+                # Se der erro com um supervisor, adiciona dados vazios
+                print(f"Erro ao processar supervisor {supervisor.nome}: {e}")
+                data.append({
+                    'supervisor': supervisor,
+                    'total_chamados': 0,
+                    'agente_top': None,
+                    'qtd_top': 0,
+                    'agentes': [],
+                    'num_agentes': 0
+                })
+
+        # Ordena supervisores por total de atendimentos
+        data.sort(key=lambda x: x['total_chamados'], reverse=True)
+
+        # Calcula top 5 agentes
+        todos_agentes = []
+        for bloco in data:
+            for agente in bloco['agentes']:
+                todos_agentes.append({
+                    'nome': agente['nome'],
+                    'qtd_chamados': agente['qtd_chamados'],
+                    'supervisor_nome': bloco['supervisor'].nome
+                })
+        
+        todos_agentes.sort(key=lambda x: x['qtd_chamados'], reverse=True)
+        top_5_agentes = todos_agentes[:5]
+
+        # Estatísticas finais
+        total_supervisores = len(supervisores)
+        media_por_agente = round(total_atendimentos / total_agentes, 1) if total_agentes > 0 else 0
+
+        return render_template('dashboard.html',
+                               data=data,
+                               total_supervisores=total_supervisores,
+                               total_agentes=total_agentes,
+                               total_atendimentos=total_atendimentos,
+                               media_por_agente=media_por_agente,
+                               top_5_agentes=top_5_agentes,
+                               data_inicio=data_inicio_str,
+                               data_fim=data_fim_str)
+
+    except Exception as e:
+        # Em caso de erro geral, redireciona com mensagem
+        print(f"Erro geral no dashboard: {e}")
+        flash(f'Erro ao carregar dashboard: {str(e)}', 'danger')
+        return redirect(url_for('atendimentos'))  # Redireciona para atendimentos como fallback
 
 
 

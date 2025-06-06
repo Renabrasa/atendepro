@@ -68,30 +68,45 @@ def login():
 
 
 
+# SUBSTITUA a função dashboard() no app.py por esta versão
+
 @app.route('/dashboard')
 @login_required
 def dashboard():
+    from datetime import datetime, date
+    
+    # Pega filtros da URL (se houver)
     data_inicio_str = request.args.get('data_inicio', '')
     data_fim_str = request.args.get('data_fim', '')
+    
+    # Se não há filtros, usa dados de HOJE por padrão
+    if not data_inicio_str and not data_fim_str:
+        hoje = date.today()
+        data_inicio = datetime.combine(hoje, datetime.min.time())
+        data_fim = datetime.combine(hoje, datetime.max.time())
+        data_inicio_str = hoje.strftime('%Y-%m-%d')
+        data_fim_str = hoje.strftime('%Y-%m-%d')
+        periodo_atual = "HOJE"
+    else:
+        # Se há filtros, usa eles
+        data_inicio = None
+        data_fim = None
+        periodo_atual = "PERÍODO PERSONALIZADO"
+        
+        try:
+            if data_inicio_str:
+                data_inicio = datetime.strptime(data_inicio_str, '%Y-%m-%d')
+            if data_fim_str:
+                data_fim = datetime.strptime(data_fim_str, '%Y-%m-%d')
+                data_fim = datetime.combine(data_fim.date(), datetime.max.time())
+        except ValueError:
+            flash('Formato de data inválido.', 'danger')
+            return redirect(url_for('dashboard'))
 
-    data_inicio = None
-    data_fim = None
-
-    try:
-        if data_inicio_str:
-            data_inicio = datetime.strptime(data_inicio_str, '%Y-%m-%d')
-        if data_fim_str:
-            data_fim = datetime.strptime(data_fim_str, '%Y-%m-%d') + timedelta(days=1) - timedelta(seconds=1)
-    except ValueError:
-        flash('Formato de data inválido.', 'danger')
-        return redirect(url_for('dashboard'))
-
-    # CORREÇÃO AQUI:
+    # Buscar supervisores baseado no tipo de usuário
     if current_user.tipo in ['admin', 'coordenadora']:
-        # Admin e Coordenadora veem todos os supervisores E coordenadores
         supervisores = User.query.filter(User.tipo.in_(['supervisor', 'coordenadora'])).all()
     else:
-        # Supervisor vê apenas a si mesmo
         supervisores = [current_user]
 
     data = []
@@ -100,7 +115,9 @@ def dashboard():
     todos_agentes = []
 
     for sup in supervisores:
+        # Query com filtros de data aplicados
         query = Atendimento.query.filter_by(supervisor_id=sup.id)
+        
         if data_inicio:
             query = query.filter(Atendimento.data_hora >= data_inicio)
         if data_fim:
@@ -170,7 +187,8 @@ def dashboard():
                            media_por_agente=media_por_agente,
                            top_5_agentes=top_5_agentes,
                            data_inicio=data_inicio_str,
-                           data_fim=data_fim_str)
+                           data_fim=data_fim_str,
+                           periodo_atual=periodo_atual)
 
 
 
@@ -597,16 +615,16 @@ from flask_login import login_required, current_user
 
 # Substitua a função agentes() no seu app.py por esta versão corrigida:
 
+# SUBSTITUA a rota /cadastros/agentes no app.py por esta versão corrigida
+
 @app.route('/cadastros/agentes', methods=['GET', 'POST'])
 @login_required
 def agentes():
     supervisores = User.query.filter_by(tipo='supervisor').all()
     
-    # NOVO:
-    if current_user.tipo in ['admin', 'coordenadora']:
-        equipes = Equipe.query.all()
-    else:
-        equipes = Equipe.query.filter_by(supervisor_id=current_user.id).all()
+    # CORREÇÃO: SEMPRE mostrar todas as equipes para permitir compartilhamento
+    # Independente do tipo de usuário, mostra todas as equipes
+    equipes = Equipe.query.all()
 
     if request.method == 'POST':
         nome = request.form['nome']
@@ -641,6 +659,17 @@ def agentes():
             flash('Supervisor selecionado não é válido.', 'danger')
             return redirect(url_for('agentes'))
 
+        # VALIDAÇÃO ADICIONAL: Verificar se o supervisor atual pode criar agentes
+        # Supervisor só pode criar agentes se pelo menos uma das equipes selecionadas for dele
+        if current_user.tipo == 'supervisor':
+            equipes_do_supervisor = set(str(e.id) for e in Equipe.query.filter_by(supervisor_id=current_user.id).all())
+            equipes_selecionadas = set(equipes_ids)
+            
+            # Verifica se há pelo menos uma equipe em comum
+            if not equipes_do_supervisor.intersection(equipes_selecionadas):
+                flash('Você deve incluir pelo menos uma de suas próprias equipes ao criar um agente.', 'warning')
+                return redirect(url_for('agentes'))
+
         novo_agente = Agente(
             nome=nome,
             discord_id=discord_id if discord_id else None,
@@ -654,10 +683,12 @@ def agentes():
 
         db.session.add(novo_agente)
         db.session.commit()
-        flash(f'Agente "{nome}" criado com sucesso! Supervisor principal: {supervisor.nome}', 'success')
+        
+        equipes_nomes = [e.nome for e in selecionadas]
+        flash(f'Agente "{nome}" criado com sucesso! Supervisor principal: {supervisor.nome}. Equipes: {", ".join(equipes_nomes)}', 'success')
         return redirect(url_for('agentes'))
 
-    # Listagem de agentes
+    # Listagem de agentes (mantém a lógica de permissão atual para visualização)
     if current_user.tipo in ['admin', 'coordenadora']:
         agentes = Agente.query.all()
     else:
@@ -677,11 +708,15 @@ def agentes():
 
 from datetime import datetime
 
+# SUBSTITUA a rota /cadastros/agente/editar/<int:agente_id> no app.py por esta versão
+
 @app.route('/cadastros/agente/editar/<int:agente_id>', methods=['GET', 'POST'])
 @login_required
 def editar_agente(agente_id):
     agente = Agente.query.get_or_404(agente_id)
     supervisores = User.query.filter_by(tipo='supervisor').all()
+    
+    # CORREÇÃO: SEMPRE mostrar todas as equipes para permitir compartilhamento
     equipes = Equipe.query.all()
 
     if request.method == 'POST':
@@ -723,6 +758,16 @@ def editar_agente(agente_id):
         # Atualiza equipes
         equipes_ids = request.form.getlist('equipes')
         if equipes_ids:
+            # VALIDAÇÃO: Supervisor só pode editar se pelo menos uma equipe for dele
+            if current_user.tipo == 'supervisor':
+                equipes_do_supervisor = set(str(e.id) for e in Equipe.query.filter_by(supervisor_id=current_user.id).all())
+                equipes_selecionadas = set(equipes_ids)
+                
+                # Verifica se há pelo menos uma equipe em comum
+                if not equipes_do_supervisor.intersection(equipes_selecionadas):
+                    flash('Você deve manter pelo menos uma de suas próprias equipes ao editar um agente.', 'warning')
+                    return redirect(url_for('editar_agente', agente_id=agente_id))
+            
             agente.equipes = Equipe.query.filter(Equipe.id.in_(equipes_ids)).all()
         else:
             flash('Selecione pelo menos uma equipe.', 'danger')
@@ -734,7 +779,9 @@ def editar_agente(agente_id):
             agente.ativo = bool(int(ativo))
 
         db.session.commit()
-        flash(f'Agente "{agente.nome}" atualizado com sucesso! Supervisor principal: {supervisor.nome}', 'success')
+        
+        equipes_nomes = [e.nome for e in agente.equipes]
+        flash(f'Agente "{agente.nome}" atualizado com sucesso! Supervisor principal: {supervisor.nome}. Equipes: {", ".join(equipes_nomes)}', 'success')
         return redirect(url_for('agentes'))
 
     return render_template('agente_edit.html', agente=agente, supervisores=supervisores, equipes=equipes)

@@ -2,729 +2,696 @@
 {% block title %}Dashboard Executivo{% endblock %}
 {% block content %}
 <style>
-  .dashboard-container {
-    max-width: 1400px;
-    margin: 0 auto;
-    padding: 20px;
+  /* Reset e Variáveis */
+  :root {
+    --primary: #1e293b;
+    --secondary: #475569;
+    --accent: #3b82f6;
+    --background: #f8fafc;
+    --white: #ffffff;
+    --border: #e2e8f0;
+    --text: #334155;
+    --muted: #64748b;
+    --success: #059669;
+    --warning: #d97706;
+    --danger: #dc2626;
   }
 
-  .header-section {
-    background: linear-gradient(135deg, #003366, #0056b3);
-    color: white;
-    padding: 25px;
-    border-radius: 12px;
-    margin-bottom: 30px;
+  * {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+  }
+
+  body {
+    background: var(--background);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    line-height: 1.5;
+  }
+
+  .dashboard {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 24px;
+  }
+
+  /* Header Profissional */
+  .header {
+    background: var(--white);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 24px 32px;
+    margin-bottom: 24px;
     display: flex;
     justify-content: space-between;
     align-items: center;
-    flex-wrap: wrap;
-    gap: 15px;
   }
 
-  .header-title {
-    font-size: 2em;
-    font-weight: 700;
-    margin: 0;
+  .header-content h1 {
+    font-size: 24px;
+    font-weight: 600;
+    color: var(--primary);
+    margin-bottom: 4px;
   }
 
-  .header-subtitle {
-    font-size: 1em;
-    opacity: 0.9;
-    margin: 5px 0 0 0;
+  .header-content p {
+    color: var(--muted);
+    font-size: 14px;
+  }
+
+  .header-actions {
+    display: flex;
+    gap: 12px;
   }
 
   .btn {
-    padding: 10px 20px;
-    border: none;
-    border-radius: 8px;
+    padding: 8px 16px;
+    border-radius: 6px;
+    border: 1px solid var(--border);
+    background: var(--white);
+    color: var(--text);
     text-decoration: none;
-    font-weight: 600;
-    cursor: pointer;
-    transition: all 0.3s ease;
+    font-size: 14px;
+    font-weight: 500;
+    transition: all 0.2s;
     display: inline-flex;
     align-items: center;
     gap: 8px;
   }
 
+  .btn:hover {
+    background: var(--background);
+    border-color: var(--accent);
+  }
+
   .btn-primary {
-    background: rgba(255,255,255,0.2);
-    color: white;
-    border: 2px solid rgba(255,255,255,0.3);
+    background: var(--accent);
+    color: var(--white);
+    border-color: var(--accent);
   }
 
   .btn-primary:hover {
-    background: rgba(255,255,255,0.3);
-    transform: translateY(-2px);
+    background: #2563eb;
   }
 
-  /* Filtros */
-  .filters-section {
-    background: white;
-    padding: 25px;
-    border-radius: 12px;
-    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-    margin-bottom: 25px;
-  }
-
-  .filters-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 20px;
+  /* Filtros Compactos */
+  .filters {
+    background: var(--white);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 20px 24px;
+    margin-bottom: 24px;
   }
 
   .filters-title {
-    font-size: 1.2em;
+    font-size: 16px;
     font-weight: 600;
-    color: #003366;
-    margin: 0;
+    color: var(--primary);
+    margin-bottom: 16px;
   }
 
-  .filters-content {
+  .filters-row {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-    gap: 20px;
+    grid-template-columns: 200px 200px 1fr auto;
+    gap: 16px;
     align-items: end;
   }
 
-  .filter-group {
+  .form-group {
     display: flex;
     flex-direction: column;
-    gap: 5px;
+    gap: 6px;
   }
 
-  .filter-group label {
-    font-weight: 600;
-    color: #003366;
-    font-size: 0.9em;
+  .form-label {
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text);
   }
 
-  .filter-group input {
-    padding: 10px;
-    border: 2px solid #e2e8f0;
-    border-radius: 8px;
-    font-size: 1em;
-    transition: border-color 0.3s ease;
+  .form-input {
+    padding: 8px 12px;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    font-size: 14px;
+    transition: border-color 0.2s;
   }
 
-  .filter-group input:focus {
-    border-color: #003366;
+  .form-input:focus {
     outline: none;
+    border-color: var(--accent);
   }
 
-  .btn-success {
-    background: linear-gradient(135deg, #28a745, #20c997);
-    color: white;
-    border: none;
-    padding: 10px 20px;
-    font-weight: 600;
-  }
-
-  .btn-success:hover {
-    background: linear-gradient(135deg, #218838, #1ca085);
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(40, 167, 69, 0.3);
-  }
-
-  .btn-info {
-    background: linear-gradient(135deg, #17a2b8, #6610f2);
-    color: white;
-    border: none;
-    padding: 10px 20px;
-    font-weight: 600;
-  }
-
-  .btn-info:hover {
-    background: linear-gradient(135deg, #138496, #5a0fcf);
-    transform: translateY(-2px);
-  }
-
-  /* Cards de Estatísticas */
-  .stats-row {
+  /* KPIs Horizontais */
+  .kpis {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-    gap: 20px;
-    margin-bottom: 25px;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 16px;
+    margin-bottom: 24px;
   }
 
-  .stat-card {
-    background: white;
-    padding: 25px;
-    border-radius: 12px;
-    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-    text-align: center;
-    border-left: 4px solid #003366;
-    transition: all 0.3s ease;
-  }
-
-  .stat-card:hover {
-    transform: translateY(-5px);
-    box-shadow: 0 8px 25px rgba(0,0,0,0.15);
-  }
-
-  .stat-number {
-    font-size: 2.5em;
-    font-weight: 700;
-    color: #003366;
-    margin-bottom: 5px;
-    line-height: 1;
-  }
-
-  .stat-label {
-    color: #718096;
-    font-weight: 600;
-    text-transform: uppercase;
-    font-size: 0.85em;
-    margin: 0;
-  }
-
-  /* Board Simplificado */
-  .board-container {
-    background: white;
-    border-radius: 12px;
-    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-    overflow: hidden;
-    margin-bottom: 25px;
-  }
-
-  .board-header {
-    background: linear-gradient(135deg, #003366, #0056b3);
-    color: white;
-    padding: 20px 25px;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-  }
-
-  .board-title {
-    font-size: 1.3em;
-    font-weight: 600;
-    margin: 0;
-  }
-
-  .supervisors-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-    gap: 25px;
-    padding: 25px;
-  }
-
-  .supervisor-card {
-    background: #f8fafc;
-    border-radius: 12px;
+  .kpi {
+    background: var(--white);
+    border: 1px solid var(--border);
+    border-radius: 8px;
     padding: 20px;
-    border: 2px solid #e2e8f0;
-    transition: all 0.3s ease;
-    position: relative;
-  }
-
-  .supervisor-card:hover {
-    border-color: #003366;
-    box-shadow: 0 6px 20px rgba(0,0,0,0.12);
-    transform: translateY(-3px);
-  }
-
-  .supervisor-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 15px;
-    padding-bottom: 10px;
-    border-bottom: 2px solid #e2e8f0;
-  }
-
-  .supervisor-name {
-    font-size: 1.2em;
-    font-weight: 700;
-    color: #003366;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-  }
-
-  .supervisor-badge {
-    padding: 4px 10px;
-    border-radius: 12px;
-    font-size: 0.7em;
-    font-weight: 600;
-    text-transform: uppercase;
-  }
-
-  .badge-coordenadora {
-    background: #f093fb;
-    color: white;
-  }
-
-  .badge-supervisor {
-    background: #003366;
-    color: white;
-  }
-
-  .supervisor-stats {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 15px;
-    margin-bottom: 20px;
-  }
-
-  .mini-stat {
     text-align: center;
-    padding: 12px 8px;
-    background: white;
-    border-radius: 8px;
-    border: 1px solid #e2e8f0;
   }
 
-  .mini-stat-number {
-    font-size: 1.8em;
+  .kpi-value {
+    font-size: 32px;
     font-weight: 700;
-    color: #003366;
-    margin-bottom: 4px;
+    color: var(--primary);
     line-height: 1;
+    margin-bottom: 8px;
   }
 
-  .mini-stat-label {
-    font-size: 0.75em;
-    color: #718096;
-    font-weight: 600;
+  .kpi-label {
+    font-size: 13px;
+    color: var(--muted);
+    font-weight: 500;
     text-transform: uppercase;
+    letter-spacing: 0.5px;
   }
 
-  .agents-preview {
-    background: white;
+  /* Tabela Principal */
+  .main-content {
+    display: grid;
+    grid-template-columns: 1fr 300px;
+    gap: 24px;
+  }
+
+  .data-table {
+    background: var(--white);
+    border: 1px solid var(--border);
     border-radius: 8px;
-    padding: 15px;
-    border: 1px solid #e2e8f0;
+    overflow: hidden;
   }
 
-  .agents-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 10px;
+  .table-header {
+    padding: 20px 24px;
+    border-bottom: 1px solid var(--border);
+    background: #fafbfc;
   }
 
-  .agents-title {
+  .table-header h3 {
+    font-size: 16px;
     font-weight: 600;
-    color: #4a5568;
-    font-size: 0.9em;
+    color: var(--primary);
   }
 
-  .view-details-btn {
-    background: #667eea;
-    color: white;
-    border: none;
-    padding: 4px 8px;
-    border-radius: 4px;
-    font-size: 0.75em;
-    cursor: pointer;
-    transition: all 0.2s ease;
-  }
-
-  .view-details-btn:hover {
-    background: #5a67d8;
-    transform: scale(1.05);
-  }
-
-  .agents-list {
-    max-height: 120px;
+  .table-container {
+    height: 500px;
     overflow-y: auto;
   }
 
-  .agent-item {
+  .table {
+    width: 100%;
+    border-collapse: collapse;
+  }
+
+  .table th {
+    background: #fafbfc;
+    padding: 12px 16px;
+    text-align: left;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    border-bottom: 1px solid var(--border);
+    position: sticky;
+    top: 0;
+    z-index: 10;
+  }
+
+  .table td {
+    padding: 16px;
+    border-bottom: 1px solid #f1f5f9;
+    font-size: 14px;
+    vertical-align: middle;
+  }
+
+  .table tr:hover {
+    background: #fafbfc;
+  }
+
+  .supervisor-name {
+    font-weight: 600;
+    color: var(--primary);
+  }
+
+  .supervisor-type {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 12px;
+    font-size: 11px;
+    font-weight: 500;
+    text-transform: uppercase;
+    margin-left: 8px;
+  }
+
+  .type-admin {
+    background: #fef3c7;
+    color: #92400e;
+  }
+
+  .type-coordenadora {
+    background: #fce7f3;
+    color: #be185d;
+  }
+
+  .type-supervisor {
+    background: #dbeafe;
+    color: #1d4ed8;
+  }
+
+  .metric {
+    font-weight: 600;
+    color: var(--accent);
+  }
+
+  .agent-list {
+    font-size: 13px;
+    color: var(--muted);
+    max-width: 200px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .expand-btn {
+    background: none;
+    border: none;
+    color: var(--accent);
+    cursor: pointer;
+    font-size: 12px;
+    padding: 4px 8px;
+    border-radius: 4px;
+    transition: background 0.2s;
+  }
+
+  .expand-btn:hover {
+    background: #f0f9ff;
+  }
+
+  /* Sidebar com Resumos */
+  .sidebar {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  .sidebar-card {
+    background: var(--white);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    overflow: hidden;
+  }
+
+  .sidebar-header {
+    padding: 16px 20px;
+    background: #fafbfc;
+    border-bottom: 1px solid var(--border);
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--primary);
+  }
+
+  .sidebar-content {
+    padding: 16px 20px;
+  }
+
+  .top-performers {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .performer-item {
     display: flex;
     justify-content: space-between;
     align-items: center;
     padding: 8px 0;
-    border-bottom: 1px solid #f1f5f9;
   }
 
-  .agent-item:last-child {
-    border-bottom: none;
-  }
-
-  .agent-name {
+  .performer-name {
+    font-size: 13px;
     font-weight: 500;
-    color: #2d3748;
-    font-size: 0.9em;
+    color: var(--text);
   }
 
-  .agent-count {
-    background: #667eea;
-    color: white;
+  .performer-count {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--accent);
+    background: #f0f9ff;
     padding: 2px 8px;
     border-radius: 10px;
-    font-size: 0.75em;
-    font-weight: 600;
   }
 
-  .empty-state {
+  .quick-stats {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+  }
+
+  .quick-stat {
     text-align: center;
-    padding: 30px;
-    color: #718096;
-    font-style: italic;
+    padding: 12px;
+    background: #fafbfc;
+    border-radius: 6px;
   }
 
-  /* Modal para detalhes */
+  .quick-stat-value {
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--primary);
+    margin-bottom: 4px;
+  }
+
+  .quick-stat-label {
+    font-size: 11px;
+    color: var(--muted);
+    text-transform: uppercase;
+  }
+
+  /* Modal Simples */
   .modal {
     display: none;
     position: fixed;
-    z-index: 1000;
-    left: 0;
     top: 0;
+    left: 0;
     width: 100%;
     height: 100%;
-    background-color: rgba(0,0,0,0.5);
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 1000;
   }
 
   .modal-content {
-    background-color: white;
+    background: var(--white);
     margin: 5% auto;
-    padding: 0;
-    border-radius: 12px;
-    width: 80%;
+    width: 90%;
     max-width: 600px;
-    max-height: 80vh;
+    border-radius: 8px;
     overflow: hidden;
-    box-shadow: 0 20px 60px rgba(0,0,0,0.3);
   }
 
   .modal-header {
-    background: linear-gradient(135deg, #003366, #0056b3);
-    color: white;
-    padding: 20px;
+    padding: 20px 24px;
+    background: #fafbfc;
+    border-bottom: 1px solid var(--border);
     display: flex;
     justify-content: space-between;
     align-items: center;
   }
 
   .modal-title {
-    font-size: 1.3em;
+    font-size: 16px;
     font-weight: 600;
-    margin: 0;
+    color: var(--primary);
   }
 
-  .close {
-    color: white;
-    font-size: 28px;
-    font-weight: bold;
+  .modal-close {
+    background: none;
+    border: none;
+    font-size: 20px;
+    color: var(--muted);
     cursor: pointer;
-    line-height: 1;
-  }
-
-  .close:hover {
-    opacity: 0.7;
+    padding: 4px;
   }
 
   .modal-body {
-    padding: 20px;
-    max-height: 60vh;
+    padding: 24px;
+    max-height: 400px;
     overflow-y: auto;
   }
 
-  .atendimento-item {
-    background: #f8fafc;
-    border: 1px solid #e2e8f0;
-    border-radius: 8px;
-    padding: 15px;
-    margin-bottom: 10px;
+  /* Responsivo */
+  @media (max-width: 1024px) {
+    .main-content {
+      grid-template-columns: 1fr;
+    }
+    
+    .sidebar {
+      grid-row: 1;
+    }
   }
 
-  .atendimento-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 8px;
-  }
-
-  .atendimento-id {
-    font-weight: 700;
-    color: #667eea;
-  }
-
-  .atendimento-date {
-    color: #a0aec0;
-    font-size: 0.8em;
-  }
-
-  .atendimento-content {
-    color: #4a5568;
-    line-height: 1.4;
-    margin-bottom: 8px;
-  }
-
-  .classificacao-tag {
-    display: inline-block;
-    padding: 2px 8px;
-    border-radius: 12px;
-    font-size: 0.7em;
-    font-weight: 600;
-    text-transform: uppercase;
-  }
-
-  .classificacao-basico { background: #d4edda; color: #155724; }
-  .classificacao-medio { background: #fff3cd; color: #856404; }
-  .classificacao-complexo { background: #f8d7da; color: #721c24; }
-  .classificacao-sem { background: #e2e8f0; color: #718096; }
-
-  /* Responsividade */
   @media (max-width: 768px) {
-    .dashboard-container {
-      padding: 15px;
+    .dashboard {
+      padding: 16px;
     }
 
-    .header-section {
+    .header {
       flex-direction: column;
+      gap: 16px;
       text-align: center;
     }
 
-    .filters-content {
+    .filters-row {
       grid-template-columns: 1fr;
+      gap: 12px;
     }
 
-    .stats-row {
+    .kpis {
       grid-template-columns: repeat(2, 1fr);
     }
-
-    .supervisors-grid {
-      grid-template-columns: 1fr;
-      padding: 15px;
-    }
-
-    .supervisor-stats {
-      grid-template-columns: 1fr;
-      gap: 10px;
-    }
-
-    .modal-content {
-      width: 95%;
-      margin: 10% auto;
-    }
   }
 
-  /* Animações */
-  @keyframes slideIn {
-    from {
-      opacity: 0;
-      transform: translateY(20px);
-    }
-    to {
-      opacity: 1;
-      transform: translateY(0);
-    }
+  /* Estados Vazios */
+  .empty-state {
+    text-align: center;
+    padding: 60px 20px;
+    color: var(--muted);
   }
 
-  .supervisor-card {
-    animation: slideIn 0.5s ease-out;
-  }
-
-  /* Scrollbar personalizada */
-  .agents-list::-webkit-scrollbar,
-  .modal-body::-webkit-scrollbar {
-    width: 6px;
-  }
-
-  .agents-list::-webkit-scrollbar-track,
-  .modal-body::-webkit-scrollbar-track {
-    background: #f1f5f9;
-    border-radius: 3px;
-  }
-
-  .agents-list::-webkit-scrollbar-thumb,
-  .modal-body::-webkit-scrollbar-thumb {
-    background: #cbd5e0;
-    border-radius: 3px;
-  }
-
-  .agents-list::-webkit-scrollbar-thumb:hover,
-  .modal-body::-webkit-scrollbar-thumb:hover {
-    background: #a0aec0;
+  .empty-state h3 {
+    color: var(--text);
+    margin-bottom: 8px;
+    font-weight: 500;
   }
 </style>
 
-<div class="dashboard-container">
-  <!-- Header -->
-  <div class="header-section">
-    <div>
-      <h1 class="header-title">📊 Dashboard Executivo</h1>
-      <p class="header-subtitle">Visão geral dos atendimentos e equipes</p>
+<div class="dashboard">
+  <!-- Header Profissional -->
+  <header class="header">
+    <div class="header-content">
+      <h1>Dashboard Executivo</h1>
+      <p>
+        <strong>{{ periodo_atual }}:</strong>
+        {% if periodo_atual == "HOJE" %}
+          {{ data_inicio|strftime('%d/%m/%Y') }}
+        {% else %}
+          {{ data_inicio }} a {{ data_fim }}
+        {% endif %}
+      </p>
     </div>
-    <div>
+    <div class="header-actions">
       <a href="{{ url_for('atendimentos') }}" class="btn btn-primary">
-        📋 Ver Todos os Atendimentos
+        Ver Atendimentos
+      </a>
+      <a href="{{ url_for('novo_atendimento') }}" class="btn">
+        Novo Atendimento
       </a>
     </div>
-  </div>
+  </header>
 
-  <!-- Filtros -->
-  <div class="filters-section">
-    <div class="filters-header">
-      <h3 class="filters-title">🔍 Filtros de Período</h3>
-    </div>
-    
-    <form method="GET" class="filters-content">
-      <div class="filter-group">
-        <label for="data_inicio">📅 Data Inicial</label>
-        <input type="date" id="data_inicio" name="data_inicio" value="{{ data_inicio }}">
+  <!-- Filtros Compactos -->
+  <section class="filters">
+    <h3 class="filters-title">Filtros Personalizados</h3>
+    <form method="GET" class="filters-row">
+      <div class="form-group">
+        <label class="form-label">Data Inicial</label>
+        <input type="date" name="data_inicio" value="{{ data_inicio }}" class="form-input">
       </div>
-      
-      <div class="filter-group">
-        <label for="data_fim">📅 Data Final</label>
-        <input type="date" id="data_fim" name="data_fim" value="{{ data_fim }}">
+      <div class="form-group">
+        <label class="form-label">Data Final</label>
+        <input type="date" name="data_fim" value="{{ data_fim }}" class="form-input">
       </div>
-      
-      <div class="filter-group">
-        <label>&nbsp;</label>
-        <div style="display: flex; gap: 10px;">
-          <button type="submit" class="btn btn-success">🔍 Aplicar Filtro</button>
-          <a href="{{ url_for('dashboard') }}" class="btn btn-info">🔄 Limpar</a>
-        </div>
+      <div style="display: flex; gap: 8px; align-items: end;">
+        <button type="submit" class="btn btn-primary">Aplicar</button>
+        <a href="{{ url_for('dashboard') }}" class="btn">Hoje</a>
       </div>
     </form>
-  </div>
+  </section>
 
-  <!-- Estatísticas Gerais -->
-  <div class="stats-row">
-    <div class="stat-card">
-      <div class="stat-number">{{ total_supervisores }}</div>
-      <div class="stat-label">
-        {% if current_user.tipo in ['admin', 'coordenadora'] %}
-          Supervisores
-        {% else %}
-          Minha Equipe
-        {% endif %}
+  <!-- KPIs Horizontais -->
+  <section class="kpis">
+    <div class="kpi">
+      <div class="kpi-value">{{ total_supervisores }}</div>
+      <div class="kpi-label">
+        {% if current_user.tipo in ['admin', 'coordenadora'] %}Supervisores{% else %}Equipes{% endif %}
       </div>
     </div>
-    <div class="stat-card">
-      <div class="stat-number">{{ total_agentes }}</div>
-      <div class="stat-label">Total de Agentes</div>
+    <div class="kpi">
+      <div class="kpi-value">{{ total_agentes }}</div>
+      <div class="kpi-label">Agentes</div>
     </div>
-    <div class="stat-card">
-      <div class="stat-number">{{ total_atendimentos }}</div>
-      <div class="stat-label">Total Atendimentos</div>
+    <div class="kpi">
+      <div class="kpi-value">{{ total_atendimentos }}</div>
+      <div class="kpi-label">Atendimentos</div>
     </div>
-    {% if media_por_agente %}
-    <div class="stat-card">
-      <div class="stat-number">{{ media_por_agente }}</div>
-      <div class="stat-label">Média por Agente</div>
+    <div class="kpi">
+      <div class="kpi-value">{{ media_por_agente or '0' }}</div>
+      <div class="kpi-label">Média/Agente</div>
     </div>
-    {% endif %}
-  </div>
+  </section>
 
-  <!-- Board de Supervisores Simplificado -->
-  <div class="board-container">
-    <div class="board-header">
-      <h3 class="board-title">👥 Supervisores e Equipes</h3>
-    </div>
-    
-    <div class="supervisors-grid">
-      {% for bloco in data %}
-        <div class="supervisor-card">
-          <div class="supervisor-header">
-            <div class="supervisor-name">
-              {% if bloco.supervisor.tipo == 'coordenadora' %}
-                👩‍💼 {{ bloco.supervisor.nome }}
-              {% else %}
-                👤 {{ bloco.supervisor.nome }}
-              {% endif %}
-            </div>
-            <div class="supervisor-badge {% if bloco.supervisor.tipo == 'coordenadora' %}badge-coordenadora{% else %}badge-supervisor{% endif %}">
-              {% if bloco.supervisor.tipo == 'coordenadora' %}COORDENADORA{% else %}SUPERVISOR{% endif %}
-            </div>
-          </div>
-          
-          <div class="supervisor-stats">
-            <div class="mini-stat">
-              <div class="mini-stat-number">{{ bloco.total_chamados }}</div>
-              <div class="mini-stat-label">Atendimentos</div>
-            </div>
-            <div class="mini-stat">
-              <div class="mini-stat-number">{{ bloco.num_agentes }}</div>
-              <div class="mini-stat-label">Agentes</div>
-            </div>
-            <div class="mini-stat">
-              <div class="mini-stat-number">{{ bloco.qtd_top or 0 }}</div>
-              <div class="mini-stat-label">Top Agente</div>
-            </div>
-          </div>
-
-          <div class="agents-preview">
-            <div class="agents-header">
-              <span class="agents-title">👤 Agentes Ativos</span>
-              {% if bloco.agentes %}
-                <button class="view-details-btn" onclick="showAgentDetails('{{ bloco.supervisor.nome }}', '{{ bloco.supervisor.id }}')">
-                  Ver Detalhes
-                </button>
-              {% endif %}
-            </div>
-            
-            {% if bloco.agentes %}
-              <div class="agents-list">
-                {% for agente in bloco.agentes[:5] %}
-                  <div class="agent-item">
-                    <span class="agent-name">{{ agente.nome }}</span>
-                    <span class="agent-count">{{ agente.qtd_chamados }}</span>
-                  </div>
-                {% endfor %}
-                {% if bloco.agentes|length > 5 %}
-                  <div class="agent-item">
-                    <span class="agent-name" style="color: #667eea; font-style: italic;">
-                      + {{ bloco.agentes|length - 5 }} agentes...
-                    </span>
-                  </div>
+  <!-- Conteúdo Principal -->
+  <div class="main-content">
+    <!-- Tabela de Supervisores -->
+    <section class="data-table">
+      <div class="table-header">
+        <h3>Supervisores e Equipes</h3>
+      </div>
+      <div class="table-container">
+        <table class="table">
+          <thead>
+            <tr>
+              <th>Supervisor</th>
+              <th>Atendimentos</th>
+              <th>Agentes</th>
+              <th>Melhor Agente</th>
+              <th>Top 3 Agentes</th>
+              <th>Ações</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for bloco in data %}
+            <tr>
+              <td>
+                <div class="supervisor-name">{{ bloco.supervisor.nome }}</div>
+                <span class="supervisor-type type-{{ bloco.supervisor.tipo }}">
+                  {% if bloco.supervisor.tipo == 'admin' %}Admin
+                  {% elif bloco.supervisor.tipo == 'coordenadora' %}Coord
+                  {% else %}Sup{% endif %}
+                </span>
+              </td>
+              <td>
+                <span class="metric">{{ bloco.total_chamados }}</span>
+              </td>
+              <td>
+                <span class="metric">{{ bloco.num_agentes }}</span>
+              </td>
+              <td>
+                {% if bloco.agente_top %}
+                  <strong>{{ bloco.agente_top }}</strong>
+                  <small>({{ bloco.qtd_top }})</small>
+                {% else %}
+                  <span style="color: var(--muted);">—</span>
                 {% endif %}
-              </div>
+              </td>
+              <td>
+                <div class="agent-list">
+                  {% for agente in bloco.agentes[:3] %}
+                    {{ agente.nome }} ({{ agente.qtd_chamados }}){% if not loop.last %}, {% endif %}
+                  {% else %}
+                    <span style="color: var(--muted);">Nenhum agente</span>
+                  {% endfor %}
+                  {% if bloco.agentes|length > 3 %}
+                    <span style="color: var(--muted);">...</span>
+                  {% endif %}
+                </div>
+              </td>
+              <td>
+                {% if bloco.agentes %}
+                  <button class="expand-btn" onclick="showDetails('{{ bloco.supervisor.nome }}', '{{ bloco.supervisor.id }}')">
+                    Ver Detalhes
+                  </button>
+                {% else %}
+                  <span style="color: var(--muted); font-size: 12px;">—</span>
+                {% endif %}
+              </td>
+            </tr>
             {% else %}
-              <div class="empty-state">
-                <p>📭 Nenhum agente com atendimentos</p>
-              </div>
-            {% endif %}
+            <tr>
+              <td colspan="6" class="empty-state">
+                <h3>Nenhum supervisor encontrado</h3>
+                <p>Não há dados para exibir no período selecionado.</p>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- Sidebar com Resumos -->
+    <aside class="sidebar">
+      {% if top_5_agentes %}
+      <!-- Top Performers -->
+      <div class="sidebar-card">
+        <div class="sidebar-header">Top 5 Agentes</div>
+        <div class="sidebar-content">
+          <div class="top-performers">
+            {% for agente in top_5_agentes[:5] %}
+            <div class="performer-item">
+              <span class="performer-name">{{ agente.nome }}</span>
+              <span class="performer-count">{{ agente.qtd_chamados }}</span>
+            </div>
+            {% endfor %}
           </div>
         </div>
-      {% else %}
-        <div class="empty-state" style="grid-column: 1 / -1;">
-          <h3>📊 Nenhum supervisor encontrado</h3>
-          <p>Não há dados para exibir no dashboard.</p>
-          {% if current_user.tipo in ['admin', 'coordenadora'] %}
-            <a href="{{ url_for('supervisores') }}" class="btn btn-primary" style="margin-top: 15px;">
-              ➕ Cadastrar Supervisor
-            </a>
-          {% endif %}
-        </div>
-      {% endfor %}
-    </div>
-  </div>
+      </div>
+      {% endif %}
 
-  {% if top_5_agentes %}
-  <!-- Top 5 Agentes -->
-  <div class="board-container">
-    <div class="board-header">
-      <h3 class="board-title">🏆 Top 5 Agentes (Período Filtrado)</h3>
-    </div>
-    
-    <div style="padding: 25px;">
-      <div class="stats-row">
-        {% for agente in top_5_agentes[:5] %}
-          <div class="stat-card">
-            <div class="stat-number">{{ agente.qtd_chamados }}</div>
-            <div class="stat-label">{{ agente.nome }}</div>
-            <div style="font-size: 0.8em; color: #6c757d; margin-top: 5px;">
-              {{ agente.supervisor_nome }}
+      <!-- Estatísticas Rápidas -->
+      <div class="sidebar-card">
+        <div class="sidebar-header">Resumo do Período</div>
+        <div class="sidebar-content">
+          <div class="quick-stats">
+            <div class="quick-stat">
+              <div class="quick-stat-value">{{ data|length }}</div>
+              <div class="quick-stat-label">Supervisores</div>
+            </div>
+            <div class="quick-stat">
+              <div class="quick-stat-value">
+                {% set total_agentes_ativos = data|sum(attribute='num_agentes') %}
+                {{ total_agentes_ativos }}
+              </div>
+              <div class="quick-stat-label">Agentes Ativos</div>
             </div>
           </div>
-        {% endfor %}
+        </div>
       </div>
-    </div>
+
+      <!-- Informações Adicionais -->
+      <div class="sidebar-card">
+        <div class="sidebar-header">Informações do Período</div>
+        <div class="sidebar-content">
+          <div style="font-size: 13px; color: var(--muted); line-height: 1.6;">
+            <p><strong>Período:</strong> {{ periodo_atual }}</p>
+            {% if periodo_atual == "HOJE" %}
+              <p><strong>Data:</strong> {{ data_inicio|strftime('%d/%m/%Y') }}</p>
+            {% else %}
+              <p><strong>De:</strong> {{ data_inicio }}</p>
+              <p><strong>Até:</strong> {{ data_fim }}</p>
+            {% endif %}
+            <p><strong>Usuário:</strong> {{ current_user.nome }}</p>
+            <p><strong>Tipo:</strong> {{ current_user.tipo|title }}</p>
+            <hr style="margin: 12px 0; border: none; border-top: 1px solid var(--border);">
+            <p style="font-size: 12px; color: var(--muted);">
+              {% if periodo_atual == "HOJE" %}
+                💡 Mostrando dados de hoje. Use os filtros para ver outros períodos.
+              {% else %}
+                📅 Período personalizado ativo. Clique em "Hoje" para voltar aos dados atuais.
+              {% endif %}
+            </p>
+          </div>
+        </div>
+      </div>
+    </aside>
   </div>
-  {% endif %}
 </div>
 
-<!-- Modal para Detalhes dos Agentes -->
-<div id="agentModal" class="modal">
+<!-- Modal Simples -->
+<div id="detailsModal" class="modal">
   <div class="modal-content">
     <div class="modal-header">
-      <h3 class="modal-title" id="modalTitle">Detalhes dos Agentes</h3>
-      <span class="close" onclick="closeModal()">&times;</span>
+      <h3 class="modal-title" id="modalTitle">Detalhes</h3>
+      <button class="modal-close" onclick="closeModal()">&times;</button>
     </div>
     <div class="modal-body" id="modalBody">
       <!-- Conteúdo será inserido via JavaScript -->
@@ -735,30 +702,31 @@
 <script>
   // Validação de filtros
   document.querySelector('form').addEventListener('submit', function(e) {
-    const inicio = document.getElementById('data_inicio').value;
-    const fim = document.getElementById('data_fim').value;
+    const inicio = document.querySelector('[name="data_inicio"]').value;
+    const fim = document.querySelector('[name="data_fim"]').value;
     
     if (inicio && fim && inicio > fim) {
       e.preventDefault();
-      alert('⚠️ A data inicial não pode ser maior que a data final.');
+      alert('A data inicial não pode ser maior que a data final.');
     }
   });
 
-  // Função para mostrar detalhes dos agentes
-  function showAgentDetails(supervisorName, supervisorId) {
-    const modal = document.getElementById('agentModal');
+  // Modal simples (sem serialização complexa)
+  function showDetails(supervisorName, supervisorId) {
+    const modal = document.getElementById('detailsModal');
     const modalTitle = document.getElementById('modalTitle');
     const modalBody = document.getElementById('modalBody');
     
-    modalTitle.textContent = `👤 Agentes de ${supervisorName}`;
-    
-    // Buscar dados via AJAX (implementação futura) ou usar dados já na página
+    modalTitle.textContent = `Detalhes: ${supervisorName}`;
     modalBody.innerHTML = `
-      <div style="text-align: center; padding: 40px; color: #718096;">
-        <h4>📊 Detalhes dos Agentes</h4>
-        <p>Supervisor: <strong>${supervisorName}</strong></p>
-        <p style="font-style: italic;">Esta funcionalidade pode ser expandida para mostrar detalhes completos.</p>
-        <button onclick="closeModal()" style="background: #003366; color: white; border: none; padding: 10px 20px; border-radius: 6px; margin-top: 15px;">
+      <div style="text-align: center; padding: 40px; color: var(--muted);">
+        <h4 style="color: var(--text); margin-bottom: 16px;">Informações Detalhadas</h4>
+        <p><strong>Supervisor:</strong> ${supervisorName}</p>
+        <p><strong>ID:</strong> ${supervisorId}</p>
+        <p style="margin-top: 24px; font-style: italic;">
+          Esta funcionalidade pode ser expandida para mostrar detalhes completos dos agentes e atendimentos.
+        </p>
+        <button onclick="closeModal()" style="margin-top: 20px; padding: 8px 16px; background: var(--accent); color: white; border: none; border-radius: 6px; cursor: pointer;">
           Fechar
         </button>
       </div>
@@ -767,16 +735,15 @@
     modal.style.display = 'block';
   }
 
-  // Função para fechar modal
   function closeModal() {
-    document.getElementById('agentModal').style.display = 'none';
+    document.getElementById('detailsModal').style.display = 'none';
   }
 
   // Fechar modal clicando fora
   window.onclick = function(event) {
-    const modal = document.getElementById('agentModal');
-    if (event.target == modal) {
-      modal.style.display = 'none';
+    const modal = document.getElementById('detailsModal');
+    if (event.target === modal) {
+      closeModal();
     }
   }
 </script>

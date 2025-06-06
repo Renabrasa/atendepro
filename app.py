@@ -396,11 +396,14 @@ def excluir_atendimento(atendimento_id):
 
 # Adicione estas rotas ao seu app.py
 
+# SUBSTITUA a rota /meu-perfil no app.py por esta versão corrigida
+
 @app.route('/meu-perfil', methods=['GET', 'POST'])
 @login_required
 def meu_perfil():
-    """Permite supervisor editar seu próprio perfil"""
-    if current_user.tipo not in ['supervisor', 'coordenadora']:
+    """Permite usuários editarem seu próprio perfil"""
+    # CORREÇÃO: Incluir admin na verificação
+    if current_user.tipo not in ['supervisor', 'coordenadora', 'admin']:
         flash('Acesso negado.', 'danger')
         return redirect(url_for('dashboard'))
     
@@ -409,12 +412,12 @@ def meu_perfil():
         current_user.nome = request.form['nome']
         current_user.email = request.form['email']
         
-        # Discord ID
+        # Discord ID (todos os tipos podem ter)
         discord_id = request.form.get('discord_id')
         current_user.discord_id = discord_id if discord_id else None
         
-        # Servidor Discord ID (apenas para supervisores)
-        if current_user.tipo == 'supervisor':
+        # Servidor Discord ID (apenas para supervisores e admin)
+        if current_user.tipo in ['supervisor', 'admin']:
             servidor_discord_id = request.form.get('servidor_discord_id')
             if servidor_discord_id:
                 # Remove espaços e divide por vírgula se houver múltiplos
@@ -451,20 +454,38 @@ def meu_perfil():
         
         return redirect(url_for('meu_perfil'))
     
-    # Preparar dados para exibição
+    # Preparar dados para exibição baseado no tipo de usuário
     equipes_supervisionadas = []
     agentes_supervisionados = []
     total_atendimentos = 0
+    usuarios_gerenciados = 0
+    total_equipes = 0
     
     if current_user.tipo == 'supervisor':
+        # Dados específicos do supervisor
         equipes_supervisionadas = Equipe.query.filter_by(supervisor_id=current_user.id).all()
         agentes_supervisionados = Agente.query.filter_by(supervisor_id=current_user.id).all()
         total_atendimentos = Atendimento.query.filter_by(supervisor_id=current_user.id).count()
+        
+    elif current_user.tipo == 'coordenadora':
+        # Dados da coordenadora (pode ver tudo)
+        total_atendimentos = Atendimento.query.count()
+        usuarios_gerenciados = User.query.filter_by(tipo='supervisor').count()
+        total_equipes = Equipe.query.count()
+        
+    elif current_user.tipo == 'admin':
+        # Dados do admin (estatísticas gerais do sistema)
+        total_atendimentos = Atendimento.query.count()
+        usuarios_gerenciados = User.query.filter(User.tipo.in_(['supervisor', 'coordenadora'])).count()
+        total_equipes = Equipe.query.count()
+        agentes_supervisionados = Agente.query.all()  # Admin vê todos os agentes
     
     return render_template('meu_perfil.html',
                          equipes=equipes_supervisionadas,
                          agentes=agentes_supervisionados,
-                         total_atendimentos=total_atendimentos)
+                         total_atendimentos=total_atendimentos,
+                         usuarios_gerenciados=usuarios_gerenciados,
+                         total_equipes=total_equipes)
 
 
 

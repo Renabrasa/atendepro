@@ -608,14 +608,114 @@ def editar_supervisor(supervisor_id):
     return render_template('supervisor_edit.html', supervisor=supervisor)
 
 
+# ADICIONE esta nova rota no app.py (após as outras rotas)
+
+@app.route('/api/supervisor-details/<int:supervisor_id>')
+@login_required
+def api_supervisor_details(supervisor_id):
+    """API para buscar detalhes de um supervisor e seus agentes"""
+    try:
+        # Verificar permissões
+        if current_user.tipo not in ['admin', 'coordenadora']:
+            if current_user.id != supervisor_id:
+                return jsonify({'success': False, 'error': 'Acesso negado'}), 403
+        
+        # Buscar o supervisor
+        supervisor = User.query.get_or_404(supervisor_id)
+        
+        # Pegar filtros da URL (mesmos do dashboard)
+        data_inicio_str = request.args.get('data_inicio', '')
+        data_fim_str = request.args.get('data_fim', '')
+        
+        # Aplicar mesma lógica de data do dashboard
+        if not data_inicio_str and not data_fim_str:
+            # Dados de hoje
+            from datetime import datetime, date
+            hoje = date.today()
+            data_inicio = datetime.combine(hoje, datetime.min.time())
+            data_fim = datetime.combine(hoje, datetime.max.time())
+        else:
+            # Dados do período especificado
+            data_inicio = None
+            data_fim = None
+            
+            if data_inicio_str:
+                data_inicio = datetime.strptime(data_inicio_str, '%Y-%m-%d')
+            if data_fim_str:
+                data_fim = datetime.strptime(data_fim_str, '%Y-%m-%d')
+                data_fim = datetime.combine(data_fim.date(), datetime.max.time())
+        
+        # Query de atendimentos do supervisor
+        query = Atendimento.query.filter_by(supervisor_id=supervisor_id)
+        
+        if data_inicio:
+            query = query.filter(Atendimento.data_hora >= data_inicio)
+        if data_fim:
+            query = query.filter(Atendimento.data_hora <= data_fim)
+        
+        atendimentos = query.order_by(Atendimento.data_hora.desc()).all()
+        
+        # Agrupar por agente
+        from collections import defaultdict
+        contador_agentes = defaultdict(list)
+        
+        for atendimento in atendimentos:
+            # Ajustar timezone
+            if atendimento.data_hora.tzinfo is None:
+                atendimento.data_hora = atendimento.data_hora.replace(tzinfo=pytz.utc)
+            atendimento.data_hora = atendimento.data_hora.astimezone(br_tz)
+            
+            contador_agentes[atendimento.agente_rel.nome].append(atendimento)
+        
+        # Preparar dados dos agentes para JSON
+        agentes_data = []
+        total_atendimentos = len(atendimentos)
+        
+        for agente_nome, lista_atendimentos in contador_agentes.items():
+            # Serializar atendimentos para JSON
+            atendimentos_json = []
+            for atendimento in lista_atendimentos:
+                atendimentos_json.append({
+                    'id': atendimento.id,
+                    'conteudo': atendimento.conteudo,
+                    'classificacao': atendimento.classificacao,
+                    'status': atendimento.status,
+                    'data_hora': atendimento.data_hora.isoformat()
+                })
+            
+            agentes_data.append({
+                'nome': agente_nome,
+                'qtd_chamados': len(lista_atendimentos),
+                'atendimentos': atendimentos_json
+            })
+        
+        # Ordenar por quantidade de atendimentos
+        agentes_data.sort(key=lambda x: x['qtd_chamados'], reverse=True)
+        
+        return jsonify({
+            'success': True,
+            'supervisor': {
+                'nome': supervisor.nome,
+                'id': supervisor.id,
+                'tipo': supervisor.tipo
+            },
+            'agentes': agentes_data,
+            'total_atendimentos': total_atendimentos
+        })
+        
+    except Exception as e:
+        app.logger.error(f'Erro na API supervisor-details: {e}')
+        return jsonify({
+            'success': False, 
+            'error': 'Erro interno do servidor'
+        }), 500
+
+
+
+
 from flask import request, flash, redirect, url_for, render_template
 from flask_login import login_required, current_user
 
-
-
-# Substitua a função agentes() no seu app.py por esta versão corrigida:
-
-# SUBSTITUA a rota /cadastros/agentes no app.py por esta versão corrigida
 
 @app.route('/cadastros/agentes', methods=['GET', 'POST'])
 @login_required

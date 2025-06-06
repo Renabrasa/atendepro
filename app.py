@@ -193,6 +193,8 @@ def dashboard():
 
 
 
+# SUBSTITUA a rota /atendimentos no app.py por esta versão atualizada
+
 @app.route('/atendimentos')
 @login_required
 def atendimentos():
@@ -203,7 +205,8 @@ def atendimentos():
     data_inicio_str = request.args.get('data_inicio', '')
     data_fim_str = request.args.get('data_fim', '')
     agente_id = request.args.get('agente', '')
-    supervisor_id = request.args.get('supervisor', '')
+    supervisor_id = request.args.get('supervisor', '')  # Supervisor do agente (mantido para compatibilidade)
+    atendido_por_id = request.args.get('atendido_por', '')  # NOVO: Quem prestou o atendimento
     status_filter = request.args.get('status', '')
     busca = request.args.get('busca', '')
 
@@ -223,7 +226,7 @@ def atendimentos():
         # Admin e Coordenadora veem todos
         query = Atendimento.query
     else:
-        # Supervisor vê apenas os seus
+        # Supervisor vê apenas os seus (atendimentos que ELE prestou)
         query = Atendimento.query.filter_by(supervisor_id=current_user.id)
 
     # Aplicar filtros
@@ -234,7 +237,11 @@ def atendimentos():
     if agente_id:
         query = query.filter_by(agente_id=agente_id)
     if supervisor_id:
-        query = query.filter_by(supervisor_id=supervisor_id)
+        # Filtro por supervisor do agente (JOIN necessário)
+        query = query.join(Agente).filter(Agente.supervisor_id == supervisor_id)
+    if atendido_por_id:
+        # NOVO: Filtro por quem prestou o atendimento
+        query = query.filter_by(supervisor_id=atendido_por_id)
     if status_filter:
         query = query.filter_by(status=status_filter)
     if busca:
@@ -289,12 +296,13 @@ def atendimentos():
                          agentes_dropdown=agentes_dropdown,
                          supervisores_dropdown=supervisores_dropdown,
                          stats=stats,
-                         # Manter filtros na URL
+                         # Manter filtros na URL (INCLUINDO O NOVO)
                          current_filters={
                              'data_inicio': data_inicio_str,
                              'data_fim': data_fim_str,
                              'agente': agente_id,
                              'supervisor': supervisor_id,
+                             'atendido_por': atendido_por_id,  # NOVO FILTRO
                              'status': status_filter,
                              'busca': busca
                          })

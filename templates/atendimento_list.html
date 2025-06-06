@@ -570,24 +570,24 @@
         </select>
       </div>
       
-      <div class="form-group">
-        <label class="form-label">Buscar</label>
-        <input type="text" name="busca" placeholder="Conteúdo..." value="{{ current_filters.busca }}" class="form-input">
-      </div>
-
       {% if current_user.tipo in ['admin', 'coordenadora'] %}
       <div class="form-group">
-        <label class="form-label">Supervisor</label>
-        <select name="supervisor" class="form-select">
+        <label class="form-label">Atendido Por</label>
+        <select name="atendido_por" class="form-select">
           <option value="">Todos</option>
           {% for supervisor in supervisores_dropdown %}
-            <option value="{{ supervisor.id }}" {{ 'selected' if current_filters.supervisor == supervisor.id|string }}>
+            <option value="{{ supervisor.id }}" {{ 'selected' if current_filters.atendido_por == supervisor.id|string }}>
               {{ supervisor.nome }}
             </option>
           {% endfor %}
         </select>
       </div>
       {% endif %}
+      
+      <div class="form-group">
+        <label class="form-label">Buscar</label>
+        <input type="text" name="busca" placeholder="Conteúdo..." value="{{ current_filters.busca }}" class="form-input">
+      </div>
       
       <div class="filter-actions">
         <button type="submit" class="btn btn-success">Filtrar</button>
@@ -617,7 +617,8 @@
             <th style="width: 120px;">Data/Hora</th>
             <th style="width: 150px;">Agente</th>
             {% if current_user.tipo in ['admin', 'coordenadora'] %}
-            <th style="width: 120px;">Supervisor</th>
+            <th style="width: 120px;">Sup. Agente</th>
+            <th style="width: 120px;">Atendido Por</th>
             {% endif %}
             <th>Conteúdo</th>
             <th style="width: 100px;">Classificação</th>
@@ -637,10 +638,22 @@
               </td>
               <td>
                 <div class="agente-name">{{ atendimento.agente_rel.nome }}</div>
+                <div class="supervisor-name">Equipe: {{ atendimento.agente_rel.supervisor.nome }}</div>
               </td>
               {% if current_user.tipo in ['admin', 'coordenadora'] %}
               <td>
-                <div class="supervisor-name">{{ atendimento.supervisor.nome }}</div>
+                <div class="supervisor-name">{{ atendimento.agente_rel.supervisor.nome }}</div>
+              </td>
+              <td>
+                <div class="supervisor-name">
+                  {{ atendimento.supervisor.nome }}
+                  {% if atendimento.supervisor.id != atendimento.agente_rel.supervisor_id %}
+                    <span style="color: var(--warning); font-weight: 600;">*</span>
+                  {% endif %}
+                </div>
+                {% if atendimento.supervisor.tipo == 'coordenadora' %}
+                  <div style="font-size: 10px; color: var(--accent); font-weight: 600;">COORD</div>
+                {% endif %}
               </td>
               {% endif %}
               <td>
@@ -678,7 +691,7 @@
             </tr>
           {% else %}
             <tr>
-              <td colspan="8" class="empty-state">
+              <td colspan="9" class="empty-state">
                 <h3>Nenhum atendimento encontrado</h3>
                 <p>Não há atendimentos para os critérios selecionados.</p>
                 <a href="{{ url_for('novo_atendimento') }}" class="btn btn-primary" style="margin-top: 16px;">

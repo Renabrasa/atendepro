@@ -2,91 +2,179 @@
 {% block title %}Gerenciar Equipes{% endblock %}
 {% block content %}
 <style>
-  .equipes-container {
-    max-width: 1200px;
-    margin: 0 auto;
-    padding: 20px;
+  /* Variáveis Profissionais */
+  :root {
+    --primary: #1e293b;
+    --secondary: #475569;
+    --accent: #3b82f6;
+    --background: #f8fafc;
+    --white: #ffffff;
+    --border: #e2e8f0;
+    --text: #334155;
+    --muted: #64748b;
+    --success: #059669;
+    --warning: #d97706;
+    --danger: #dc2626;
   }
 
-  .header-section {
-    background: linear-gradient(135deg, #003366, #0056b3);
-    color: white;
-    padding: 25px;
-    border-radius: 12px;
-    margin-bottom: 30px;
+  * {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+  }
+
+  body {
+    background: var(--background);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    line-height: 1.5;
+  }
+
+  .equipes {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 24px;
+  }
+
+  /* Header */
+  .header {
+    background: var(--white);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 24px 32px;
+    margin-bottom: 24px;
+  }
+
+  .header-top {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    flex-wrap: wrap;
-    gap: 15px;
+    margin-bottom: 20px;
   }
 
-  .header-title {
-    font-size: 2em;
-    font-weight: 700;
-    margin: 0;
+  .header-content h1 {
+    font-size: 24px;
+    font-weight: 600;
+    color: var(--primary);
+    margin-bottom: 4px;
   }
 
-  .header-subtitle {
-    font-size: 1em;
-    opacity: 0.9;
-    margin: 5px 0 0 0;
+  .header-content p {
+    color: var(--muted);
+    font-size: 14px;
+  }
+
+  .header-actions {
+    display: flex;
+    gap: 12px;
   }
 
   .btn {
-    padding: 10px 20px;
-    border: none;
-    border-radius: 8px;
+    padding: 8px 16px;
+    border-radius: 6px;
+    border: 1px solid var(--border);
+    background: var(--white);
+    color: var(--text);
     text-decoration: none;
-    font-weight: 600;
-    cursor: pointer;
-    transition: all 0.3s ease;
+    font-size: 14px;
+    font-weight: 500;
+    transition: all 0.2s;
     display: inline-flex;
     align-items: center;
     gap: 8px;
+    cursor: pointer;
   }
 
-  .btn-secondary {
-    background: rgba(255,255,255,0.2);
-    color: white;
-    border: 2px solid rgba(255,255,255,0.3);
+  .btn:hover {
+    background: var(--background);
+    border-color: var(--accent);
   }
 
-  .btn-secondary:hover {
-    background: rgba(255,255,255,0.3);
-    transform: translateY(-2px);
+  .btn-primary {
+    background: var(--accent);
+    color: var(--white);
+    border-color: var(--accent);
   }
 
+  .btn-primary:hover {
+    background: #2563eb;
+  }
+
+  .btn-success {
+    background: var(--success);
+    color: var(--white);
+    border-color: var(--success);
+  }
+
+  .btn-success:hover {
+    background: #047857;
+  }
+
+  .btn-sm {
+    padding: 4px 8px;
+    font-size: 12px;
+  }
+
+  .btn-danger {
+    background: var(--danger);
+    color: var(--white);
+    border-color: var(--danger);
+  }
+
+  .btn-danger:hover {
+    background: #b91c1c;
+  }
+
+  /* KPIs Compactos */
+  .kpis {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 24px;
+  }
+
+  .kpi {
+    text-align: center;
+  }
+
+  .kpi-value {
+    font-size: 28px;
+    font-weight: 700;
+    color: var(--primary);
+    line-height: 1;
+    margin-bottom: 6px;
+  }
+
+  .kpi-label {
+    font-size: 12px;
+    color: var(--muted);
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  /* Formulário de Nova Equipe */
   .form-section {
-    background: white;
-    padding: 30px;
-    border-radius: 12px;
-    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-    margin-bottom: 25px;
-  }
-
-  .form-header {
-    background: linear-gradient(135deg, #17a2b8, #0056b3);
-    color: white;
-    padding: 20px 25px;
-    margin: -30px -30px 25px -30px;
-    border-radius: 12px 12px 0 0;
-    display: flex;
-    align-items: center;
-    gap: 10px;
+    background: var(--white);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 32px;
+    margin-bottom: 24px;
   }
 
   .form-title {
-    font-size: 1.3em;
+    font-size: 18px;
     font-weight: 600;
-    margin: 0;
+    color: var(--primary);
+    margin-bottom: 24px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid var(--border);
   }
 
-  .form-row {
+  .form-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-    gap: 20px;
-    margin-bottom: 25px;
+    grid-template-columns: 1fr 1fr;
+    gap: 24px;
+    margin-bottom: 24px;
   }
 
   .form-group {
@@ -95,31 +183,37 @@
     gap: 8px;
   }
 
+  .form-group.full-width {
+    grid-column: 1 / -1;
+  }
+
   .form-label {
+    font-size: 14px;
     font-weight: 600;
-    color: #003366;
-    font-size: 1em;
+    color: var(--text);
+    display: flex;
+    align-items: center;
+    gap: 4px;
   }
 
-  .form-label .required {
-    color: #dc3545;
-    margin-left: 4px;
+  .required {
+    color: var(--danger);
   }
 
-  .form-control, .form-select {
-    padding: 12px 15px;
-    border: 2px solid #e2e8f0;
-    border-radius: 8px;
-    font-size: 1em;
-    transition: all 0.3s ease;
-    box-sizing: border-box;
+  .form-input, .form-select {
+    padding: 12px 16px;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    font-size: 14px;
     font-family: inherit;
+    transition: all 0.2s;
+    background: var(--white);
   }
 
-  .form-control:focus, .form-select:focus {
-    border-color: #003366;
+  .form-input:focus, .form-select:focus {
     outline: none;
-    box-shadow: 0 0 0 3px rgba(0, 51, 102, 0.1);
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
   }
 
   .form-select {
@@ -131,405 +225,561 @@
     appearance: none;
   }
 
+  .help-text {
+    font-size: 12px;
+    color: var(--muted);
+    margin-top: 4px;
+  }
+
   .form-actions {
     display: flex;
-    gap: 15px;
-    align-items: center;
-    flex-wrap: wrap;
-    margin-top: 20px;
-    padding-top: 20px;
-    border-top: 2px solid #f1f5f9;
+    gap: 12px;
+    justify-content: flex-end;
+    margin-top: 24px;
+    padding-top: 24px;
+    border-top: 1px solid var(--border);
   }
 
-  .btn-primary {
-    background: linear-gradient(135deg, #28a745, #20c997);
-    color: white;
-    border: none;
-    padding: 12px 25px;
-    font-size: 1.1em;
-    font-weight: 600;
+  /* Toggle para formulário */
+  .toggle-form {
+    margin-bottom: 24px;
   }
 
-  .btn-primary:hover {
-    background: linear-gradient(135deg, #218838, #1ca085);
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(40, 167, 69, 0.3);
+  .form-section.collapsed {
+    display: none;
   }
 
-  .btn-outline {
-    background: transparent;
-    color: #6c757d;
-    border: 2px solid #dee2e6;
-    padding: 10px 20px;
-  }
-
-  .btn-outline:hover {
-    background: #f8f9fa;
-    border-color: #adb5bd;
-    transform: translateY(-1px);
-  }
-
-  /* Lista de Equipes */
-  .list-section {
-    background: white;
-    border-radius: 12px;
-    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+  /* Tabela Principal */
+  .data-table {
+    background: var(--white);
+    border: 1px solid var(--border);
+    border-radius: 8px;
     overflow: hidden;
+    margin-bottom: 24px;
   }
 
-  .list-header {
-    background: linear-gradient(135deg, #003366, #0056b3);
-    color: white;
-    padding: 20px 25px;
+  .table-header {
+    padding: 16px 20px;
+    border-bottom: 1px solid var(--border);
+    background: #fafbfc;
     display: flex;
     justify-content: space-between;
     align-items: center;
   }
 
-  .list-title {
-    font-size: 1.3em;
+  .table-title {
+    font-size: 16px;
     font-weight: 600;
-    margin: 0;
+    color: var(--primary);
+  }
+
+  .table-subtitle {
+    font-size: 12px;
+    color: var(--muted);
   }
 
   .table-container {
-    overflow-x: auto;
+    max-height: 500px;
+    overflow-y: auto;
   }
 
   .table {
     width: 100%;
     border-collapse: collapse;
-    margin: 0;
   }
 
   .table th {
-    background: #f8fafc;
-    padding: 15px 20px;
+    background: #fafbfc;
+    padding: 12px 16px;
     text-align: left;
+    font-size: 11px;
     font-weight: 600;
-    color: #2d3748;
-    border-bottom: 2px solid #e2e8f0;
-    white-space: nowrap;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    border-bottom: 1px solid var(--border);
+    position: sticky;
+    top: 0;
+    z-index: 10;
   }
 
   .table td {
-    padding: 15px 20px;
-    border-bottom: 1px solid #e2e8f0;
+    padding: 16px;
+    border-bottom: 1px solid #f1f5f9;
+    font-size: 14px;
     vertical-align: middle;
   }
 
   .table tr:hover {
-    background: #f8fafc;
+    background: #fafbfc;
   }
 
   .equipe-id {
-    font-weight: 700;
-    color: #667eea;
-    background: #e6f3ff;
-    padding: 4px 8px;
-    border-radius: 4px;
-    font-size: 0.9em;
+    font-weight: 600;
+    color: var(--accent);
+    font-family: monospace;
   }
 
-  .equipe-nome {
+  .equipe-name {
     font-weight: 600;
-    color: #2d3748;
+    color: var(--primary);
   }
 
   .supervisor-info {
     display: flex;
-    align-items: center;
-    gap: 8px;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  .supervisor-name {
+    font-weight: 500;
+    color: var(--text);
   }
 
   .supervisor-badge {
-    background: #003366;
-    color: white;
-    padding: 2px 8px;
-    border-radius: 12px;
-    font-size: 0.75em;
+    display: inline-block;
+    padding: 2px 6px;
+    border-radius: 10px;
+    font-size: 10px;
     font-weight: 600;
+    text-transform: uppercase;
+  }
+
+  .badge-coordenadora {
+    background: #fef3c7;
+    color: #92400e;
+  }
+
+  .badge-supervisor {
+    background: #dbeafe;
+    color: #1d4ed8;
   }
 
   .agentes-count {
     display: inline-flex;
     align-items: center;
-    gap: 5px;
-    background: #e6f7ff;
-    color: #0066cc;
-    padding: 4px 12px;
-    border-radius: 16px;
+    gap: 4px;
+    padding: 4px 8px;
+    background: #f0f9ff;
+    color: #0369a1;
+    border-radius: 12px;
     font-weight: 600;
-    font-size: 0.9em;
+    font-size: 12px;
   }
 
-  .btn-edit {
-    background: linear-gradient(135deg, #17a2b8, #6610f2);
-    color: white;
-    padding: 6px 12px;
-    font-size: 0.85em;
-    border-radius: 6px;
+  .actions-cell {
+    display: flex;
+    gap: 4px;
   }
 
-  .btn-edit:hover {
-    background: linear-gradient(135deg, #138496, #5a0fcf);
-    transform: translateY(-1px);
-  }
-
+  /* Estados Vazios */
   .empty-state {
     text-align: center;
     padding: 60px 20px;
-    color: #718096;
+    color: var(--muted);
   }
 
   .empty-state h3 {
-    color: #2d3748;
-    margin-bottom: 10px;
+    color: var(--text);
+    margin-bottom: 8px;
+    font-weight: 500;
   }
 
-  .empty-state p {
-    margin-bottom: 20px;
+  /* Estados de validação */
+  .form-group.error .form-input,
+  .form-group.error .form-select {
+    border-color: var(--danger);
+    box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.1);
   }
 
-  .help-text {
-    font-size: 0.9em;
-    color: #6c757d;
-    margin-top: 5px;
-    display: flex;
-    align-items: center;
-    gap: 5px;
+  .error-message {
+    font-size: 12px;
+    color: var(--danger);
+    margin-top: 4px;
+    display: none;
   }
 
-  /* Responsividade */
+  .form-group.error .error-message {
+    display: block;
+  }
+
+  /* Loading state */
+  .btn.loading {
+    opacity: 0.7;
+    cursor: not-allowed;
+    position: relative;
+  }
+
+  .btn.loading::after {
+    content: '';
+    position: absolute;
+    width: 16px;
+    height: 16px;
+    border: 2px solid transparent;
+    border-top: 2px solid currentColor;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    margin-left: 8px;
+  }
+
+  @keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+  }
+
+  /* Responsivo */
+  @media (max-width: 1200px) {
+    .form-grid {
+      grid-template-columns: 1fr;
+    }
+    
+    .kpis {
+      grid-template-columns: repeat(2, 1fr);
+    }
+  }
+
   @media (max-width: 768px) {
-    .equipes-container {
-      padding: 15px;
+    .equipes {
+      padding: 16px;
     }
 
-    .header-section {
+    .header-top {
       flex-direction: column;
+      gap: 16px;
       text-align: center;
     }
 
-    .form-section {
-      padding: 20px;
+    .kpis {
+      grid-template-columns: repeat(2, 1fr);
+      gap: 16px;
     }
 
-    .form-header {
-      margin: -20px -20px 20px -20px;
-    }
-
-    .form-row {
-      grid-template-columns: 1fr;
-    }
-
-    .form-actions {
-      flex-direction: column;
-      width: 100%;
-    }
-
-    .btn {
-      width: 100%;
-      justify-content: center;
+    .table-container {
+      max-height: 400px;
     }
 
     .table {
-      font-size: 0.9em;
+      font-size: 13px;
     }
 
     .table th,
     .table td {
-      padding: 10px 8px;
+      padding: 8px;
     }
   }
 
-  /* Animações */
-  @keyframes slideIn {
-    from {
-      opacity: 0;
-      transform: translateY(20px);
-    }
-    to {
-      opacity: 1;
-      transform: translateY(0);
-    }
+  /* Melhorias de Performance */
+  .table-container::-webkit-scrollbar {
+    width: 8px;
   }
 
-  .form-section,
-  .list-section {
-    animation: slideIn 0.5s ease-out;
+  .table-container::-webkit-scrollbar-track {
+    background: #f1f5f9;
+  }
+
+  .table-container::-webkit-scrollbar-thumb {
+    background: #cbd5e0;
+    border-radius: 4px;
+  }
+
+  .table-container::-webkit-scrollbar-thumb:hover {
+    background: #a0aec0;
   }
 </style>
 
-<div class="equipes-container">
-  <!-- Header -->
-  <div class="header-section">
-    <div>
-      <h1 class="header-title">🏢 Gerenciar Equipes</h1>
-      <p class="header-subtitle">Organize e gerencie suas equipes de trabalho</p>
-    </div>
-    <div>
-      <!--a href="{{ url_for('dashboard') }}" class="btn btn-secondary">
-        ← Voltar ao Dashboard
-      </a-->
-    </div>
-  </div>
-
-  <!-- Formulário Nova Equipe -->
-  <div class="form-section">
-    <div class="form-header">
-      <span>➕</span>
-      <h2 class="form-title">Criar Nova Equipe</h2>
+<div class="equipes">
+  <!-- Header com KPIs -->
+  <header class="header">
+    <div class="header-top">
+      <div class="header-content">
+        <h1>🏢 Gerenciar Equipes</h1>
+        <p>Organize e gerencie suas equipes de trabalho</p>
+      </div>
+      <div class="header-actions">
+        <button type="button" onclick="toggleForm()" class="btn btn-primary" id="toggleFormBtn">
+          ➕ Nova Equipe
+        </button>
+        <a href="{{ url_for('dashboard') }}" class="btn">
+          📊 Dashboard
+        </a>
+      </div>
     </div>
 
-    <form method="POST">
-      <div class="form-row">
+    <!-- KPIs Integrados -->
+    <div class="kpis">
+      <div class="kpi">
+        <div class="kpi-value">{{ equipes|length }}</div>
+        <div class="kpi-label">Total</div>
+      </div>
+      <div class="kpi">
+        <div class="kpi-value">{{ agentes_por_supervisor.values()|sum if agentes_por_supervisor else 0 }}</div>
+        <div class="kpi-label">Agentes</div>
+      </div>
+      <div class="kpi">
+        <div class="kpi-value">{{ supervisores|length if supervisores else 0 }}</div>
+        <div class="kpi-label">Supervisores</div>
+      </div>
+      <div class="kpi">
+        <div class="kpi-value">{{ ((agentes_por_supervisor.values()|sum) / (equipes|length))|round(1) if equipes|length > 0 else 0 }}</div>
+        <div class="kpi-label">Média/Equipe</div>
+      </div>
+    </div>
+  </header>
+
+  <!-- Formulário de Nova Equipe -->
+  <section class="form-section collapsed" id="formSection">
+    <h2 class="form-title">➕ Criar Nova Equipe</h2>
+
+    <form method="POST" id="equipeForm">
+      <div class="form-grid">
+        <!-- Nome -->
         <div class="form-group">
           <label for="nome" class="form-label">
-            🏷️ Nome da Equipe
+            Nome da Equipe
             <span class="required">*</span>
           </label>
-          <input 
-            type="text" 
-            class="form-control" 
-            id="nome" 
-            name="nome" 
-            required 
-            placeholder="Digite o nome da equipe..."
-          >
-          <div class="help-text">
-            💡 Escolha um nome descritivo para a equipe
-          </div>
+          <input type="text" id="nome" name="nome" required class="form-input" 
+                 placeholder="Nome da equipe">
+          <div class="help-text">Escolha um nome descritivo para a equipe</div>
+          <div class="error-message" id="nome-error">O nome é obrigatório</div>
         </div>
 
+        <!-- Supervisor (apenas para admin e coordenadora) -->
         {% if current_user.tipo in ['admin', 'coordenadora'] %}
         <div class="form-group">
           <label for="supervisor_id" class="form-label">
-            👤 Supervisor Responsável
+            Supervisor Responsável
             <span class="required">*</span>
           </label>
-          <select class="form-select" id="supervisor_id" name="supervisor_id" required>
-            <option value="">-- Selecione um supervisor --</option>
+          <select id="supervisor_id" name="supervisor_id" required class="form-select">
+            <option value="">Selecione um supervisor</option>
             {% for supervisor in supervisores %}
             <option value="{{ supervisor.id }}">{{ supervisor.nome }}</option>
             {% endfor %}
           </select>
-          <div class="help-text">
-            👥 Supervisor que gerenciará esta equipe
-          </div>
+          <div class="help-text">Supervisor que gerenciará esta equipe</div>
+          <div class="error-message" id="supervisor-error">Por favor, selecione um supervisor</div>
         </div>
         {% endif %}
       </div>
 
+      <!-- Ações -->
       <div class="form-actions">
-        <button type="submit" class="btn btn-primary">
+        <button type="button" onclick="toggleForm()" class="btn">
+          Cancelar
+        </button>
+        <button type="submit" class="btn btn-success" id="submitBtn">
           💾 Criar Equipe
         </button>
-        <a href="{{ url_for('dashboard') }}" class="btn btn-outline">
-          ❌ Cancelar
-        </a>
       </div>
     </form>
-  </div>
+  </section>
 
-  <!-- Lista de Equipes -->
-  <div class="list-section">
-    <div class="list-header">
-      <h3 class="list-title">📋 Equipes Cadastradas</h3>
-      <span style="opacity: 0.9;">{{ equipes|length }} equipe(s)</span>
+  <!-- Tabela Principal -->
+  <section class="data-table">
+    <div class="table-header">
+      <div>
+        <div class="table-title">Lista de Equipes</div>
+        <div class="table-subtitle">
+          Total: {{ equipes|length }} equipe(s) cadastrada(s)
+        </div>
+      </div>
     </div>
-
-    {% if equipes %}
+    
     <div class="table-container">
       <table class="table">
         <thead>
           <tr>
-            <th>ID</th>
-            <th>🏷️ Nome da Equipe</th>
-            <th>👤 Supervisor</th>
-            <th>👥 Agentes</th>
+            <th style="width: 80px;">ID</th>
+            <th style="width: 250px;">Nome da Equipe</th>
+            <th style="width: 200px;">Supervisor</th>
+            <th style="width: 120px;">Agentes</th>
             {% if current_user.tipo in ['admin', 'coordenadora'] %}
-            <th>⚙️ Ações</th>
+            <th style="width: 120px;">Ações</th>
             {% endif %}
           </tr>
         </thead>
         <tbody>
           {% for equipe in equipes %}
-          <tr>
-            <td>
-              <span class="equipe-id">#{{ equipe.id }}</span>
-            </td>
-            <td>
-              <span class="equipe-nome">{{ equipe.nome }}</span>
-            </td>
-            <td>
-              <div class="supervisor-info">
-                <span>{{ equipe.supervisor.nome }}</span>
-                <span class="supervisor-badge">
-                  {% if equipe.supervisor.tipo == 'coordenadora' %}COORD{% else %}SUP{% endif %}
+            <tr>
+              <td>
+                <span class="equipe-id">#{{ equipe.id }}</span>
+              </td>
+              <td>
+                <div class="equipe-name">{{ equipe.nome }}</div>
+              </td>
+              <td>
+                <div class="supervisor-info">
+                  <div class="supervisor-name">{{ equipe.supervisor.nome }}</div>
+                  <span class="supervisor-badge badge-{{ equipe.supervisor.tipo }}">
+                    {% if equipe.supervisor.tipo == 'coordenadora' %}Coordenadora{% else %}Supervisor{% endif %}
+                  </span>
+                </div>
+              </td>
+              <td>
+                <span class="agentes-count">
+                  👥 {{ agentes_por_supervisor.get(equipe.supervisor_id, 0) }}
                 </span>
-              </div>
-            </td>
-            <td>
-              <span class="agentes-count">
-                👥 {{ agentes_por_supervisor.get(equipe.supervisor_id, 0) }}
-              </span>
-            </td>
-            {% if current_user.tipo in ['admin', 'coordenadora'] %}
-            <td>
-              <a href="{{ url_for('editar_equipe', equipe_id=equipe.id) }}" class="btn btn-edit">
-                ✏️ Editar
-              </a>
-            </td>
-            {% endif %}
-          </tr>
+              </td>
+              {% if current_user.tipo in ['admin', 'coordenadora'] %}
+              <td>
+                <div class="actions-cell">
+                  <a href="{{ url_for('editar_equipe', equipe_id=equipe.id) }}" 
+                     class="btn btn-sm" title="Editar">
+                    ✏️ Editar
+                  </a>
+                </div>
+              </td>
+              {% endif %}
+            </tr>
+          {% else %}
+            <tr>
+              <td colspan="{% if current_user.tipo in ['admin', 'coordenadora'] %}5{% else %}4{% endif %}" class="empty-state">
+                <h3>Nenhuma equipe cadastrada</h3>
+                <p>Comece criando a primeira equipe do sistema.</p>
+                <button onclick="toggleForm()" class="btn btn-primary" style="margin-top: 16px;">
+                  ➕ Criar Primeira Equipe
+                </button>
+              </td>
+            </tr>
           {% endfor %}
         </tbody>
       </table>
     </div>
-    {% else %}
-    <div class="empty-state">
-      <h3>📂 Nenhuma equipe cadastrada</h3>
-      <p>Comece criando sua primeira equipe usando o formulário acima.</p>
-      <div style="font-size: 3em; margin: 20px 0; opacity: 0.3;">🏢</div>
-    </div>
-    {% endif %}
-  </div>
+  </section>
 </div>
 
 <script>
-  // Validação do formulário
-  document.querySelector('form').addEventListener('submit', function(e) {
-    const nome = document.getElementById('nome').value.trim();
-    const supervisorSelect = document.getElementById('supervisor_id');
+  // Toggle do formulário
+  function toggleForm() {
+    const formSection = document.getElementById('formSection');
+    const toggleBtn = document.getElementById('toggleFormBtn');
     
-    if (!nome) {
-      e.preventDefault();
-      alert('⚠️ Por favor, digite o nome da equipe.');
+    if (formSection.classList.contains('collapsed')) {
+      formSection.classList.remove('collapsed');
+      toggleBtn.textContent = '❌ Cancelar';
+      toggleBtn.classList.remove('btn-primary');
+      toggleBtn.classList.add('btn-danger');
+      
+      // Focus no primeiro campo
       document.getElementById('nome').focus();
-      return;
+    } else {
+      formSection.classList.add('collapsed');
+      toggleBtn.textContent = '➕ Nova Equipe';
+      toggleBtn.classList.remove('btn-danger');
+      toggleBtn.classList.add('btn-primary');
+      
+      // Limpar formulário
+      document.getElementById('equipeForm').reset();
+      clearErrors();
     }
+  }
+
+  // Limpar erros
+  function clearErrors() {
+    document.querySelectorAll('.form-group.error').forEach(group => {
+      group.classList.remove('error');
+    });
+  }
+
+  // Validação em tempo real
+  function validateField(field, errorId, condition, message) {
+    const errorElement = document.getElementById(errorId);
+    const formGroup = field.closest('.form-group');
     
-    if (nome.length < 3) {
-      e.preventDefault();
-      alert('⚠️ O nome da equipe deve ter pelo menos 3 caracteres.');
-      document.getElementById('nome').focus();
-      return;
+    if (condition) {
+      formGroup.classList.remove('error');
+      return true;
+    } else {
+      formGroup.classList.add('error');
+      errorElement.textContent = message;
+      return false;
+    }
+  }
+
+  // Elementos do formulário
+  const form = document.getElementById('equipeForm');
+  const nomeInput = document.getElementById('nome');
+  const supervisorSelect = document.getElementById('supervisor_id');
+  const submitBtn = document.getElementById('submitBtn');
+
+  // Validações
+  nomeInput.addEventListener('blur', function() {
+    validateField(
+      this, 
+      'nome-error', 
+      this.value.trim().length >= 3, 
+      'Nome deve ter pelo menos 3 caracteres'
+    );
+  });
+
+  {% if current_user.tipo in ['admin', 'coordenadora'] %}
+  if (supervisorSelect) {
+    supervisorSelect.addEventListener('change', function() {
+      validateField(
+        this, 
+        'supervisor-error', 
+        this.value !== '', 
+        'Por favor, selecione um supervisor'
+      );
+    });
+  }
+  {% endif %}
+
+  // Remove erros quando o usuário digita
+  nomeInput.addEventListener('input', function() {
+    if (this.closest('.form-group').classList.contains('error')) {
+      this.closest('.form-group').classList.remove('error');
+    }
+  });
+
+  // Submissão do formulário
+  form.addEventListener('submit', function(e) {
+    let isValid = true;
+    
+    // Validar nome
+    if (!validateField(nomeInput, 'nome-error', nomeInput.value.trim().length >= 3, 'Nome deve ter pelo menos 3 caracteres')) {
+      isValid = false;
     }
     
     {% if current_user.tipo in ['admin', 'coordenadora'] %}
-    if (supervisorSelect && !supervisorSelect.value) {
-      e.preventDefault();
-      alert('⚠️ Por favor, selecione um supervisor.');
-      supervisorSelect.focus();
-      return;
+    // Validar supervisor
+    if (supervisorSelect && !validateField(supervisorSelect, 'supervisor-error', supervisorSelect.value !== '', 'Por favor, selecione um supervisor')) {
+      isValid = false;
     }
     {% endif %}
+    
+    if (!isValid) {
+      e.preventDefault();
+      
+      // Focar no primeiro campo com erro
+      const firstError = document.querySelector('.form-group.error input, .form-group.error select');
+      if (firstError) {
+        firstError.focus();
+      }
+      return;
+    }
+    
+    // Loading state
+    submitBtn.classList.add('loading');
+    submitBtn.textContent = 'Criando...';
+    submitBtn.disabled = true;
   });
 
-  // Auto-focus no campo nome
-  document.addEventListener('DOMContentLoaded', function() {
-    document.getElementById('nome').focus();
+  // Atalhos de teclado
+  document.addEventListener('keydown', function(e) {
+    // ESC para fechar formulário
+    if (e.key === 'Escape' && !document.getElementById('formSection').classList.contains('collapsed')) {
+      toggleForm();
+    }
+    
+    // Ctrl/Cmd + N para nova equipe
+    if ((e.ctrlKey || e.metaKey) && e.key === 'n') {
+      e.preventDefault();
+      if (document.getElementById('formSection').classList.contains('collapsed')) {
+        toggleForm();
+      }
+    }
   });
 </script>
 

@@ -181,30 +181,113 @@ def dashboard():
 
 
 
+# SUBSTITUA COMPLETAMENTE A ROTA /atendimentos NO APP.PY
+
 @app.route('/atendimentos')
 @login_required
 def atendimentos():
-    # ANTES:
-    # if current_user.tipo == 'admin':
-    #     atendimentos = Atendimento.query.order_by(Atendimento.data_hora.desc()).all()
-    # else:
-    #     atendimentos = Atendimento.query.filter_by(supervisor_id=current_user.id).order_by(Atendimento.data_hora.desc()).all()
+    # Parâmetros de filtro da URL
+    page = request.args.get('page', 1, type=int)
+    per_page = 20  # 20 atendimentos por página
     
-    # NOVO:
+    data_inicio_str = request.args.get('data_inicio', '')
+    data_fim_str = request.args.get('data_fim', '')
+    agente_id = request.args.get('agente', '')
+    supervisor_id = request.args.get('supervisor', '')
+    status_filter = request.args.get('status', '')
+    busca = request.args.get('busca', '')
+
+    # Converte datas
+    data_inicio = None
+    data_fim = None
+    try:
+        if data_inicio_str:
+            data_inicio = datetime.strptime(data_inicio_str, '%Y-%m-%d')
+        if data_fim_str:
+            data_fim = datetime.strptime(data_fim_str, '%Y-%m-%d') + timedelta(days=1) - timedelta(seconds=1)
+    except ValueError:
+        flash('Formato de data inválido.', 'danger')
+
+    # Query base com filtros de permissão
     if current_user.tipo in ['admin', 'coordenadora']:
         # Admin e Coordenadora veem todos
-        atendimentos = Atendimento.query.order_by(Atendimento.data_hora.desc()).all()
+        query = Atendimento.query
     else:
         # Supervisor vê apenas os seus
-        atendimentos = Atendimento.query.filter_by(supervisor_id=current_user.id).order_by(Atendimento.data_hora.desc()).all()
+        query = Atendimento.query.filter_by(supervisor_id=current_user.id)
 
-    # Ajusta timezone para cada atendimento
-    for atendimento in atendimentos:
+    # Aplicar filtros
+    if data_inicio:
+        query = query.filter(Atendimento.data_hora >= data_inicio)
+    if data_fim:
+        query = query.filter(Atendimento.data_hora <= data_fim)
+    if agente_id:
+        query = query.filter_by(agente_id=agente_id)
+    if supervisor_id:
+        query = query.filter_by(supervisor_id=supervisor_id)
+    if status_filter:
+        query = query.filter_by(status=status_filter)
+    if busca:
+        query = query.filter(Atendimento.conteudo.contains(busca))
+
+    # Ordenar por data (mais recente primeiro)
+    query = query.order_by(Atendimento.data_hora.desc())
+
+    # Paginação
+    atendimentos_paginated = query.paginate(
+        page=page, 
+        per_page=per_page, 
+        error_out=False
+    )
+
+    # Ajustar timezone
+    for atendimento in atendimentos_paginated.items:
         if atendimento.data_hora.tzinfo is None:
             atendimento.data_hora = atendimento.data_hora.replace(tzinfo=pytz.utc)
         atendimento.data_hora = atendimento.data_hora.astimezone(br_tz)
 
-    return render_template('atendimento_list.html', atendimentos=atendimentos)
+    # Buscar dados para os dropdowns de filtro
+    if current_user.tipo in ['admin', 'coordenadora']:
+        # Admin/Coordenadora veem todos
+        agentes_dropdown = Agente.query.filter_by(ativo=True).all()
+        supervisores_dropdown = User.query.filter(User.tipo.in_(['supervisor', 'coordenadora'])).all()
+    else:
+        # Supervisor vê apenas seus agentes
+        agentes_dropdown = db.session.query(Agente).join(
+            agente_equipe, Agente.id == agente_equipe.c.agente_id
+        ).join(
+            Equipe, agente_equipe.c.equipe_id == Equipe.id
+        ).filter(
+            Equipe.supervisor_id == current_user.id,
+            Agente.ativo == True
+        ).distinct().all()
+        supervisores_dropdown = [current_user]
+
+    # Estatísticas para os cards
+    stats = {
+        'total_filtrados': atendimentos_paginated.total,
+        'pendentes': query.filter_by(status='pendente').count() if status_filter != 'classificado' else 0,
+        'classificados': query.filter_by(status='classificado').count() if status_filter != 'pendente' else 0,
+        'hoje': query.filter(
+            Atendimento.data_hora >= datetime.now().replace(hour=0, minute=0, second=0)
+        ).count() if not data_inicio and not data_fim else 0
+    }
+
+    return render_template('atendimento_list.html', 
+                         atendimentos_paginated=atendimentos_paginated,
+                         atendimentos=atendimentos_paginated.items,
+                         agentes_dropdown=agentes_dropdown,
+                         supervisores_dropdown=supervisores_dropdown,
+                         stats=stats,
+                         # Manter filtros na URL
+                         current_filters={
+                             'data_inicio': data_inicio_str,
+                             'data_fim': data_fim_str,
+                             'agente': agente_id,
+                             'supervisor': supervisor_id,
+                             'status': status_filter,
+                             'busca': busca
+                         })
 
 
 from datetime import date
@@ -438,7 +521,19 @@ def supervisores():
             flash('Supervisor criado com sucesso!', 'success')
             return redirect(url_for('supervisores'))
 
-    supervisores = User.query.filter_by(tipo='supervisor').all()
+    # CORREÇÃO AQUI: Incluir coordenadora na listagem
+    # ANTES: supervisores = User.query.filter_by(tipo='supervisor').all()
+    # NOVO:
+    if current_user.tipo == 'admin':
+        # Admin vê supervisores E coordenadores
+        supervisores = User.query.filter(User.tipo.in_(['supervisor', 'coordenadora'])).all()
+    else:
+        # Coordenadora vê supervisores E ela mesma
+        supervisores_lista = User.query.filter_by(tipo='supervisor').all()
+        # Adiciona a própria coordenadora na lista
+        supervisores_lista.append(current_user)
+        supervisores = supervisores_lista
+
     return render_template('supervisores.html', supervisores=supervisores)
 
 @app.route('/cadastros/supervisor/editar/<int:supervisor_id>', methods=['GET', 'POST'])
@@ -638,13 +733,13 @@ def equipes():
         flash('Acesso negado.', 'danger')
         return redirect(url_for('dashboard'))
 
-    # Lista de supervisores para o admin escolher
+    # Lista de supervisores para o admin/coordenadora escolher
     supervisores = User.query.filter_by(tipo='supervisor').all() if current_user.tipo in ['admin', 'coordenadora'] else None
 
     if request.method == 'POST':
         nome = request.form['nome']
         
-        # CORREÇÃO: Admin pode escolher o supervisor, supervisor cria para si
+        # CORREÇÃO: Admin/Coordenadora pode escolher o supervisor, supervisor cria para si
         if current_user.tipo in ['admin', 'coordenadora']:
             supervisor_id = request.form.get('supervisor_id')
             if not supervisor_id:
@@ -674,12 +769,33 @@ def equipes():
         flash(f'Equipe "{nome}" criada com sucesso para o supervisor {supervisor_nome}!', 'success')
         return redirect(url_for('equipes'))
 
+    # Listagem de equipes
     if current_user.tipo in ['admin', 'coordenadora']:
         equipes = Equipe.query.all()
     else:
         equipes = Equipe.query.filter_by(supervisor_id=current_user.id).all()
 
-    return render_template('equipes.html', equipes=equipes, supervisores=supervisores)
+    # NOVO: Calcular quantidade de agentes por supervisor
+    # Cria um dicionário com a contagem de agentes por supervisor
+    agentes_por_supervisor = {}
+    
+    # Busca todos os supervisores únicos das equipes
+    supervisores_equipes = User.query.filter(
+        User.id.in_([equipe.supervisor_id for equipe in equipes])
+    ).all()
+    
+    # Para cada supervisor, conta quantos agentes ele supervisiona diretamente
+    for supervisor in supervisores_equipes:
+        qtd_agentes = Agente.query.filter_by(
+            supervisor_id=supervisor.id,
+            ativo=True
+        ).count()
+        agentes_por_supervisor[supervisor.id] = qtd_agentes
+
+    return render_template('equipes.html', 
+                         equipes=equipes, 
+                         supervisores=supervisores,
+                         agentes_por_supervisor=agentes_por_supervisor)
 
 @app.route('/cadastros/equipe/editar/<int:equipe_id>', methods=['GET', 'POST'])
 @login_required

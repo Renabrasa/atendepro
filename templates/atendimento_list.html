@@ -1,45 +1,550 @@
 {% extends 'base.html' %}
 {% block title %}Lista de Atendimentos{% endblock %}
 {% block content %}
-<h2>Atendimentos</h2>
+<style>
+  .atendimentos-container {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 20px;
+  }
 
-<a href="{{ url_for('novo_atendimento') }}" style="display:inline-block; margin-bottom: 20px; background-color:#003366; color:#fff; padding: 10px 18px; border-radius:5px; text-decoration:none;">
-    Novo Atendimento
-</a>
+  .header-section {
+    background: linear-gradient(135deg, #003366, #0056b3);
+    color: white;
+    padding: 25px;
+    border-radius: 12px;
+    margin-bottom: 30px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 15px;
+  }
 
-<table style="width:100%; border-collapse: collapse;">
-    <thead style="background-color:#f0f0f0; color:#333;">
-        <tr>
-            <th style="padding:10px; border: 1px solid #ccc;">ID</th>
-            <th style="padding:10px; border: 1px solid #ccc;">Data/Hora</th>
-            <th style="padding:10px; border: 1px solid #ccc;">Agente</th>
-            <th style="padding:10px; border: 1px solid #ccc;">Supervisor</th>
-            <th style="padding:10px; border: 1px solid #ccc;">Conteúdo</th>
-            <th style="padding:10px; border: 1px solid #ccc;">Classificação</th>
-            <th style="padding:10px; border: 1px solid #ccc;">Status</th>
-            <th style="padding:10px; border: 1px solid #ccc;">Ações</th>
-        </tr>
-    </thead>
-    <tbody>
-        {% for atendimento in atendimentos %}
-        <tr>
-            <td style="padding:8px; border: 1px solid #ccc; text-align:center;">{{ atendimento.id }}</td>
-            <td style="padding:8px; border: 1px solid #ccc;">{{ atendimento.data_hora.strftime('%d/%m/%Y %H:%M') }}</td>
-            <td style="padding:8px; border: 1px solid #ccc;">{{ atendimento.agente_rel.nome }}</td>
-            <td style="padding:8px; border: 1px solid #ccc;">{{ atendimento.supervisor.nome }}</td>
-            <td style="padding:8px; border: 1px solid #ccc;">{{ atendimento.conteudo[:50] }}{% if atendimento.conteudo|length > 50 %}...{% endif %}</td>
-            <td style="padding:8px; border: 1px solid #ccc;">{{ atendimento.classificacao or 'Não classificado' }}</td>
-            <td style="padding:8px; border: 1px solid #ccc;">{{ atendimento.status }}</td>
-            <td style="padding:8px; border: 1px solid #ccc; text-align:center;">
-                <a href="{{ url_for('editar_atendimento', atendimento_id=atendimento.id) }}" style="color:#003366; text-decoration:none; margin-right:8px;">Editar</a>
-                <a href="{{ url_for('excluir_atendimento', atendimento_id=atendimento.id) }}" onclick="return confirm('Confirma exclusão?');" style="color:#cc0000; text-decoration:none;">Excluir</a>
-            </td>
-        </tr>
+  .header-title {
+    font-size: 2em;
+    font-weight: 700;
+    margin: 0;
+  }
+
+  .btn {
+    padding: 10px 20px;
+    border: none;
+    border-radius: 8px;
+    text-decoration: none;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .btn-primary {
+    background: rgba(255,255,255,0.2);
+    color: white;
+    border: 2px solid rgba(255,255,255,0.3);
+  }
+
+  .btn-primary:hover {
+    background: rgba(255,255,255,0.3);
+    transform: translateY(-2px);
+  }
+
+  .btn-success { background: #28a745; color: white; }
+  .btn-danger { background: #dc3545; color: white; }
+  .btn-info { background: #17a2b8; color: white; }
+  .btn-sm { padding: 6px 12px; font-size: 0.875em; }
+
+  /* Filtros */
+  .filters-section {
+    background: white;
+    padding: 25px;
+    border-radius: 12px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    margin-bottom: 25px;
+  }
+
+  .filters-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+  }
+
+  .filters-title {
+    font-size: 1.2em;
+    font-weight: 600;
+    color: #003366;
+    margin: 0;
+  }
+
+  .filters-content {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 20px;
+    align-items: end;
+  }
+
+  .filter-group {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+  }
+
+  .filter-group label {
+    font-weight: 600;
+    color: #003366;
+    font-size: 0.9em;
+  }
+
+  .filter-group input,
+  .filter-group select {
+    padding: 10px;
+    border: 2px solid #e2e8f0;
+    border-radius: 8px;
+    font-size: 1em;
+    transition: border-color 0.3s ease;
+  }
+
+  .filter-group input:focus,
+  .filter-group select:focus {
+    border-color: #003366;
+    outline: none;
+  }
+
+  /* Estatísticas */
+  .stats-row {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 20px;
+    margin-bottom: 25px;
+  }
+
+  .stat-card {
+    background: white;
+    padding: 20px;
+    border-radius: 12px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    text-align: center;
+    border-left: 4px solid #003366;
+  }
+
+  .stat-number {
+    font-size: 2em;
+    font-weight: 700;
+    color: #003366;
+    margin-bottom: 5px;
+  }
+
+  .stat-label {
+    color: #718096;
+    font-weight: 600;
+    text-transform: uppercase;
+    font-size: 0.85em;
+  }
+
+  /* Tabela */
+  .table-container {
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    overflow: hidden;
+  }
+
+  .table-header {
+    background: linear-gradient(135deg, #f093fb, #f5576c);
+    color: white;
+    padding: 20px 25px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .table-title {
+    font-size: 1.2em;
+    font-weight: 600;
+    margin: 0;
+  }
+
+  .table-responsive {
+    overflow-x: auto;
+    max-height: 600px;
+    overflow-y: auto;
+  }
+
+  .table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 0;
+  }
+
+  .table th {
+    background: #f8f9fa;
+    padding: 15px 12px;
+    text-align: left;
+    font-weight: 600;
+    color: #2d3748;
+    border-bottom: 2px solid #e2e8f0;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+  }
+
+  .table td {
+    padding: 15px 12px;
+    border-bottom: 1px solid #e2e8f0;
+    vertical-align: middle;
+  }
+
+  .table tr:hover {
+    background: #f8f9fa;
+  }
+
+  .status-badge {
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 0.8em;
+    font-weight: 600;
+    text-transform: uppercase;
+  }
+
+  .status-pendente { background: #fff3cd; color: #856404; }
+  .status-classificado { background: #d4edda; color: #155724; }
+  .status-concluido { background: #cce5ff; color: #0066cc; }
+
+  .conteudo-preview {
+    max-width: 300px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  /* Paginação */
+  .pagination-container {
+    background: white;
+    padding: 20px;
+    border-radius: 12px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    margin-top: 20px;
+  }
+
+  .pagination {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+
+  .pagination a,
+  .pagination span {
+    padding: 8px 12px;
+    border: 1px solid #ddd;
+    text-decoration: none;
+    color: #003366;
+    border-radius: 5px;
+    transition: all 0.3s ease;
+  }
+
+  .pagination a:hover {
+    background: #003366;
+    color: white;
+  }
+
+  .pagination .current {
+    background: #003366;
+    color: white;
+    font-weight: 600;
+  }
+
+  .pagination .disabled {
+    color: #999;
+    cursor: not-allowed;
+  }
+
+  .pagination-info {
+    text-align: center;
+    margin-bottom: 15px;
+    color: #718096;
+    font-size: 0.9em;
+  }
+
+  /* Estados vazios */
+  .empty-state {
+    text-align: center;
+    padding: 60px 20px;
+    color: #718096;
+  }
+
+  .empty-state h3 {
+    color: #2d3748;
+    margin-bottom: 10px;
+  }
+
+  /* Responsividade */
+  @media (max-width: 768px) {
+    .header-section {
+      flex-direction: column;
+      text-align: center;
+    }
+
+    .filters-content {
+      grid-template-columns: 1fr;
+    }
+
+    .stats-row {
+      grid-template-columns: repeat(2, 1fr);
+    }
+
+    .pagination {
+      justify-content: center;
+      gap: 5px;
+    }
+
+    .pagination a,
+    .pagination span {
+      padding: 6px 8px;
+      font-size: 0.9em;
+    }
+  }
+</style>
+
+<div class="atendimentos-container">
+  <!-- Header -->
+  <div class="header-section">
+    <h1 class="header-title">📋 Atendimentos</h1>
+    <div>
+      <a href="{{ url_for('novo_atendimento') }}" class="btn btn-primary">
+        ➕ Novo Atendimento
+      </a>
+    </div>
+  </div>
+
+  <!-- Filtros -->
+  <div class="filters-section">
+    <div class="filters-header">
+      <h3 class="filters-title">🔍 Filtros</h3>
+    </div>
+    
+    <form method="GET" class="filters-content">
+      <div class="filter-group">
+        <label for="data_inicio">📅 Data Inicial</label>
+        <input type="date" id="data_inicio" name="data_inicio" value="{{ current_filters.data_inicio }}">
+      </div>
+      
+      <div class="filter-group">
+        <label for="data_fim">📅 Data Final</label>
+        <input type="date" id="data_fim" name="data_fim" value="{{ current_filters.data_fim }}">
+      </div>
+      
+      <div class="filter-group">
+        <label for="agente">👤 Agente</label>
+        <select id="agente" name="agente">
+          <option value="">Todos os agentes</option>
+          {% for agente in agentes_dropdown %}
+            <option value="{{ agente.id }}" {{ 'selected' if current_filters.agente == agente.id|string }}>
+              {{ agente.nome }}
+            </option>
+          {% endfor %}
+        </select>
+      </div>
+      
+      {% if current_user.tipo in ['admin', 'coordenadora'] %}
+      <div class="filter-group">
+        <label for="supervisor">👥 Supervisor</label>
+        <select id="supervisor" name="supervisor">
+          <option value="">Todos os supervisores</option>
+          {% for supervisor in supervisores_dropdown %}
+            <option value="{{ supervisor.id }}" {{ 'selected' if current_filters.supervisor == supervisor.id|string }}>
+              {{ supervisor.nome }}
+            </option>
+          {% endfor %}
+        </select>
+      </div>
+      {% endif %}
+      
+      <div class="filter-group">
+        <label for="status">📊 Status</label>
+        <select id="status" name="status">
+          <option value="">Todos os status</option>
+          <option value="pendente" {{ 'selected' if current_filters.status == 'pendente' }}>Pendente</option>
+          <option value="classificado" {{ 'selected' if current_filters.status == 'classificado' }}>Classificado</option>
+        </select>
+      </div>
+      
+      <div class="filter-group">
+        <label for="busca">🔎 Buscar</label>
+        <input type="text" id="busca" name="busca" placeholder="Buscar no conteúdo..." value="{{ current_filters.busca }}">
+      </div>
+      
+      <div class="filter-group">
+        <label>&nbsp;</label>
+        <div style="display: flex; gap: 10px;">
+          <button type="submit" class="btn btn-success btn-sm">🔍 Filtrar</button>
+          <a href="{{ url_for('atendimentos') }}" class="btn btn-info btn-sm">🔄 Limpar</a>
+        </div>
+      </div>
+    </form>
+  </div>
+
+  <!-- Estatísticas -->
+  <div class="stats-row">
+    <div class="stat-card">
+      <div class="stat-number">{{ stats.total_filtrados }}</div>
+      <div class="stat-label">Total Encontrados</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-number">{{ stats.pendentes }}</div>
+      <div class="stat-label">Pendentes</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-number">{{ stats.classificados }}</div>
+      <div class="stat-label">Classificados</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-number">{{ stats.hoje }}</div>
+      <div class="stat-label">Hoje</div>
+    </div>
+  </div>
+
+  <!-- Tabela -->
+  <div class="table-container">
+    <div class="table-header">
+      <h3 class="table-title">📋 Lista de Atendimentos</h3>
+    </div>
+    
+    <div class="table-responsive">
+      <table class="table">
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>📅 Data/Hora</th>
+            <th>👤 Agente</th>
+            {% if current_user.tipo in ['admin', 'coordenadora'] %}
+              <th>👥 Supervisor</th>
+            {% endif %}
+            <th>📝 Conteúdo</th>
+            <th>🏷️ Classificação</th>
+            <th>📊 Status</th>
+            <th>⚙️ Ações</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for atendimento in atendimentos %}
+            <tr>
+              <td><strong>#{{ atendimento.id }}</strong></td>
+              <td>
+                {{ atendimento.data_hora.strftime('%d/%m/%Y') }}<br>
+                <small>{{ atendimento.data_hora.strftime('%H:%M') }}</small>
+              </td>
+              <td><strong>{{ atendimento.agente_rel.nome }}</strong></td>
+              {% if current_user.tipo in ['admin', 'coordenadora'] %}
+                <td>{{ atendimento.supervisor.nome }}</td>
+              {% endif %}
+              <td>
+                <div class="conteudo-preview" title="{{ atendimento.conteudo }}">
+                  {{ atendimento.conteudo[:80] }}{% if atendimento.conteudo|length > 80 %}...{% endif %}
+                </div>
+              </td>
+              <td>
+                {% if atendimento.classificacao %}
+                  <span style="color: #28a745; font-weight: 600;">{{ atendimento.classificacao }}</span>
+                {% else %}
+                  <span style="color: #6c757d;">Não classificado</span>
+                {% endif %}
+              </td>
+              <td>
+                <span class="status-badge status-{{ atendimento.status or 'pendente' }}">
+                  {{ atendimento.status or 'pendente' }}
+                </span>
+              </td>
+              <td>
+                <div style="display: flex; gap: 5px;">
+                  <a href="{{ url_for('editar_atendimento', atendimento_id=atendimento.id) }}" 
+                     class="btn btn-info btn-sm" title="Editar">
+                    ✏️
+                  </a>
+                  <a href="{{ url_for('excluir_atendimento', atendimento_id=atendimento.id) }}" 
+                     onclick="return confirm('Confirma exclusão do atendimento #{{ atendimento.id }}?');" 
+                     class="btn btn-danger btn-sm" title="Excluir">
+                    🗑️
+                  </a>
+                </div>
+              </td>
+            </tr>
+          {% else %}
+            <tr>
+              <td colspan="8" class="empty-state">
+                <h3>📭 Nenhum atendimento encontrado</h3>
+                <p>Não há atendimentos para os critérios selecionados.</p>
+                <a href="{{ url_for('novo_atendimento') }}" class="btn btn-success">
+                  ➕ Criar Primeiro Atendimento
+                </a>
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Paginação -->
+  {% if atendimentos_paginated.pages > 1 %}
+  <div class="pagination-container">
+    <div class="pagination-info">
+      Mostrando {{ atendimentos_paginated.per_page * (atendimentos_paginated.page - 1) + 1 }} 
+      a {{ atendimentos_paginated.per_page * (atendimentos_paginated.page - 1) + atendimentos|length }} 
+      de {{ atendimentos_paginated.total }} atendimentos
+    </div>
+    
+    <div class="pagination">
+      <!-- Primeira página -->
+      {% if atendimentos_paginated.has_prev %}
+        <a href="{{ url_for('atendimentos', page=1, **current_filters) }}">« Primeira</a>
+        <a href="{{ url_for('atendimentos', page=atendimentos_paginated.prev_num, **current_filters) }}">‹ Anterior</a>
+      {% else %}
+        <span class="disabled">« Primeira</span>
+        <span class="disabled">‹ Anterior</span>
+      {% endif %}
+
+      <!-- Páginas numeradas -->
+      {% for page_num in atendimentos_paginated.iter_pages() %}
+        {% if page_num %}
+          {% if page_num != atendimentos_paginated.page %}
+            <a href="{{ url_for('atendimentos', page=page_num, **current_filters) }}">{{ page_num }}</a>
+          {% else %}
+            <span class="current">{{ page_num }}</span>
+          {% endif %}
         {% else %}
-        <tr>
-            <td colspan="8" style="padding:20px; text-align:center; color:#666;">Nenhum atendimento encontrado.</td>
-        </tr>
-        {% endfor %}
-    </tbody>
-</table>
+          <span>…</span>
+        {% endif %}
+      {% endfor %}
+
+      <!-- Última página -->
+      {% if atendimentos_paginated.has_next %}
+        <a href="{{ url_for('atendimentos', page=atendimentos_paginated.next_num, **current_filters) }}">Próxima ›</a>
+        <a href="{{ url_for('atendimentos', page=atendimentos_paginated.pages, **current_filters) }}">Última »</a>
+      {% else %}
+        <span class="disabled">Próxima ›</span>
+        <span class="disabled">Última »</span>
+      {% endif %}
+    </div>
+  </div>
+  {% endif %}
+</div>
+
+<script>
+  // Validação de filtros
+  document.querySelector('form').addEventListener('submit', function(e) {
+    const inicio = document.getElementById('data_inicio').value;
+    const fim = document.getElementById('data_fim').value;
+    
+    if (inicio && fim && inicio > fim) {
+      e.preventDefault();
+      alert('⚠️ A data inicial não pode ser maior que a data final.');
+    }
+  });
+</script>
+
 {% endblock %}

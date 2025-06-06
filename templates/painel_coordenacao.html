@@ -1,332 +1,1342 @@
-{% extends 'base.html' %}
-{% block title %}Painel de Coordenação{% endblock %}
-{% block content %}
-<h2>👑 Painel de Coordenação</h2>
+<!DOCTYPE html>
+<html lang="pt-BR">
 
-<!-- Estatísticas Gerais -->
-<div class="stats-container">
-  <div class="stat-card">
-    <div class="stat-number">{{ stats.total_supervisores }}</div>
-    <div class="stat-label">Supervisores</div>
-  </div>
-  <div class="stat-card">
-    <div class="stat-number">{{ stats.total_agentes }}</div>
-    <div class="stat-label">Agentes</div>
-  </div>
-  <div class="stat-card">
-    <div class="stat-number">{{ stats.total_atendimentos }}</div>
-    <div class="stat-label">Total Atendimentos</div>
-  </div>
-  <div class="stat-card">
-    <div class="stat-number">{{ stats.atendimentos_hoje }}</div>
-    <div class="stat-label">Hoje</div>
-  </div>
-</div>
-
-<!-- Relatório por Supervisor -->
-<div class="supervisores-container">
-  <div class="supervisores-header">
-    <h3>📊 Performance por Supervisor</h3>
-    <div class="header-actions">
-      <button onclick="exportarRelatorio()" class="btn btn-secondary">📤 Exportar</button>
-      <button onclick="atualizarDados()" class="btn btn-primary">🔄 Atualizar</button>
-    </div>
-  </div>
-
-  <div class="supervisores-grid">
-    {% for sup in supervisores_stats %}
-    <div class="supervisor-card">
-      <div class="supervisor-header">
-        <h4>{{ sup.nome }}</h4>
-        <!-- ADICIONE ESTA LINHA para mostrar se é coordenador -->
-        {% if sup.tipo == 'coordenadora' %}
-        <span class="badge badge-warning">Coordenadora</span>
-        {% endif %}
-        <span class="discord-status">{{ sup.status_discord }}</span>
-      </div>
-
-      <div class="supervisor-metrics">
-        <div class="metric">
-          <span class="metric-number">{{ sup.atendimentos }}</span>
-          <span class="metric-label">Atendimentos</span>
-        </div>
-        <div class="metric">
-          <span class="metric-number">{{ sup.agentes }}</span>
-          <span class="metric-label">Agentes</span>
-        </div>
-        <div class="metric">
-          <span class="metric-number">{{ sup.equipes }}</span>
-          <span class="metric-label">Equipes</span>
-        </div>
-      </div>
-
-      <div class="supervisor-actions">
-        <button onclick="verDetalhes('{{ sup.nome }}')" class="btn btn-sm btn-info">
-          👀 Ver Detalhes
-        </button>
-      </div>
-    </div>
-    {% endfor %}
-  </div>
-</div>
-
-<!-- Resumo Executivo -->
-<div class="resumo-container">
-  <div class="resumo-header">
-    <h3>📋 Resumo Executivo</h3>
-  </div>
-
-  <div class="resumo-content">
-    <div class="resumo-item">
-      <strong>Média de Atendimentos por Supervisor:</strong>
-      {{ "%.1f"|format((stats.total_atendimentos / stats.total_supervisores) if stats.total_supervisores > 0 else 0) }}
-    </div>
-
-    <div class="resumo-item">
-      <strong>Média de Agentes por Supervisor:</strong>
-      {{ "%.1f"|format((stats.total_agentes / stats.total_supervisores) if stats.total_supervisores > 0 else 0) }}
-    </div>
-
-    <div class="resumo-item">
-      <strong>Atendimentos Este Mês:</strong>
-      {{ stats.atendimentos_mes }}
-      <span class="resumo-info">
-        ({{ "%.1f"|format((stats.atendimentos_mes / stats.total_atendimentos * 100) if stats.total_atendimentos > 0 else
-        0) }}% do total)
-      </span>
-    </div>
-
-    <div class="resumo-item">
-      <strong>Supervisores com Discord:</strong>
-      {{ supervisores_stats|selectattr('status_discord', 'equalto', '✅')|list|length }} de {{ stats.total_supervisores
-      }}
-    </div>
-  </div>
-</div>
-
-<style>
-  /* Estilos específicos para coordenação */
-  .stats-container {
-    display: flex;
-    gap: 20px;
-    margin-bottom: 30px;
-  }
-
-  .stat-card {
-    flex: 1;
-    background: linear-gradient(135deg, #667eea, #764ba2);
-    color: white;
-    padding: 20px;
-    border-radius: 10px;
-    text-align: center;
-    font-weight: 700;
-    font-size: 1.8em;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-  }
-
-  .stat-label {
-    font-weight: 400;
-    font-size: 0.6em;
-    margin-top: 8px;
-  }
-
-  .supervisores-container {
-    background: #fff;
-    border-radius: 12px;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-    margin-bottom: 30px;
-    border: 1px solid #e1e5e9;
-  }
-
-  .supervisores-header {
-    background: linear-gradient(135deg, #f093fb, #f5576c);
-    color: white;
-    padding: 16px 24px;
-    border-radius: 12px 12px 0 0;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-  }
-
-  .supervisores-header h3 {
-    margin: 0;
-    font-size: 1.2em;
-  }
-
-  .header-actions {
-    display: flex;
-    gap: 10px;
-  }
-
-  .supervisores-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-    gap: 20px;
-    padding: 24px;
-  }
-
-  .supervisor-card {
-    background: #f8f9fa;
-    border: 1px solid #e9ecef;
-    border-radius: 10px;
-    padding: 20px;
-    transition: all 0.3s ease;
-  }
-
-  .supervisor-card:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.1);
-  }
-
-  .supervisor-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 16px;
-  }
-
-  .supervisor-header h4 {
-    margin: 0;
-    color: #003366;
-    font-size: 1.2em;
-  }
-
-  .discord-status {
-    font-size: 1.5em;
-  }
-
-  .supervisor-metrics {
-    display: flex;
-    justify-content: space-between;
-    margin-bottom: 16px;
-  }
-
-  .metric {
-    text-align: center;
-  }
-
-  .metric-number {
-    display: block;
-    font-size: 1.5em;
-    font-weight: bold;
-    color: #003366;
-  }
-
-  .metric-label {
-    font-size: 0.8em;
-    color: #6c757d;
-  }
-
-  .supervisor-actions {
-    text-align: center;
-  }
-
-  .resumo-container {
-    background: #fff;
-    border-radius: 12px;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-    border: 1px solid #e1e5e9;
-  }
-
-  .resumo-header {
-    background: linear-gradient(135deg, #4facfe, #00f2fe);
-    color: white;
-    padding: 16px 24px;
-    border-radius: 12px 12px 0 0;
-  }
-
-  .resumo-header h3 {
-    margin: 0;
-    font-size: 1.2em;
-  }
-
-  .resumo-content {
-    padding: 24px;
-  }
-
-  .resumo-item {
-    padding: 12px 0;
-    border-bottom: 1px solid #e9ecef;
-    font-size: 1.1em;
-  }
-
-  .resumo-item:last-child {
-    border-bottom: none;
-  }
-
-  .resumo-info {
-    color: #6c757d;
-    font-size: 0.9em;
-  }
-
-  .btn {
-    display: inline-flex;
-    align-items: center;
-    gap: 5px;
-    padding: 8px 16px;
-    border: none;
-    border-radius: 6px;
-    font-weight: 600;
-    text-decoration: none;
-    cursor: pointer;
-    transition: all 0.3s ease;
-    font-size: 0.9em;
-  }
-
-  .btn-primary {
-    background: #007bff;
-    color: white;
-  }
-
-  .btn-secondary {
-    background: #6c757d;
-    color: white;
-  }
-
-  .btn-info {
-    background: #17a2b8;
-    color: white;
-  }
-
-  .btn-sm {
-    padding: 6px 12px;
-    font-size: 0.8em;
-  }
-
-  .btn:hover {
-    transform: translateY(-1px);
-    opacity: 0.9;
-  }
-
-  @media (max-width: 768px) {
-    .stats-container {
-      flex-direction: column;
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Painel da Coordenação</title>
+  <style>
+    :root {
+      --coord-primary: #be185d;
+      --coord-secondary: #ec4899;
+      --coord-accent: #f472b6;
+      --coord-light: #fdf2f8;
+      --coord-lighter: #fef7f3;
+      --coord-background: #fefcfe;
+      --coord-border: #fce7f3;
+      --coord-text: #374151;
+      --coord-muted: #6b7280;
+      --coord-success: #059669;
+      --coord-warning: #d97706;
+      --coord-danger: #dc2626;
+      --coord-white: #ffffff;
     }
 
-    .supervisores-grid {
-      grid-template-columns: 1fr;
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
     }
 
-    .supervisores-header {
-      flex-direction: column;
+    body {
+      background: var(--coord-background);
+      color: var(--coord-text);
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      line-height: 1.5;
+    }
+
+    .coordenacao {
+      max-width: 1400px;
+      margin: 0 auto;
+      padding: 24px;
+    }
+
+    .coord-header {
+      background: linear-gradient(135deg, var(--coord-primary) 0%, var(--coord-secondary) 100%);
+      border: 1px solid var(--coord-border);
+      border-radius: 12px;
+      padding: 32px;
+      margin-bottom: 24px;
+      color: white;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .coord-header::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      right: 0;
+      width: 200px;
+      height: 200px;
+      background: radial-gradient(circle, rgba(255, 255, 255, 0.1) 0%, transparent 70%);
+      border-radius: 50%;
+      transform: translate(50px, -50px);
+    }
+
+    .header-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 24px;
+      position: relative;
+      z-index: 2;
+    }
+
+    .header-content h1 {
+      font-size: 28px;
+      font-weight: 700;
+      margin-bottom: 8px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .header-content p {
+      font-size: 16px;
+      opacity: 0.9;
+    }
+
+    .header-actions {
+      display: flex;
+      gap: 12px;
+    }
+
+    .btn {
+      padding: 8px 16px;
+      border-radius: 8px;
+      border: none;
+      color: var(--coord-text);
+      text-decoration: none;
+      font-size: 14px;
+      font-weight: 500;
+      transition: all 0.2s;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      cursor: pointer;
+    }
+
+    .btn-coord {
+      background: rgba(255, 255, 255, 0.2);
+      color: white;
+      border: 1px solid rgba(255, 255, 255, 0.3);
+    }
+
+    .btn-coord:hover {
+      background: rgba(255, 255, 255, 0.3);
+      transform: translateY(-2px);
+    }
+
+    .exec-kpis {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 20px;
+      position: relative;
+      z-index: 2;
+    }
+
+    .exec-kpi {
+      background: rgba(255, 255, 255, 0.15);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      border-radius: 12px;
+      padding: 20px;
+      text-align: center;
+      backdrop-filter: blur(10px);
+    }
+
+    .exec-kpi-value {
+      font-size: 24px;
+      font-weight: 700;
+      color: white;
+      line-height: 1;
+      margin-bottom: 8px;
+    }
+
+    .exec-kpi-label {
+      font-size: 12px;
+      color: rgba(255, 255, 255, 0.8);
+      font-weight: 500;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    @media (max-width: 768px) {
+      .coordenacao {
+        padding: 16px;
+      }
+
+      .coord-header {
+        padding: 24px 20px;
+      }
+
+      .header-top {
+        flex-direction: column;
+        gap: 16px;
+        text-align: center;
+      }
+
+      .exec-kpis {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 16px;
+      }
+    }
+
+    .coord-layout {
+      display: grid;
+      grid-template-columns: 2fr 1fr;
+      gap: 24px;
+      margin-bottom: 24px;
+    }
+
+    .coord-card {
+      background: var(--coord-white);
+      border: 1px solid var(--coord-border);
+      border-radius: 12px;
+      overflow: hidden;
+      box-shadow: 0 4px 6px -1px rgba(190, 24, 93, 0.1);
+    }
+
+    .coord-card-header {
+      background: linear-gradient(135deg, var(--coord-light) 0%, var(--coord-lighter) 100%);
+      border-bottom: 1px solid var(--coord-border);
+      padding: 20px 24px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .coord-card-title {
+      font-size: 18px;
+      font-weight: 600;
+      color: var(--coord-primary);
+      display: flex;
+      align-items: center;
       gap: 10px;
     }
-  }
-</style>
 
-<script>
-  function exportarRelatorio() {
-    window.print();
-  }
+    .coord-card-subtitle {
+      font-size: 12px;
+      color: var(--coord-muted);
+      margin-top: 4px;
+    }
 
-  function atualizarDados() {
-    location.reload();
-  }
+    .coord-card-content {
+      padding: 24px;
+    }
 
-  function verDetalhes(nomeSupervisor) {
-    // Pode implementar modal ou redirecionar para página específica
-    alert(`Funcionalidade "Ver Detalhes" para ${nomeSupervisor} será implementada em breve.`);
-  }
-</script>
+    .supervisor-grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 16px;
+    }
 
-{% endblock %}
+    .supervisor-item {
+      background: var(--coord-light);
+      border: 1px solid var(--coord-border);
+      border-radius: 8px;
+      padding: 20px;
+      transition: all 0.2s;
+    }
+
+    .supervisor-item:hover {
+      background: var(--coord-lighter);
+      border-color: var(--coord-accent);
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(190, 24, 93, 0.15);
+    }
+
+    .supervisor-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 16px;
+    }
+
+    .supervisor-name {
+      font-size: 16px;
+      font-weight: 600;
+      color: var(--coord-primary);
+    }
+
+    .supervisor-total {
+      background: var(--coord-primary);
+      color: white;
+      padding: 4px 12px;
+      border-radius: 12px;
+      font-size: 12px;
+      font-weight: 600;
+    }
+
+    .complexity-bars {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+
+    .complexity-bar {
+      text-align: center;
+    }
+
+    .complexity-label {
+      font-size: 11px;
+      font-weight: 500;
+      color: var(--coord-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 6px;
+    }
+
+    .complexity-value {
+      font-size: 18px;
+      font-weight: 700;
+      margin-bottom: 4px;
+    }
+
+    .complexity-basic .complexity-value {
+      color: var(--coord-success);
+    }
+
+    .complexity-medium .complexity-value {
+      color: var(--coord-warning);
+    }
+
+    .complexity-complex .complexity-value {
+      color: var(--coord-danger);
+    }
+
+    .complexity-progress {
+      height: 4px;
+      background: #f1f5f9;
+      border-radius: 2px;
+      overflow: hidden;
+    }
+
+    .complexity-fill {
+      height: 100%;
+      border-radius: 2px;
+      transition: width 0.3s ease;
+    }
+
+    .complexity-basic .complexity-fill {
+      background: var(--coord-success);
+    }
+
+    .complexity-medium .complexity-fill {
+      background: var(--coord-warning);
+    }
+
+    .complexity-complex .complexity-fill {
+      background: var(--coord-danger);
+    }
+
+    .top-agents {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .agent-rank {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 8px 12px;
+      background: rgba(255, 255, 255, 0.5);
+      border-radius: 6px;
+      transition: all 0.2s;
+    }
+
+    .agent-rank:hover {
+      background: rgba(255, 255, 255, 0.8);
+    }
+
+    .rank-position {
+      width: 24px;
+      height: 24px;
+      background: var(--coord-secondary);
+      color: white;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 12px;
+      font-weight: 600;
+    }
+
+    .rank-position.first {
+      background: #ffd700;
+      color: #92400e;
+    }
+
+    .rank-position.second {
+      background: #c0c0c0;
+      color: #374151;
+    }
+
+    .rank-position.third {
+      background: #cd7f32;
+      color: white;
+    }
+
+    .agent-info {
+      flex: 1;
+    }
+
+    .agent-name {
+      font-size: 14px;
+      font-weight: 500;
+      color: var(--coord-text);
+    }
+
+    .agent-count {
+      font-size: 12px;
+      color: var(--coord-muted);
+    }
+
+    @media (max-width: 1200px) {
+      .coord-layout {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    @media (max-width: 768px) {
+      .complexity-bars {
+        grid-template-columns: 1fr;
+        gap: 8px;
+      }
+    }
+
+    .temporal-analysis {
+      display: flex;
+      flex-direction: column;
+      gap: 24px;
+    }
+
+    .weekday-chart {
+      background: var(--coord-white);
+      border: 1px solid var(--coord-border);
+      border-radius: 12px;
+      overflow: hidden;
+      box-shadow: 0 4px 6px -1px rgba(190, 24, 93, 0.1);
+    }
+
+    .weekday-header {
+      background: linear-gradient(135deg, var(--coord-light) 0%, var(--coord-lighter) 100%);
+      border-bottom: 1px solid var(--coord-border);
+      padding: 16px 20px;
+    }
+
+    .weekday-title {
+      font-size: 16px;
+      font-weight: 600;
+      color: var(--coord-primary);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .weekday-content {
+      padding: 20px;
+    }
+
+    .weekday-bars {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      gap: 12px;
+      align-items: end;
+      height: 120px;
+      padding: 10px 0;
+    }
+
+    .weekday-bar {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .bar-container {
+      height: 80px;
+      width: 24px;
+      background: #f1f5f9;
+      border-radius: 4px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .bar-fill {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      background: var(--coord-secondary);
+      border-radius: 4px 4px 0 0;
+      transition: height 0.5s ease;
+    }
+
+    .bar-value {
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--coord-primary);
+      margin-bottom: 4px;
+    }
+
+    .weekday-name {
+      font-size: 10px;
+      color: var(--coord-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .heatmap-container {
+      background: var(--coord-white);
+      border: 1px solid var(--coord-border);
+      border-radius: 12px;
+      overflow: hidden;
+      box-shadow: 0 4px 6px -1px rgba(190, 24, 93, 0.1);
+    }
+
+    .heatmap-header {
+      background: linear-gradient(135deg, var(--coord-light) 0%, var(--coord-lighter) 100%);
+      border-bottom: 1px solid var(--coord-border);
+      padding: 16px 20px;
+    }
+
+    .heatmap-title {
+      font-size: 16px;
+      font-weight: 600;
+      color: var(--coord-primary);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .heatmap-content {
+      padding: 20px;
+    }
+
+    .heatmap-grid {
+      display: grid;
+      grid-template-columns: 100px repeat(7, 1fr);
+      gap: 4px;
+      align-items: center;
+    }
+
+    .heatmap-supervisor {
+      font-size: 12px;
+      font-weight: 500;
+      color: var(--coord-text);
+      padding: 8px 4px;
+    }
+
+    .heatmap-cell {
+      height: 32px;
+      border-radius: 4px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 11px;
+      font-weight: 600;
+      color: white;
+      transition: all 0.2s;
+      cursor: pointer;
+    }
+
+    .heatmap-cell:hover {
+      transform: scale(1.1);
+      z-index: 10;
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    }
+
+    .intensity-low {
+      background: #fce7f3;
+      color: var(--coord-primary);
+    }
+
+    .intensity-medium {
+      background: var(--coord-accent);
+    }
+
+    .intensity-high {
+      background: var(--coord-secondary);
+    }
+
+    .intensity-very-high {
+      background: var(--coord-primary);
+    }
+
+    .weekday-headers {
+      display: contents;
+    }
+
+    .weekday-header-cell {
+      font-size: 10px;
+      color: var(--coord-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      text-align: center;
+      padding: 8px 4px;
+    }
+
+    @media (max-width: 768px) {
+      .weekday-bars {
+        grid-template-columns: repeat(7, 1fr);
+        gap: 8px;
+      }
+
+      .heatmap-grid {
+        grid-template-columns: 80px repeat(7, 1fr);
+        gap: 2px;
+      }
+    }
+
+    .comparison-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 24px;
+      margin-top: 24px;
+    }
+
+    .comparison-card {
+      background: var(--coord-white);
+      border: 1px solid var(--coord-border);
+      border-radius: 12px;
+      overflow: hidden;
+      box-shadow: 0 4px 6px -1px rgba(190, 24, 93, 0.1);
+    }
+
+    .comparison-header {
+      background: linear-gradient(135deg, var(--coord-light) 0%, var(--coord-lighter) 100%);
+      border-bottom: 1px solid var(--coord-border);
+      padding: 16px 20px;
+    }
+
+    .comparison-title {
+      font-size: 16px;
+      font-weight: 600;
+      color: var(--coord-primary);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .comparison-content {
+      padding: 20px;
+    }
+
+    .comparison-items {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .comparison-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 12px;
+      background: var(--coord-light);
+      border-radius: 8px;
+      transition: all 0.2s;
+    }
+
+    .comparison-item:hover {
+      background: var(--coord-lighter);
+      transform: translateY(-1px);
+    }
+
+    .comparison-label {
+      font-size: 14px;
+      font-weight: 500;
+      color: var(--coord-text);
+    }
+
+    .comparison-values {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .comparison-current {
+      font-size: 16px;
+      font-weight: 700;
+      color: var(--coord-primary);
+    }
+
+    .comparison-previous {
+      font-size: 14px;
+      color: var(--coord-muted);
+    }
+
+    .comparison-change {
+      font-size: 12px;
+      font-weight: 600;
+      padding: 2px 6px;
+      border-radius: 12px;
+    }
+
+    .change-positive {
+      background: #dcfce7;
+      color: #166534;
+    }
+
+    .change-negative {
+      background: #fecaca;
+      color: #991b1b;
+    }
+
+    .change-neutral {
+      background: #e5e7eb;
+      color: #374151;
+    }
+
+    .projection-value {
+      font-size: 18px;
+      font-weight: 700;
+      color: var(--coord-secondary);
+      text-align: center;
+      padding: 16px;
+      background: var(--coord-light);
+      border-radius: 8px;
+      margin-top: 16px;
+      border: 2px dashed var(--coord-accent);
+    }
+
+    .progress-bar {
+      width: 100%;
+      height: 8px;
+      background: #f1f5f9;
+      border-radius: 4px;
+      overflow: hidden;
+      margin: 8px 0;
+    }
+
+    .progress-fill {
+      height: 100%;
+      background: linear-gradient(90deg, var(--coord-secondary) 0%, var(--coord-primary) 100%);
+      border-radius: 4px;
+      transition: width 1s ease;
+    }
+
+    .footer-info {
+      margin-top: 32px;
+      padding: 20px;
+      background: linear-gradient(135deg, var(--coord-light) 0%, var(--coord-lighter) 100%);
+      border-radius: 12px;
+      text-align: center;
+      border: 1px solid var(--coord-border);
+    }
+
+    .footer-text {
+      font-size: 14px;
+      color: var(--coord-muted);
+      margin-bottom: 8px;
+    }
+
+    .footer-highlight {
+      font-size: 16px;
+      font-weight: 600;
+      color: var(--coord-primary);
+    }
+
+    @media (max-width: 1200px) {
+      .comparison-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    @media (max-width: 768px) {
+      .comparison-item {
+        flex-direction: column;
+        gap: 8px;
+        text-align: center;
+      }
+
+      .comparison-values {
+        justify-content: center;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <div class="coordenacao">
+    <header class="coord-header">
+      <div class="header-top">
+        <div class="header-content">
+          <h1>👑 Painel da Coordenação</h1>
+          <p>Análise temporal de demanda e volume por supervisor</p>
+        </div>
+        <div class="header-actions">
+          <a href="#" class="btn btn-coord">📊 Dashboard Geral</a>
+          <a href="#" class="btn btn-coord">👥 Supervisores</a>
+        </div>
+      </div>
+
+      <div class="exec-kpis">
+        <div class="exec-kpi">
+          <div class="exec-kpi-value">3</div>
+          <div class="exec-kpi-label">Supervisores</div>
+        </div>
+        <div class="exec-kpi">
+          <div class="exec-kpi-value">24</div>
+          <div class="exec-kpi-label">Agentes</div>
+        </div>
+        <div class="exec-kpi">
+          <div class="exec-kpi-value">381</div>
+          <div class="exec-kpi-label">Atend. Mês</div>
+        </div>
+        <div class="exec-kpi">
+          <div class="exec-kpi-value">127</div>
+          <div class="exec-kpi-label">Média/Sup</div>
+        </div>
+      </div>
+    </header>
+
+    <div class="coord-layout">
+      <div class="coord-card">
+        <div class="coord-card-header">
+          <div>
+            <div class="coord-card-title">📊 Volume por Supervisor</div>
+            <div class="coord-card-subtitle">Distribuição por complexidade e top 5 agentes</div>
+          </div>
+          <select class="btn" style="border: 1px solid var(--coord-border); background: white;">
+            <option>Últimos 30 dias</option>
+            <option>Últimos 7 dias</option>
+            <option>Este mês</option>
+          </select>
+        </div>
+        <div class="coord-card-content">
+          <div class="supervisor-grid">
+
+            <!-- Supervisor 1: Ana Silva -->
+            <div class="supervisor-item">
+              <div class="supervisor-header">
+                <div class="supervisor-name">Ana Silva</div>
+                <div class="supervisor-total">127 atendimentos</div>
+              </div>
+
+              <div class="complexity-bars">
+                <div class="complexity-bar complexity-basic">
+                  <div class="complexity-label">Básico</div>
+                  <div class="complexity-value">68</div>
+                  <div class="complexity-progress">
+                    <div class="complexity-fill" style="width: 54%"></div>
+                  </div>
+                </div>
+                <div class="complexity-bar complexity-medium">
+                  <div class="complexity-label">Médio</div>
+                  <div class="complexity-value">42</div>
+                  <div class="complexity-progress">
+                    <div class="complexity-fill" style="width: 33%"></div>
+                  </div>
+                </div>
+                <div class="complexity-bar complexity-complex">
+                  <div class="complexity-label">Complexo</div>
+                  <div class="complexity-value">17</div>
+                  <div class="complexity-progress">
+                    <div class="complexity-fill" style="width: 13%"></div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="top-agents">
+                <div class="agent-rank">
+                  <div class="rank-position first">1</div>
+                  <div class="agent-info">
+                    <div class="agent-name">João Santos</div>
+                    <div class="agent-count">34 atendimentos</div>
+                  </div>
+                </div>
+                <div class="agent-rank">
+                  <div class="rank-position second">2</div>
+                  <div class="agent-info">
+                    <div class="agent-name">Maria Costa</div>
+                    <div class="agent-count">28 atendimentos</div>
+                  </div>
+                </div>
+                <div class="agent-rank">
+                  <div class="rank-position third">3</div>
+                  <div class="agent-info">
+                    <div class="agent-name">Pedro Lima</div>
+                    <div class="agent-count">25 atendimentos</div>
+                  </div>
+                </div>
+                <div class="agent-rank">
+                  <div class="rank-position">4</div>
+                  <div class="agent-info">
+                    <div class="agent-name">Laura Mendes</div>
+                    <div class="agent-count">22 atendimentos</div>
+                  </div>
+                </div>
+                <div class="agent-rank">
+                  <div class="rank-position">5</div>
+                  <div class="agent-info">
+                    <div class="agent-name">Carlos Rocha</div>
+                    <div class="agent-count">18 atendimentos</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Supervisor 2: Roberto Fernandes -->
+            <div class="supervisor-item">
+              <div class="supervisor-header">
+                <div class="supervisor-name">Roberto Fernandes</div>
+                <div class="supervisor-total">98 atendimentos</div>
+              </div>
+
+              <div class="complexity-bars">
+                <div class="complexity-bar complexity-basic">
+                  <div class="complexity-label">Básico</div>
+                  <div class="complexity-value">45</div>
+                  <div class="complexity-progress">
+                    <div class="complexity-fill" style="width: 46%"></div>
+                  </div>
+                </div>
+                <div class="complexity-bar complexity-medium">
+                  <div class="complexity-label">Médio</div>
+                  <div class="complexity-value">35</div>
+                  <div class="complexity-progress">
+                    <div class="complexity-fill" style="width: 36%"></div>
+                  </div>
+                </div>
+                <div class="complexity-bar complexity-complex">
+                  <div class="complexity-label">Complexo</div>
+                  <div class="complexity-value">18</div>
+                  <div class="complexity-progress">
+                    <div class="complexity-fill" style="width: 18%"></div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="top-agents">
+                <div class="agent-rank">
+                  <div class="rank-position first">1</div>
+                  <div class="agent-info">
+                    <div class="agent-name">Fernanda Alves</div>
+                    <div class="agent-count">26 atendimentos</div>
+                  </div>
+                </div>
+                <div class="agent-rank">
+                  <div class="rank-position second">2</div>
+                  <div class="agent-info">
+                    <div class="agent-name">Ricardo Dias</div>
+                    <div class="agent-count">24 atendimentos</div>
+                  </div>
+                </div>
+                <div class="agent-rank">
+                  <div class="rank-position third">3</div>
+                  <div class="agent-info">
+                    <div class="agent-name">Juliana Campos</div>
+                    <div class="agent-count">20 atendimentos</div>
+                  </div>
+                </div>
+                <div class="agent-rank">
+                  <div class="rank-position">4</div>
+                  <div class="agent-info">
+                    <div class="agent-name">Thiago Martins</div>
+                    <div class="agent-count">16 atendimentos</div>
+                  </div>
+                </div>
+                <div class="agent-rank">
+                  <div class="rank-position">5</div>
+                  <div class="agent-info">
+                    <div class="agent-name">Camila Torres</div>
+                    <div class="agent-count">12 atendimentos</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Supervisor 3: Mariana Oliveira -->
+            <div class="supervisor-item">
+              <div class="supervisor-header">
+                <div class="supervisor-name">Mariana Oliveira</div>
+                <div class="supervisor-total">156 atendimentos</div>
+              </div>
+
+              <div class="complexity-bars">
+                <div class="complexity-bar complexity-basic">
+                  <div class="complexity-label">Básico</div>
+                  <div class="complexity-value">89</div>
+                  <div class="complexity-progress">
+                    <div class="complexity-fill" style="width: 57%"></div>
+                  </div>
+                </div>
+                <div class="complexity-bar complexity-medium">
+                  <div class="complexity-label">Médio</div>
+                  <div class="complexity-value">48</div>
+                  <div class="complexity-progress">
+                    <div class="complexity-fill" style="width: 31%"></div>
+                  </div>
+                </div>
+                <div class="complexity-bar complexity-complex">
+                  <div class="complexity-label">Complexo</div>
+                  <div class="complexity-value">19</div>
+                  <div class="complexity-progress">
+                    <div class="complexity-fill" style="width: 12%"></div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="top-agents">
+                <div class="agent-rank">
+                  <div class="rank-position first">1</div>
+                  <div class="agent-info">
+                    <div class="agent-name">Gabriel Souza</div>
+                    <div class="agent-count">42 atendimentos</div>
+                  </div>
+                </div>
+                <div class="agent-rank">
+                  <div class="rank-position second">2</div>
+                  <div class="agent-info">
+                    <div class="agent-name">Amanda Ribeiro</div>
+                    <div class="agent-count">38 atendimentos</div>
+                  </div>
+                </div>
+                <div class="agent-rank">
+                  <div class="rank-position third">3</div>
+                  <div class="agent-info">
+                    <div class="agent-name">Lucas Barbosa</div>
+                    <div class="agent-count">32 atendimentos</div>
+                  </div>
+                </div>
+                <div class="agent-rank">
+                  <div class="rank-position">4</div>
+                  <div class="agent-info">
+                    <div class="agent-name">Beatriz Gomes</div>
+                    <div class="agent-count">28 atendimentos</div>
+                  </div>
+                </div>
+                <div class="agent-rank">
+                  <div class="rank-position">5</div>
+                  <div class="agent-info">
+                    <div class="agent-name">Felipe Aragão</div>
+                    <div class="agent-count">16 atendimentos</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Segunda coluna: Análise Temporal -->
+      <div class="temporal-analysis">
+        <!-- Gráfico de Barras por Dia da Semana -->
+        <div class="weekday-chart">
+          <div class="weekday-header">
+            <div class="weekday-title">📅 Volume por Dia da Semana</div>
+          </div>
+          <div class="weekday-content">
+            <div class="weekday-bars">
+              <div class="weekday-bar">
+                <div class="bar-value">48</div>
+                <div class="bar-container">
+                  <div class="bar-fill" style="height: 60%"></div>
+                </div>
+                <div class="weekday-name">Dom</div>
+              </div>
+              <div class="weekday-bar">
+                <div class="bar-value">72</div>
+                <div class="bar-container">
+                  <div class="bar-fill" style="height: 90%"></div>
+                </div>
+                <div class="weekday-name">Seg</div>
+              </div>
+              <div class="weekday-bar">
+                <div class="bar-value">65</div>
+                <div class="bar-container">
+                  <div class="bar-fill" style="height: 81%"></div>
+                </div>
+                <div class="weekday-name">Ter</div>
+              </div>
+              <div class="weekday-bar">
+                <div class="bar-value">69</div>
+                <div class="bar-container">
+                  <div class="bar-fill" style="height: 86%"></div>
+                </div>
+                <div class="weekday-name">Qua</div>
+              </div>
+              <div class="weekday-bar">
+                <div class="bar-value">58</div>
+                <div class="bar-container">
+                  <div class="bar-fill" style="height: 73%"></div>
+                </div>
+                <div class="weekday-name">Qui</div>
+              </div>
+              <div class="weekday-bar">
+                <div class="bar-value">43</div>
+                <div class="bar-container">
+                  <div class="bar-fill" style="height: 54%"></div>
+                </div>
+                <div class="weekday-name">Sex</div>
+              </div>
+              <div class="weekday-bar">
+                <div class="bar-value">26</div>
+                <div class="bar-container">
+                  <div class="bar-fill" style="height: 33%"></div>
+                </div>
+                <div class="weekday-name">Sáb</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Heatmap Supervisor x Dia da Semana -->
+        <div class="heatmap-container">
+          <div class="heatmap-header">
+            <div class="heatmap-title">🔥 Heatmap Supervisor x Dia</div>
+          </div>
+          <div class="heatmap-content">
+            <div class="heatmap-grid">
+              <!-- Cabeçalho -->
+              <div class="heatmap-supervisor"></div>
+              <div class="weekday-header-cell">Dom</div>
+              <div class="weekday-header-cell">Seg</div>
+              <div class="weekday-header-cell">Ter</div>
+              <div class="weekday-header-cell">Qua</div>
+              <div class="weekday-header-cell">Qui</div>
+              <div class="weekday-header-cell">Sex</div>
+              <div class="weekday-header-cell">Sáb</div>
+
+              <!-- Ana Silva -->
+              <div class="heatmap-supervisor">Ana Silva</div>
+              <div class="heatmap-cell intensity-medium" title="Ana Silva - Domingo: 15 atendimentos">15</div>
+              <div class="heatmap-cell intensity-very-high" title="Ana Silva - Segunda: 24 atendimentos">24</div>
+              <div class="heatmap-cell intensity-high" title="Ana Silva - Terça: 21 atendimentos">21</div>
+              <div class="heatmap-cell intensity-very-high" title="Ana Silva - Quarta: 23 atendimentos">23</div>
+              <div class="heatmap-cell intensity-high" title="Ana Silva - Quinta: 19 atendimentos">19</div>
+              <div class="heatmap-cell intensity-medium" title="Ana Silva - Sexta: 16 atendimentos">16</div>
+              <div class="heatmap-cell intensity-low" title="Ana Silva - Sábado: 9 atendimentos">9</div>
+
+              <!-- Roberto Fernandes -->
+              <div class="heatmap-supervisor">Roberto F.</div>
+              <div class="heatmap-cell intensity-medium" title="Roberto Fernandes - Domingo: 12 atendimentos">12</div>
+              <div class="heatmap-cell intensity-high" title="Roberto Fernandes - Segunda: 18 atendimentos">18</div>
+              <div class="heatmap-cell intensity-medium" title="Roberto Fernandes - Terça: 15 atendimentos">15</div>
+              <div class="heatmap-cell intensity-high" title="Roberto Fernandes - Quarta: 17 atendimentos">17</div>
+              <div class="heatmap-cell intensity-medium" title="Roberto Fernandes - Quinta: 14 atendimentos">14</div>
+              <div class="heatmap-cell intensity-medium" title="Roberto Fernandes - Sexta: 13 atendimentos">13</div>
+              <div class="heatmap-cell intensity-low" title="Roberto Fernandes - Sábado: 9 atendimentos">9</div>
+
+              <!-- Mariana Oliveira -->
+              <div class="heatmap-supervisor">Mariana O.</div>
+              <div class="heatmap-cell intensity-high" title="Mariana Oliveira - Domingo: 21 atendimentos">21</div>
+              <div class="heatmap-cell intensity-very-high" title="Mariana Oliveira - Segunda: 30 atendimentos">30</div>
+              <div class="heatmap-cell intensity-very-high" title="Mariana Oliveira - Terça: 29 atendimentos">29</div>
+              <div class="heatmap-cell intensity-very-high" title="Mariana Oliveira - Quarta: 29 atendimentos">29</div>
+              <div class="heatmap-cell intensity-high" title="Mariana Oliveira - Quinta: 25 atendimentos">25</div>
+              <div class="heatmap-cell intensity-medium" title="Mariana Oliveira - Sexta: 14 atendimentos">14</div>
+              <div class="heatmap-cell intensity-low" title="Mariana Oliveira - Sábado: 8 atendimentos">8</div>
+            </div>
+          </div>
+        </div>
+      </div> <!-- Fecha temporal-analysis -->
+    </div> <!-- Fecha coord-layout -->
+
+    <!-- PARTE 4: HTML dos Comparativos e Projeções -->
+    <div class="comparison-grid">
+      <!-- Card 1: Comparativo Mensal -->
+      <div class="comparison-card">
+        <div class="comparison-header">
+          <div class="comparison-title">📈 Comparativo Mensal</div>
+        </div>
+        <div class="comparison-content">
+          <div class="comparison-items">
+            <div class="comparison-item">
+              <div class="comparison-label">Total de Atendimentos</div>
+              <div class="comparison-values">
+                <div class="comparison-current">381</div>
+                <div class="comparison-previous">348</div>
+                <div class="comparison-change change-positive">+9.5%</div>
+              </div>
+            </div>
+
+            <div class="comparison-item">
+              <div class="comparison-label">Média por Supervisor</div>
+              <div class="comparison-values">
+                <div class="comparison-current">127</div>
+                <div class="comparison-previous">116</div>
+                <div class="comparison-change change-positive">+9.5%</div>
+              </div>
+            </div>
+
+            <div class="comparison-item">
+              <div class="comparison-label">Casos Complexos</div>
+              <div class="comparison-values">
+                <div class="comparison-current">54</div>
+                <div class="comparison-previous">48</div>
+                <div class="comparison-change change-positive">+12.5%</div>
+              </div>
+            </div>
+
+            <div class="comparison-item">
+              <div class="comparison-label">Distribuição Balanceada</div>
+              <div class="comparison-values">
+                <div class="comparison-current">85%</div>
+                <div class="comparison-previous">78%</div>
+                <div class="comparison-change change-positive">+7%</div>
+              </div>
+            </div>
+
+            <div class="comparison-item">
+              <div class="comparison-label">Eficiência Operacional</div>
+              <div class="comparison-values">
+                <div class="comparison-current">92%</div>
+                <div class="comparison-previous">89%</div>
+                <div class="comparison-change change-positive">+3%</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Card 2: Projeção Final do Mês -->
+      <div class="comparison-card">
+        <div class="comparison-header">
+          <div class="comparison-title">🎯 Projeção Final do Mês</div>
+        </div>
+        <div class="comparison-content">
+          <div class="comparison-items">
+            <div class="comparison-item">
+              <div class="comparison-label">Meta Mensal</div>
+              <div class="comparison-values">
+                <div class="comparison-current">450</div>
+                <div class="comparison-previous">450</div>
+                <div class="comparison-change change-neutral">Meta</div>
+              </div>
+            </div>
+
+            <div class="comparison-item">
+              <div class="comparison-label">Progresso Atual</div>
+              <div class="comparison-values">
+                <div class="comparison-current">381</div>
+                <div class="comparison-previous">450</div>
+                <div class="comparison-change change-positive">84.7%</div>
+              </div>
+            </div>
+
+            <div class="progress-bar">
+              <div class="progress-fill" style="width: 84.7%"></div>
+            </div>
+
+            <div class="comparison-item">
+              <div class="comparison-label">Dias Restantes</div>
+              <div class="comparison-values">
+                <div class="comparison-current">8</div>
+                <div class="comparison-previous">30</div>
+                <div class="comparison-change" style="background: #fbbf24; color: #92400e;">27%</div>
+              </div>
+            </div>
+
+            <div class="comparison-item">
+              <div class="comparison-label">Ritmo Diário Necessário</div>
+              <div class="comparison-values">
+                <div class="comparison-current">8.6</div>
+                <div class="comparison-previous">15.0</div>
+                <div class="comparison-change change-positive">-43%</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="projection-value">
+            🎯 Projeção: 463 atendimentos<br>
+            <span style="font-size: 14px; color: var(--coord-success);">+2.9% acima da meta</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Informações de Rodapé -->
+    <div class="footer-info">
+      <div class="footer-text">Última atualização: 06 de junho de 2025 às 14:30</div>
+      <div class="footer-highlight">Sistema de Coordenação - Dados em tempo real</div>
+    </div>
+
+    <!-- Fechamento das divs principais -->
+  </div> <!-- Fecha .coordenacao -->
+  <!-- JavaScript para animações -->
+  <script>
+    // Animação das barras do gráfico semanal
+    document.addEventListener('DOMContentLoaded', function () {
+      const barFills = document.querySelectorAll('.bar-fill');
+      barFills.forEach((bar, index) => {
+        setTimeout(() => {
+          bar.style.opacity = '1';
+        }, index * 100);
+      });
+
+      // resto do código...
+
+      // Efeito hover nas células do heatmap
+      const heatmapCells = document.querySelectorAll('.heatmap-cell');
+      heatmapCells.forEach(cell => {
+        cell.addEventListener('mouseenter', function () {
+          this.style.transform = 'scale(1.15)';
+          this.style.zIndex = '10';
+        });
+
+        cell.addEventListener('mouseleave', function () {
+          this.style.transform = 'scale(1)';
+          this.style.zIndex = '1';
+        });
+      });
+
+      document.addEventListener('DOMContentLoaded', function () {
+        // Animação da barra de progresso
+        setTimeout(() => {
+          const progressBar = document.querySelector('.progress-fill');
+          if (progressBar) {
+            progressBar.style.width = '84.7%';
+          }
+        }, 500);
+
+        // Animação dos números de comparação
+        const currentValues = document.querySelectorAll('.comparison-current');
+        currentValues.forEach((element, index) => {
+          const finalValue = element.textContent.replace('%', '');
+          const isPercentage = element.textContent.includes('%');
+
+          if (!isNaN(finalValue)) {
+            let currentValue = 0;
+            const increment = parseFloat(finalValue) / 30;
+
+            const timer = setInterval(() => {
+              currentValue += increment;
+              if (currentValue >= parseFloat(finalValue)) {
+                currentValue = parseFloat(finalValue);
+                clearInterval(timer);
+              }
+
+              element.textContent = Math.floor(currentValue) + (isPercentage ? '%' : '');
+            }, 50);
+          }
+        });
+
+        // Efeito hover nos cards de comparação
+        const comparisonItems = document.querySelectorAll('.comparison-item');
+        comparisonItems.forEach(item => {
+          item.addEventListener('mouseenter', function () {
+            this.style.background = 'var(--coord-lighter)';
+            this.style.transform = 'translateY(-2px)';
+          });
+
+          item.addEventListener('mouseleave', function () {
+            this.style.background = 'var(--coord-light)';
+            this.style.transform = 'translateY(0)';
+          });
+        });
+
+        // Log para debug
+        console.log('Painel da Coordenação carregado com sucesso!');
+      });
+
+      // Função para atualizar dados (placeholder)
+      function atualizarDados() {
+        console.log('Atualizando dados do painel...');
+        // Aqui seria implementada a lógica de atualização real
+      }
+
+      // Atualizar a cada 5 minutos
+      setInterval(atualizarDados, 300000);
+
+
+  </script>
+
+
+</body>
+
+</html>

@@ -652,7 +652,7 @@
             <div class="agents-header">
               <span class="agents-title">👤 Agentes Ativos</span>
               {% if bloco.agentes %}
-                <button class="view-details-btn" onclick="showAgentDetails('{{ bloco.supervisor.nome }}', {{ bloco.agentes|tojson|e }})">
+                <button class="view-details-btn" onclick="showAgentDetails('{{ bloco.supervisor.nome }}', '{{ bloco.supervisor.id }}')">
                   Ver Detalhes
                 </button>
               {% endif %}
@@ -745,56 +745,25 @@
   });
 
   // Função para mostrar detalhes dos agentes
-  function showAgentDetails(supervisorName, agentes) {
+  function showAgentDetails(supervisorName, supervisorId) {
     const modal = document.getElementById('agentModal');
     const modalTitle = document.getElementById('modalTitle');
     const modalBody = document.getElementById('modalBody');
     
     modalTitle.textContent = `👤 Agentes de ${supervisorName}`;
     
-    let content = '';
-    agentes.forEach(agente => {
-      content += `
-        <div class="agent-item" style="background: white; border: 1px solid #e2e8f0; border-radius: 8px; padding: 15px; margin-bottom: 15px;">
-          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
-            <h4 style="margin: 0; color: #003366;">${agente.nome}</h4>
-            <span style="background: #667eea; color: white; padding: 4px 12px; border-radius: 12px; font-weight: 600;">
-              ${agente.qtd_chamados} atendimentos
-            </span>
-          </div>
-      `;
-      
-      if (agente.chamados && agente.chamados.length > 0) {
-        content += '<div style="max-height: 200px; overflow-y: auto;">';
-        agente.chamados.slice(0, 3).forEach(chamado => {
-          const classificacao = chamado.classificacao || 'sem';
-          content += `
-            <div class="atendimento-item">
-              <div class="atendimento-header">
-                <span class="atendimento-id">#${chamado.id}</span>
-                <span class="atendimento-date">${new Date(chamado.data_hora).toLocaleDateString('pt-BR')}</span>
-              </div>
-              <div class="atendimento-content">
-                ${chamado.conteudo.substring(0, 100)}${chamado.conteudo.length > 100 ? '...' : ''}
-              </div>
-              <span class="classificacao-tag classificacao-${classificacao}">
-                ${classificacao === 'sem' ? 'Sem classificação' : classificacao}
-              </span>
-            </div>
-          `;
-        });
-        if (agente.chamados.length > 3) {
-          content += `<p style="text-align: center; color: #667eea; font-style: italic; margin: 10px 0;">+ ${agente.chamados.length - 3} atendimentos...</p>`;
-        }
-        content += '</div>';
-      } else {
-        content += '<p style="color: #718096; font-style: italic;">Nenhum atendimento no período</p>';
-      }
-      
-      content += '</div>';
-    });
+    // Buscar dados via AJAX (implementação futura) ou usar dados já na página
+    modalBody.innerHTML = `
+      <div style="text-align: center; padding: 40px; color: #718096;">
+        <h4>📊 Detalhes dos Agentes</h4>
+        <p>Supervisor: <strong>${supervisorName}</strong></p>
+        <p style="font-style: italic;">Esta funcionalidade pode ser expandida para mostrar detalhes completos.</p>
+        <button onclick="closeModal()" style="background: #003366; color: white; border: none; padding: 10px 20px; border-radius: 6px; margin-top: 15px;">
+          Fechar
+        </button>
+      </div>
+    `;
     
-    modalBody.innerHTML = content;
     modal.style.display = 'block';
   }
 

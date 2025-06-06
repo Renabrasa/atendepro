@@ -68,249 +68,109 @@ def login():
 
 
 
-# SUBSTITUA TEMPORARIAMENTE a função dashboard() por esta versão ultra-debug
-
 @app.route('/dashboard')
 @login_required
 def dashboard():
+    data_inicio_str = request.args.get('data_inicio', '')
+    data_fim_str = request.args.get('data_fim', '')
+
+    data_inicio = None
+    data_fim = None
+
     try:
-        print("=== DASHBOARD DEBUG - INICIANDO ===")
-        print(f"Usuário: {current_user.nome} (ID: {current_user.id}, Tipo: {current_user.tipo})")
-        
-        # Captura parâmetros
-        data_inicio_str = request.args.get('data_inicio', '')
-        data_fim_str = request.args.get('data_fim', '')
-        print(f"Filtros: início={data_inicio_str}, fim={data_fim_str}")
-
-        data_inicio = None
-        data_fim = None
-
-        # Converte datas
         if data_inicio_str:
-            try:
-                data_inicio = datetime.strptime(data_inicio_str, '%Y-%m-%d')
-                print(f"Data início convertida: {data_inicio}")
-            except Exception as e:
-                print(f"ERRO na conversão de data_inicio: {e}")
-                flash('Formato de data inicial inválido.', 'danger')
-                return redirect(url_for('dashboard'))
-                
+            data_inicio = datetime.strptime(data_inicio_str, '%Y-%m-%d')
         if data_fim_str:
-            try:
-                data_fim = datetime.strptime(data_fim_str, '%Y-%m-%d') + timedelta(days=1) - timedelta(seconds=1)
-                print(f"Data fim convertida: {data_fim}")
-            except Exception as e:
-                print(f"ERRO na conversão de data_fim: {e}")
-                flash('Formato de data final inválido.', 'danger')
-                return redirect(url_for('dashboard'))
+            data_fim = datetime.strptime(data_fim_str, '%Y-%m-%d') + timedelta(days=1) - timedelta(seconds=1)
+    except ValueError:
+        flash('Formato de data inválido.', 'danger')
+        return redirect(url_for('dashboard'))
 
-        # ETAPA 1: Buscar supervisores
-        print("=== ETAPA 1: BUSCANDO SUPERVISORES ===")
-        try:
-            if current_user.tipo in ['admin', 'coordenadora']:
-                print("Usuário é admin ou coordenadora - buscando todos")
-                # TESTE: Primeiro só supervisores
-                supervisores = User.query.filter_by(tipo='supervisor').all()
-                print(f"Encontrados {len(supervisores)} supervisores:")
-                for s in supervisores:
-                    print(f"  - {s.nome} (ID: {s.id})")
-                
-                # TESTE: Agora coordenadores
-                coordenadores = User.query.filter_by(tipo='coordenadora').all()
-                print(f"Encontrados {len(coordenadores)} coordenadores:")
-                for c in coordenadores:
-                    print(f"  - {c.nome} (ID: {c.id})")
-                
-                # Junta as listas
-                supervisores.extend(coordenadores)
-                print(f"Total final: {len(supervisores)} supervisores+coordenadores")
-                
-            else:
-                print("Usuário é supervisor - só ele mesmo")
-                supervisores = [current_user]
-                print(f"Supervisor: {current_user.nome} (ID: {current_user.id})")
-                
-        except Exception as e:
-            print(f"ERRO CRÍTICO ao buscar supervisores: {e}")
-            import traceback
-            traceback.print_exc()
-            return f"ERRO na busca de supervisores: {str(e)}"
+    # CORREÇÃO AQUI:
+    if current_user.tipo in ['admin', 'coordenadora']:
+        # Admin e Coordenadora veem todos os supervisores E coordenadores
+        supervisores = User.query.filter(User.tipo.in_(['supervisor', 'coordenadora'])).all()
+    else:
+        # Supervisor vê apenas a si mesmo
+        supervisores = [current_user]
 
-        # ETAPA 2: Processar cada supervisor
-        print("=== ETAPA 2: PROCESSANDO SUPERVISORES ===")
-        data = []
-        total_atendimentos = 0
-        total_agentes = 0
-        todos_agentes = []
+    data = []
+    total_atendimentos = 0
+    total_agentes = 0
+    todos_agentes = []
 
-        for i, sup in enumerate(supervisores):
-            print(f"\n--- Processando supervisor {i+1}/{len(supervisores)}: {sup.nome} (ID: {sup.id}) ---")
-            
-            try:
-                # Query básica
-                print("Criando query base...")
-                query = Atendimento.query.filter_by(supervisor_id=sup.id)
-                print(f"Query criada para supervisor_id={sup.id}")
-                
-                # Filtros de data
-                if data_inicio:
-                    print(f"Aplicando filtro data_inicio >= {data_inicio}")
-                    query = query.filter(Atendimento.data_hora >= data_inicio)
-                if data_fim:
-                    print(f"Aplicando filtro data_fim <= {data_fim}")
-                    query = query.filter(Atendimento.data_hora <= data_fim)
+    for sup in supervisores:
+        query = Atendimento.query.filter_by(supervisor_id=sup.id)
+        if data_inicio:
+            query = query.filter(Atendimento.data_hora >= data_inicio)
+        if data_fim:
+            query = query.filter(Atendimento.data_hora <= data_fim)
 
-                # Executar query
-                print("Executando query...")
-                atendimentos = query.order_by(Atendimento.data_hora.desc()).all()
-                print(f"Encontrados {len(atendimentos)} atendimentos")
+        atendimentos = query.order_by(Atendimento.data_hora.desc()).all()
 
-                # Ajustar timezone
-                print("Ajustando timezone...")
-                for j, atendimento in enumerate(atendimentos):
-                    try:
-                        if atendimento.data_hora and atendimento.data_hora.tzinfo is None:
-                            atendimento.data_hora = atendimento.data_hora.replace(tzinfo=pytz.utc)
-                        atendimento.data_hora = atendimento.data_hora.astimezone(br_tz)
-                    except Exception as tz_error:
-                        print(f"ERRO timezone atendimento {j}: {tz_error}")
+        # Ajusta timezone para cada atendimento
+        for atendimento in atendimentos:
+            if atendimento.data_hora.tzinfo is None:
+                atendimento.data_hora = atendimento.data_hora.replace(tzinfo=pytz.utc)
+            atendimento.data_hora = atendimento.data_hora.astimezone(br_tz)
 
-                total_chamados = len(atendimentos)
-                total_atendimentos += total_chamados
-                print(f"Total de chamados: {total_chamados}")
+        total_chamados = len(atendimentos)
+        total_atendimentos += total_chamados
 
-                # Agrupar por agente
-                print("Agrupando por agente...")
-                contador_agentes = defaultdict(list)
-                
-                for j, a in enumerate(atendimentos):
-                    try:
-                        print(f"  Processando atendimento {j+1}: ID={a.id}")
-                        
-                        # TESTE: Verificar se agente_rel existe
-                        if not hasattr(a, 'agente_rel'):
-                            print(f"    ERRO: atendimento {a.id} não tem agente_rel")
-                            continue
-                            
-                        if a.agente_rel is None:
-                            print(f"    ERRO: atendimento {a.id} tem agente_rel=None")
-                            continue
-                            
-                        agente_nome = a.agente_rel.nome
-                        print(f"    Agente: {agente_nome}")
-                        contador_agentes[agente_nome].append(a)
-                        
-                    except Exception as agente_error:
-                        print(f"    ERRO ao processar agente do atendimento {a.id}: {agente_error}")
-                        continue
+        contador_agentes = defaultdict(list)
+        for a in atendimentos:
+            contador_agentes[a.agente_rel.nome].append(a)
 
-                num_agentes_supervisor = len(contador_agentes)
-                total_agentes += num_agentes_supervisor
-                print(f"Agentes únicos: {num_agentes_supervisor}")
+        num_agentes_supervisor = len(contador_agentes)
+        total_agentes += num_agentes_supervisor
 
-                # Melhor agente
-                if contador_agentes:
-                    agente_top, chamados_top = max(contador_agentes.items(), key=lambda x: len(x[1]))
-                    qtd_top = len(chamados_top)
-                    print(f"Melhor agente: {agente_top} ({qtd_top} atendimentos)")
-                else:
-                    agente_top, chamados_top, qtd_top = None, [], 0
-                    print("Nenhum agente encontrado")
+        if contador_agentes:
+            agente_top, chamados_top = max(contador_agentes.items(), key=lambda x: len(x[1]))
+            qtd_top = len(chamados_top)
+        else:
+            agente_top, chamados_top, qtd_top = None, [], 0
 
-                # Preparar dados dos agentes
-                print("Preparando dados dos agentes...")
-                agentes_data = []
-                for agente_nome, chamados in contador_agentes.items():
-                    qtd_chamados = len(chamados)
-                    agentes_data.append({
-                        'nome': agente_nome,
-                        'qtd_chamados': qtd_chamados,
-                        'chamados': chamados
-                    })
-                    todos_agentes.append({
-                        'nome': agente_nome,
-                        'qtd_chamados': qtd_chamados,
-                        'supervisor_nome': sup.nome
-                    })
+        agentes_data = []
+        for agente_nome, chamados in contador_agentes.items():
+            qtd_chamados = len(chamados)
+            agentes_data.append({
+                'nome': agente_nome,
+                'qtd_chamados': qtd_chamados,
+                'chamados': chamados
+            })
+            todos_agentes.append({
+                'nome': agente_nome,
+                'qtd_chamados': qtd_chamados,
+                'supervisor_nome': sup.nome
+            })
 
-                agentes_data.sort(key=lambda x: x['qtd_chamados'], reverse=True)
+        agentes_data.sort(key=lambda x: x['qtd_chamados'], reverse=True)
 
-                # Adicionar aos dados
-                supervisor_data = {
-                    'supervisor': sup,
-                    'total_chamados': total_chamados,
-                    'agente_top': agente_top,
-                    'qtd_top': qtd_top,
-                    'agentes': agentes_data,
-                    'num_agentes': num_agentes_supervisor
-                }
-                data.append(supervisor_data)
-                print(f"Dados do supervisor {sup.nome} adicionados com sucesso")
+        data.append({
+            'supervisor': sup,
+            'total_chamados': total_chamados,
+            'agente_top': agente_top,
+            'qtd_top': qtd_top,
+            'agentes': agentes_data,
+            'num_agentes': num_agentes_supervisor
+        })
 
-            except Exception as sup_error:
-                print(f"ERRO CRÍTICO ao processar supervisor {sup.nome}: {sup_error}")
-                import traceback
-                traceback.print_exc()
-                
-                # Adicionar dados vazios para continuar
-                data.append({
-                    'supervisor': sup,
-                    'total_chamados': 0,
-                    'agente_top': None,
-                    'qtd_top': 0,
-                    'agentes': [],
-                    'num_agentes': 0
-                })
+    data.sort(key=lambda x: x['total_chamados'], reverse=True)
+    todos_agentes.sort(key=lambda x: x['qtd_chamados'], reverse=True)
+    top_5_agentes = todos_agentes[:5]
 
-        # ETAPA 3: Finalizar dados
-        print("=== ETAPA 3: FINALIZANDO ===")
-        data.sort(key=lambda x: x['total_chamados'], reverse=True)
-        todos_agentes.sort(key=lambda x: x['qtd_chamados'], reverse=True)
-        top_5_agentes = todos_agentes[:5]
+    total_supervisores = len(supervisores)
+    media_por_agente = round(total_atendimentos / total_agentes, 1) if total_agentes > 0 else 0
 
-        total_supervisores = len(supervisores)
-        media_por_agente = round(total_atendimentos / total_agentes, 1) if total_agentes > 0 else 0
-
-        print(f"Estatísticas finais:")
-        print(f"  - Supervisores: {total_supervisores}")
-        print(f"  - Agentes: {total_agentes}")
-        print(f"  - Atendimentos: {total_atendimentos}")
-        print(f"  - Média: {media_por_agente}")
-
-        # ETAPA 4: Renderizar template
-        print("=== ETAPA 4: RENDERIZANDO TEMPLATE ===")
-        try:
-            return render_template('dashboard.html',
-                                   data=data,
-                                   total_supervisores=total_supervisores,
-                                   total_agentes=total_agentes,
-                                   total_atendimentos=total_atendimentos,
-                                   media_por_agente=media_por_agente,
-                                   top_5_agentes=top_5_agentes,
-                                   data_inicio=data_inicio_str,
-                                   data_fim=data_fim_str)
-        except Exception as template_error:
-            print(f"ERRO ao renderizar template: {template_error}")
-            import traceback
-            traceback.print_exc()
-            return f"ERRO no template: {str(template_error)}"
-
-    except Exception as e:
-        print(f"ERRO GERAL CRÍTICO: {e}")
-        import traceback
-        error_details = traceback.format_exc()
-        print("TRACEBACK COMPLETO:")
-        print(error_details)
-        
-        return f"""
-        <h1>ERRO 500 DEBUG - Dashboard</h1>
-        <h2>Erro: {str(e)}</h2>
-        <h3>Usuário: {current_user.nome if hasattr(current_user, 'nome') else 'N/A'}</h3>
-        <pre style="background: #f5f5f5; padding: 20px; font-family: monospace; white-space: pre-wrap;">
-{error_details}
-        </pre>
-        <p><a href="/atendimentos">← Voltar para Atendimentos</a></p>
-        """
+    return render_template('dashboard.html',
+                           data=data,
+                           total_supervisores=total_supervisores,
+                           total_agentes=total_agentes,
+                           total_atendimentos=total_atendimentos,
+                           media_por_agente=media_por_agente,
+                           top_5_agentes=top_5_agentes,
+                           data_inicio=data_inicio_str,
+                           data_fim=data_fim_str)
 
 
 

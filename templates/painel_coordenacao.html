@@ -1641,111 +1641,203 @@
 </div>
 
 
-
 <script>
-  // === CORREÇÃO COMPLETA DO PAINEL DA COORDENAÇÃO ===
-// Este script corrige TODOS os problemas: KPIs, Heatmap, Comparativo e Filtro
-
 document.addEventListener('DOMContentLoaded', function () {
-    console.log('🚀 Painel da Coordenação - Versão Corrigida Total');
+    console.log('🚀 Painel Compacto + Comparativo CORRIGIDO');
 
-    // === VERIFICAÇÃO E CORREÇÃO DOS DADOS DO BACKEND ===
-    
-    // Dados que devem vir do backend (com fallback)
+    // === DADOS DO BACKEND COM FALLBACK ===
     let volumeComparativo, heatmapMes, temDadosReais;
     
     try {
-        // Tenta pegar os dados do template
         volumeComparativo = {{ volume_comparativo | tojson | safe }};
         heatmapMes = {{ heatmap_mes | tojson | safe }};
         temDadosReais = {{ tem_dados_reais | tojson }};
     } catch (error) {
-        console.warn('⚠️ Dados do backend não encontrados, usando dados de demonstração');
+        console.warn('⚠️ Usando dados de demonstração');
+        temDadosReais = false;
         
-        // Dados de demonstração quando o backend não fornece
-        volumeComparativo = [
-            { dia: 'Seg', volume_atual: 45, volume_anterior: 38 },
-            { dia: 'Ter', volume_atual: 52, volume_anterior: 43 },
-            { dia: 'Qua', volume_atual: 61, volume_anterior: 55 },
-            { dia: 'Qui', volume_atual: 48, volume_anterior: 52 },
-            { dia: 'Sex', volume_atual: 71, volume_anterior: 69 },
-            { dia: 'Sab', volume_atual: 23, volume_anterior: 28 },
-            { dia: 'Dom', volume_atual: 18, volume_anterior: 21 }
-        ];
-        
+        // Gerar heatmap do mês atual
         heatmapMes = [];
-        // Gerar dados para o mês atual
         const hoje = new Date();
         const primeiroDia = new Date(hoje.getFullYear(), hoje.getMonth(), 1);
         const ultimoDia = new Date(hoje.getFullYear(), hoje.getMonth() + 1, 0);
         
         for (let dia = 1; dia <= ultimoDia.getDate(); dia++) {
             const data = new Date(hoje.getFullYear(), hoje.getMonth(), dia);
-            const volume = Math.floor(Math.random() * 50) + 5; // 5-55 atendimentos aleatórios
+            const volume = Math.floor(Math.random() * 40) + 3;
             
             heatmapMes.push({
                 dia_mes: dia,
                 volume: volume,
-                dia_semana: data.getDay(), // 0=Domingo, 1=Segunda, etc.
+                dia_semana: data.getDay(),
                 eh_hoje: dia === hoje.getDate()
             });
         }
         
-        temDadosReais = false;
+        // CORREÇÃO CRÍTICA: Dados do comparativo com dias CORRETOS
+        volumeComparativo = generateWeeklyDataCorrect();
     }
 
-    // === ANIMAÇÃO DOS KPIs (CORRIGIDA) ===
-    function animateKPIs() {
-        console.log('📊 Animando KPIs...');
+    // === FUNÇÃO CORRIGIDA PARA GERAR DADOS SEMANAIS ===
+    function generateWeeklyDataCorrect() {
+        console.log('🔧 Gerando dados semanais CORRIGIDOS...');
         
-        const kpiElements = document.querySelectorAll('.exec-kpi-value[data-target]');
+        // Hoje
+        const hoje = new Date();
+        console.log(`📅 Hoje é: ${hoje.toLocaleDateString('pt-BR', { weekday: 'long' })}`);
         
-        if (kpiElements.length === 0) {
-            console.warn('⚠️ Nenhum elemento KPI encontrado com data-target');
+        // Calcula o início da semana (segunda-feira)
+        const diaSemana = hoje.getDay(); // 0=Dom, 1=Seg, ..., 6=Sab
+        let diasAtrasSegunda;
+        
+        if (diaSemana === 0) {
+            // Domingo: volta 6 dias para chegar na segunda
+            diasAtrasSegunda = 6;
+        } else {
+            // Outros dias: volta (diaSemana - 1) dias
+            diasAtrasSegunda = diaSemana - 1;
+        }
+        
+        const segundaFeira = new Date(hoje);
+        segundaFeira.setDate(hoje.getDate() - diasAtrasSegunda);
+        
+        console.log(`📅 Segunda-feira desta semana: ${segundaFeira.toLocaleDateString('pt-BR')}`);
+        
+        // Array dos dias da semana EM ORDEM
+        const diasSemana = [
+            { nome: 'Seg', index: 0, base: 45, baseAnt: 38 },
+            { nome: 'Ter', index: 1, base: 52, baseAnt: 43 },
+            { nome: 'Qua', index: 2, base: 61, baseAnt: 55 },
+            { nome: 'Qui', index: 3, base: 48, baseAnt: 52 },
+            { nome: 'Sex', index: 4, base: 71, baseAnt: 69 },
+            { nome: 'Sab', index: 5, base: 23, baseAnt: 28 },
+            { nome: 'Dom', index: 6, base: 18, baseAnt: 21 }
+        ];
+        
+        const dadosGerados = [];
+        
+        diasSemana.forEach((diaInfo) => {
+            // Calcula a data real deste dia
+            const dataReal = new Date(segundaFeira);
+            dataReal.setDate(segundaFeira.getDate() + diaInfo.index);
+            
+            // Variação aleatória pequena
+            const variacao = Math.floor(Math.random() * 8) - 4; // -4 a +4
+            const variacaoAnt = Math.floor(Math.random() * 8) - 4;
+            
+            const dadoDia = {
+                dia: diaInfo.nome,
+                volume_atual: Math.max(1, diaInfo.base + variacao),
+                volume_anterior: Math.max(1, diaInfo.baseAnt + variacaoAnt),
+                data_real: dataReal.toLocaleDateString('pt-BR'),
+                eh_hoje: dataReal.toDateString() === hoje.toDateString()
+            };
+            
+            dadosGerados.push(dadoDia);
+            
+            console.log(`📊 ${diaInfo.nome} (${dadoDia.data_real}): Atual=${dadoDia.volume_atual}, Anterior=${dadoDia.volume_anterior} ${dadoDia.eh_hoje ? '← HOJE' : ''}`);
+        });
+        
+        return dadosGerados;
+    }
+
+    // === COMPARATIVO SEMANAL CORRIGIDO ===
+    function createWeeklyComparison() {
+        console.log('📊 Criando comparativo semanal...');
+        
+        const comparisonChart = document.getElementById('comparisonChart');
+        if (!comparisonChart) {
+            console.warn('⚠️ Container não encontrado');
             return;
         }
+        
+        comparisonChart.innerHTML = '';
 
-        kpiElements.forEach(function (element) {
-            const target = parseFloat(element.getAttribute('data-target')) || 0;
-            let current = 0;
-            const increment = target / 50;
-            
-            console.log(`📈 Animando KPI: ${target}`);
-            
-            const timer = setInterval(function () {
-                current += increment;
-                if (current >= target) {
-                    current = target;
-                    clearInterval(timer);
-                }
+        // Usa dados corretos
+        let dadosParaUsar = volumeComparativo;
+        
+        // Se não tem dados do backend, gera dados corretos
+        if (!dadosParaUsar || dadosParaUsar.length === 0) {
+            console.log('📝 Gerando dados locais corretos');
+            dadosParaUsar = generateWeeklyDataCorrect();
+        }
 
-                if (target % 1 !== 0) {
-                    element.textContent = current.toFixed(1);
-                } else {
-                    element.textContent = Math.floor(current);
-                }
-            }, 30);
-        });
+        if (dadosParaUsar && dadosParaUsar.length > 0) {
+            console.log(`📈 Processando ${dadosParaUsar.length} dias`);
+            
+            // Escala baseada no maior valor
+            const todosValores = [];
+            dadosParaUsar.forEach(d => {
+                todosValores.push(d.volume_atual || 0);
+                todosValores.push(d.volume_anterior || 0);
+            });
+            const maxVolume = Math.max(...todosValores);
+            const escalaBase = Math.max(maxVolume, 10);
+            
+            console.log(`📏 Valor máximo: ${maxVolume}, Escala: ${escalaBase}`);
+
+            // CRÍTICO: Processa na ordem EXATA do array
+            dadosParaUsar.forEach(function (dadosDia, index) {
+                const volumeAtual = dadosDia.volume_atual || 0;
+                const volumeAnterior = dadosDia.volume_anterior || 0;
+                const nomeDia = dadosDia.dia;
+
+                // Altura das barras (máximo 90px para layout compacto)
+                const alturaAtual = Math.max((volumeAtual / escalaBase) * 90, 4);
+                const alturaAnterior = Math.max((volumeAnterior / escalaBase) * 90, 4);
+
+                console.log(`📊 Posição ${index}: ${nomeDia} = Atual:${volumeAtual}(${Math.round(alturaAtual)}px), Anterior:${volumeAnterior}(${Math.round(alturaAnterior)}px)`);
+
+                const dayElement = document.createElement('div');
+                dayElement.className = 'comparison-day';
+                
+                // Destacar o dia atual
+                const isToday = dadosDia.eh_hoje || false;
+                const todayClass = isToday ? ' style="background: rgba(33, 150, 243, 0.1); border-radius: 4px; padding: 2px;"' : '';
+                
+                dayElement.innerHTML = `
+                    <div class="comparison-bars"${todayClass}>
+                        <div class="comparison-bar previous" 
+                             style="height: ${alturaAnterior}px;" 
+                             data-day="${nomeDia}"
+                             data-value="${volumeAnterior}">
+                            <div class="tooltip">Anterior: ${volumeAnterior}</div>
+                        </div>
+                        <div class="comparison-bar current" 
+                             style="height: ${alturaAtual}px;"
+                             data-day="${nomeDia}"
+                             data-value="${volumeAtual}">
+                            <div class="tooltip">Atual: ${volumeAtual}</div>
+                        </div>
+                    </div>
+                    <div class="comparison-day-label" style="${isToday ? 'color: #2196F3; font-weight: 700;' : ''}">${nomeDia}</div>
+                `;
+
+                comparisonChart.appendChild(dayElement);
+            });
+            
+            console.log('✅ Comparativo criado - dias alinhados corretamente!');
+            
+        } else {
+            console.warn('⚠️ Nenhum dado disponível');
+            comparisonChart.innerHTML = '<div style="display: flex; align-items: center; justify-content: center; height: 90px; color: #999; font-style: italic;">Dados não disponíveis</div>';
+        }
     }
 
-    // === HEATMAP DO MÊS CALENDÁRIO (CORRIGIDO) ===
+    // === HEATMAP COMPACTO ===
     function createMonthHeatmap() {
-        console.log('🔥 Criando heatmap do mês...');
+        console.log('🔥 Criando heatmap compacto...');
         
         const container = document.getElementById('heatmapCalendar');
-        if (!container) {
-            console.warn('⚠️ Container #heatmapCalendar não encontrado');
-            return;
-        }
+        if (!container) return;
         
         container.innerHTML = '';
 
-        // Cabeçalhos dos dias da semana
         const diasSemana = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sab'];
         const calendar = document.createElement('div');
         calendar.className = 'heatmap-calendar';
 
-        // Adiciona cabeçalhos
+        // Cabeçalhos
         diasSemana.forEach(dia => {
             const header = document.createElement('div');
             header.className = 'heatmap-day-header';
@@ -1754,31 +1846,27 @@ document.addEventListener('DOMContentLoaded', function () {
         });
 
         if (heatmapMes && heatmapMes.length > 0) {
-            console.log(`📅 Processando ${heatmapMes.length} dias do heatmap`);
-            
-            // Encontra o primeiro dia do mês e seu dia da semana
+            // Primeiro dia do mês
             const primeiroDia = heatmapMes[0];
             const primeiroDiaSemana = primeiroDia.dia_semana;
-            // Ajusta para Dom=0, Seg=1, etc.
-            const ajusteDiaSemana = primeiroDiaSemana === 6 ? 0 : primeiroDiaSemana + 1;
+            const offset = primeiroDiaSemana; // Domingo=0, Segunda=1, etc.
 
-            // Adiciona células vazias no início se necessário
-            for (let i = 0; i < ajusteDiaSemana; i++) {
+            // Células vazias no início
+            for (let i = 0; i < offset; i++) {
                 const emptyCell = document.createElement('div');
                 emptyCell.className = 'heatmap-day heat-0';
                 calendar.appendChild(emptyCell);
             }
 
-            // Adiciona os dias do mês
+            // Dias do mês
             heatmapMes.forEach(function (dia) {
                 const volume = dia.volume || 0;
-
-                // Determina intensidade (0-4)
+                
                 let intensity = 0;
                 if (volume > 0) {
-                    if (volume <= 10) intensity = 1;
-                    else if (volume <= 20) intensity = 2;
-                    else if (volume <= 35) intensity = 3;
+                    if (volume <= 8) intensity = 1;
+                    else if (volume <= 16) intensity = 2;
+                    else if (volume <= 25) intensity = 3;
                     else intensity = 4;
                 }
 
@@ -1787,356 +1875,88 @@ document.addEventListener('DOMContentLoaded', function () {
 
                 dayElement.innerHTML = `
                     <div class="heatmap-day-number">${dia.dia_mes}</div>
-                    ${volume > 0 ? `<div class="heatmap-day-count">${volume}</div>` : '<div class="heatmap-day-count" style="opacity: 0.3;">0</div>'}
+                    <div class="heatmap-day-count" style="opacity: ${volume > 0 ? '1' : '0.3'}">${volume}</div>
                 `;
 
                 dayElement.title = `${dia.dia_mes}: ${volume} atendimentos`;
                 calendar.appendChild(dayElement);
             });
-            
-            console.log('✅ Heatmap criado com sucesso');
-        } else {
-            console.warn('⚠️ Dados do heatmap não disponíveis');
-            calendar.innerHTML = '<div style="grid-column: span 7; text-align: center; padding: 20px; color: #999;">Dados não disponíveis</div>';
         }
 
         container.appendChild(calendar);
     }
 
-    // === CORREÇÃO ESPECÍFICA DO COMPARATIVO SEMANAL ===
-// Substitua apenas a função createWeeklyComparison() e os dados de demonstração
-
-// === DADOS DE DEMONSTRAÇÃO CORRIGIDOS ===
-function generateCorrectWeeklyData() {
-    console.log('📊 Gerando dados semanais corretos...');
-    
-    // Pega a data atual e calcula o início da semana (segunda-feira)
-    const hoje = new Date();
-    const diaDaSemana = hoje.getDay(); // 0=Domingo, 1=Segunda, ..., 6=Sábado
-    const diasParaSegunda = diaDaSemana === 0 ? -6 : 1 - diaDaSemana; // Ajusta para segunda
-    
-    const inicioSemana = new Date(hoje);
-    inicioSemana.setDate(hoje.getDate() + diasParaSegunda);
-    
-    // Gera dados para cada dia da semana
-    const diasSemana = ['Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sab', 'Dom'];
-    const dadosCorrigidos = [];
-    
-    diasSemana.forEach((nomeDia, index) => {
-        const dataAtual = new Date(inicioSemana);
-        dataAtual.setDate(inicioSemana.getDate() + index);
+    // === ANIMAÇÃO DOS KPIs ===
+    function animateKPIs() {
+        const kpiElements = document.querySelectorAll('.exec-kpi-value[data-target]');
         
-        // Gera volumes baseados no dia (mais realista)
-        let volumeBase, volumeBaseAnterior;
-        
-        switch(index) {
-            case 0: // Segunda
-                volumeBase = 45; volumeBaseAnterior = 38;
-                break;
-            case 1: // Terça
-                volumeBase = 52; volumeBaseAnterior = 43;
-                break;
-            case 2: // Quarta
-                volumeBase = 61; volumeBaseAnterior = 55;
-                break;
-            case 3: // Quinta
-                volumeBase = 48; volumeBaseAnterior = 52;
-                break;
-            case 4: // Sexta
-                volumeBase = 71; volumeBaseAnterior = 69;
-                break;
-            case 5: // Sábado
-                volumeBase = 23; volumeBaseAnterior = 28;
-                break;
-            case 6: // Domingo
-                volumeBase = 18; volumeBaseAnterior = 21;
-                break;
-        }
-        
-        // Adiciona variação aleatória pequena
-        const variacao = Math.floor(Math.random() * 6) - 3; // -3 a +3
-        const variacaoAnterior = Math.floor(Math.random() * 6) - 3;
-        
-        dadosCorrigidos.push({
-            dia: nomeDia,
-            volume_atual: Math.max(0, volumeBase + variacao),
-            volume_anterior: Math.max(0, volumeBaseAnterior + variacaoAnterior),
-            data_completa: dataAtual.toLocaleDateString('pt-BR'),
-            dia_semana_numero: index + 1 // 1=Segunda, 7=Domingo
+        kpiElements.forEach(function (element) {
+            const target = parseFloat(element.getAttribute('data-target')) || 0;
+            let current = 0;
+            const increment = target / 40;
+            
+            const timer = setInterval(function () {
+                current += increment;
+                if (current >= target) {
+                    current = target;
+                    clearInterval(timer);
+                }
+                
+                element.textContent = target % 1 !== 0 ? current.toFixed(1) : Math.floor(current);
+            }, 25);
         });
-    });
-    
-    console.log('📅 Dados semanais gerados:', dadosCorrigidos);
-    return dadosCorrigidos;
-}
-
-// === GRÁFICO COMPARATIVO SEMANAL (CORRIGIDO) ===
-function createWeeklyComparison() {
-    console.log('📊 Criando comparativo semanal CORRIGIDO...');
-    
-    const comparisonChart = document.getElementById('comparisonChart');
-    if (!comparisonChart) {
-        console.warn('⚠️ Container #comparisonChart não encontrado');
-        return;
-    }
-    
-    comparisonChart.innerHTML = '';
-
-    // Usa dados do backend se disponíveis, senão gera dados corretos
-    let dadosParaUsar;
-    
-    try {
-        // Tenta usar dados do backend
-        dadosParaUsar = volumeComparativo;
-        
-        // Se não tem dados ou está vazio, gera dados de demonstração
-        if (!dadosParaUsar || dadosParaUsar.length === 0) {
-            console.log('📝 Gerando dados de demonstração para comparativo');
-            dadosParaUsar = generateCorrectWeeklyData();
-        }
-    } catch (error) {
-        console.log('📝 Erro ao acessar dados backend, gerando demonstração');
-        dadosParaUsar = generateCorrectWeeklyData();
     }
 
-    if (dadosParaUsar && dadosParaUsar.length > 0) {
-        console.log(`📈 Processando ${dadosParaUsar.length} dias do comparativo`);
-        
-        // Escala dinâmica baseada no maior valor
-        const maxVolume = Math.max(...dadosParaUsar.map(d => Math.max(d.volume_atual || 0, d.volume_anterior || 0)));
-        const escalaBase = Math.max(maxVolume, 10); // Escala mínima de 10
-        
-        console.log(`📏 Escala máxima: ${maxVolume}, Base: ${escalaBase}`);
-
-        // Processa cada dia na ordem correta
-        dadosParaUsar.forEach(function (dadosDia, index) {
-            const volumeAtual = dadosDia.volume_atual || 0;
-            const volumeAnterior = dadosDia.volume_anterior || 0;
-            const nomeDia = dadosDia.dia || `Dia ${index + 1}`;
-
-            // Calcula altura das barras (máximo 220px)
-            const alturaAtual = Math.max((volumeAtual / escalaBase) * 220, 8);
-            const alturaAnterior = Math.max((volumeAnterior / escalaBase) * 220, 8);
-
-            console.log(`📊 ${nomeDia}: Atual=${volumeAtual} (${alturaAtual}px), Anterior=${volumeAnterior} (${alturaAnterior}px)`);
-
-            const dayElement = document.createElement('div');
-            dayElement.className = 'comparison-day';
-            dayElement.innerHTML = `
-                <div class="comparison-bars">
-                    <div class="comparison-bar previous" 
-                         style="height: ${alturaAnterior}px;" 
-                         data-value="${volumeAnterior}"
-                         data-day="${nomeDia}">
-                        <div class="tooltip">Semana passada: ${volumeAnterior}</div>
-                    </div>
-                    <div class="comparison-bar current" 
-                         style="height: ${alturaAtual}px;"
-                         data-value="${volumeAtual}"
-                         data-day="${nomeDia}">
-                        <div class="tooltip">Esta semana: ${volumeAtual}</div>
-                    </div>
-                </div>
-                <div class="comparison-day-label">${nomeDia}</div>
-            `;
-
-            comparisonChart.appendChild(dayElement);
-        });
-        
-        console.log('✅ Comparativo semanal criado com dias alinhados corretamente');
-        
-        // Adiciona evento de hover para debug
-        comparisonChart.addEventListener('mouseover', function(e) {
-            if (e.target.classList.contains('comparison-bar')) {
-                const day = e.target.dataset.day;
-                const value = e.target.dataset.value;
-                const type = e.target.classList.contains('current') ? 'atual' : 'anterior';
-                console.log(`🎯 Hover em: ${day} - ${type}: ${value}`);
-            }
-        });
-        
-    } else {
-        console.warn('⚠️ Nenhum dado disponível para o comparativo');
-        comparisonChart.innerHTML = `
-            <div style="
-                display: flex; 
-                align-items: center; 
-                justify-content: center; 
-                height: 200px; 
-                color: #999; 
-                text-align: center;
-                font-style: italic;
-            ">
-                📊 Dados comparativos não disponíveis<br>
-                <small>Configure dados no sistema ou aguarde carregamento</small>
-            </div>
-        `;
-    }
-}
-
-// === FUNÇÃO DE TESTE ESPECÍFICA PARA O COMPARATIVO ===
-function testWeeklyComparison() {
-    console.log('🧪 === TESTE DO COMPARATIVO SEMANAL ===');
-    
-    const container = document.getElementById('comparisonChart');
-    console.log('📍 Container encontrado:', !!container);
-    
-    if (container) {
-        console.log('🔄 Regenerando comparativo...');
-        
-        // Força regeneração com dados de teste específicos
-        const dadosTeste = [
-            { dia: 'Seg', volume_atual: 10, volume_anterior: 8 },
-            { dia: 'Ter', volume_atual: 15, volume_anterior: 12 },
-            { dia: 'Qua', volume_atual: 20, volume_anterior: 18 },
-            { dia: 'Qui', volume_atual: 12, volume_anterior: 15 },
-            { dia: 'Sex', volume_atual: 25, volume_anterior: 22 },
-            { dia: 'Sab', volume_atual: 5, volume_anterior: 8 },
-            { dia: 'Dom', volume_atual: 3, volume_anterior: 5 }
-        ];
-        
-        // Temporariamente substitui os dados
-        const originalData = volumeComparativo;
-        volumeComparativo = dadosTeste;
-        
-        createWeeklyComparison();
-        
-        // Restaura dados originais após 5 segundos
-        setTimeout(() => {
-            console.log('🔄 Restaurando dados originais...');
-            volumeComparativo = originalData;
-            createWeeklyComparison();
-        }, 5000);
-        
-        console.log('✅ Teste concluído - observe se Sexta está no Sexta');
-    }
-    
-    console.log('🧪 === FIM DO TESTE ===');
-}
-
-// === VALIDAÇÃO DOS DIAS DA SEMANA ===
-function validateWeekDays() {
-    console.log('🔍 === VALIDAÇÃO DOS DIAS ===');
-    
-    const hoje = new Date();
-    console.log('📅 Hoje é:', hoje.toLocaleDateString('pt-BR', { weekday: 'long' }));
-    
-    const diasSemana = ['Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sab', 'Dom'];
-    const diasCompletos = ['Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado', 'Domingo'];
-    
-    diasSemana.forEach((dia, index) => {
-        const data = new Date();
-        const diasParaSegunda = data.getDay() === 0 ? -6 : 1 - data.getDay();
-        data.setDate(data.getDate() + diasParaSegunda + index);
-        
-        console.log(`📊 ${dia} (${diasCompletos[index]}): ${data.toLocaleDateString('pt-BR')}`);
-    });
-    
-    console.log('🔍 === FIM DA VALIDAÇÃO ===');
-}
-
-// === DISPONIBILIZA FUNÇÕES PARA TESTE ===
-window.testWeeklyComparison = testWeeklyComparison;
-window.validateWeekDays = validateWeekDays;
-window.generateCorrectWeeklyData = generateCorrectWeeklyData;
-
-// === SUBSTITUA A FUNÇÃO ORIGINAL ===
-// Coloque esta função no lugar da createWeeklyComparison() original
-
-console.log('✅ Correção do comparativo semanal carregada!');
-console.log('🧪 Para testar: testWeeklyComparison()');
-console.log('🔍 Para validar dias: validateWeekDays()');
-
-    // === FUNÇÕES DO FILTRO DE DATAS (CORRIGIDAS) ===
-    function toggleDateFilter() {
-        console.log('🔧 toggleDateFilter() chamada');
-        
+    // === FUNÇÕES DO FILTRO ===
+    window.toggleDateFilter = function() {
         const container = document.getElementById('dateFilterContainer');
         const btn = document.querySelector('.filtro-btn');
         
-        if (!container) {
-            console.error('❌ Container #dateFilterContainer não encontrado!');
-            showAlert('Erro: Container do filtro não encontrado!', 'error');
-            return;
-        }
-        
-        if (!btn) {
-            console.error('❌ Botão .filtro-btn não encontrado!');
-            showAlert('Erro: Botão do filtro não encontrado!', 'error');
-            return;
-        }
-        
-        // Toggle das classes
-        const isActive = container.classList.contains('active');
-        
-        if (isActive) {
-            container.classList.remove('active');
-            btn.classList.remove('active');
-            console.log('📴 Filtro fechado');
-        } else {
-            container.classList.add('active');
-            btn.classList.add('active');
-            console.log('📱 Filtro aberto');
+        if (container && btn) {
+            container.classList.toggle('active');
+            btn.classList.toggle('active');
             
-            // Focar no primeiro campo após animação
-            setTimeout(() => {
-                const dataInicio = document.getElementById('data_inicio');
-                if (dataInicio) {
-                    dataInicio.focus();
-                }
-            }, 300);
+            if (container.classList.contains('active')) {
+                setTimeout(() => document.getElementById('data_inicio')?.focus(), 200);
+            }
         }
-    }
+    };
 
-    function clearDateFilter() {
-        console.log('🗑️ Limpando filtro de datas');
-        
+    window.clearDateFilter = function() {
         const dataInicio = document.getElementById('data_inicio');
         const dataFim = document.getElementById('data_fim');
-        
         if (dataInicio) dataInicio.value = '';
         if (dataFim) dataFim.value = '';
         
-        // Fechar o filtro
         const container = document.getElementById('dateFilterContainer');
         const btn = document.querySelector('.filtro-btn');
-        
         if (container) container.classList.remove('active');
         if (btn) btn.classList.remove('active');
-        
-        console.log('✅ Filtro limpo e fechado');
-    }
+    };
 
-    function setDateRange(days) {
-        console.log(`📅 Definindo range de ${days} dias`);
-        
+    window.setDateRange = function(days) {
         const hoje = new Date();
-        const dataInicio = new Date();
-        dataInicio.setDate(hoje.getDate() - days);
+        const inicio = new Date(hoje.getTime() - (days * 24 * 60 * 60 * 1000));
         
         const inputInicio = document.getElementById('data_inicio');
         const inputFim = document.getElementById('data_fim');
         
-        if (inputInicio) inputInicio.value = formatDate(dataInicio);
-        if (inputFim) inputFim.value = formatDate(hoje);
-    }
+        if (inputInicio) inputInicio.value = inicio.toISOString().split('T')[0];
+        if (inputFim) inputFim.value = hoje.toISOString().split('T')[0];
+    };
 
-    function setCurrentMonth() {
-        console.log('📅 Definindo mês atual');
-        
+    window.setCurrentMonth = function() {
         const hoje = new Date();
         const primeiroDia = new Date(hoje.getFullYear(), hoje.getMonth(), 1);
         
         const inputInicio = document.getElementById('data_inicio');
         const inputFim = document.getElementById('data_fim');
         
-        if (inputInicio) inputInicio.value = formatDate(primeiroDia);
-        if (inputFim) inputFim.value = formatDate(hoje);
-    }
+        if (inputInicio) inputInicio.value = primeiroDia.toISOString().split('T')[0];
+        if (inputFim) inputFim.value = hoje.toISOString().split('T')[0];
+    };
 
-    function setLastMonth() {
-        console.log('📅 Definindo mês passado');
-        
+    window.setLastMonth = function() {
         const hoje = new Date();
         const ultimoDiaAnterior = new Date(hoje.getFullYear(), hoje.getMonth(), 0);
         const primeiroDiaAnterior = new Date(hoje.getFullYear(), hoje.getMonth() - 1, 1);
@@ -2144,239 +1964,57 @@ console.log('🔍 Para validar dias: validateWeekDays()');
         const inputInicio = document.getElementById('data_inicio');
         const inputFim = document.getElementById('data_fim');
         
-        if (inputInicio) inputInicio.value = formatDate(primeiroDiaAnterior);
-        if (inputFim) inputFim.value = formatDate(ultimoDiaAnterior);
-    }
+        if (inputInicio) inputInicio.value = primeiroDiaAnterior.toISOString().split('T')[0];
+        if (inputFim) inputFim.value = ultimoDiaAnterior.toISOString().split('T')[0];
+    };
 
-    function formatDate(date) {
-        return date.toISOString().split('T')[0];
-    }
+    // === FUNÇÃO DE TESTE ===
+    window.testComparativo = function() {
+        console.log('🧪 === TESTE DO COMPARATIVO ===');
+        console.log('📅 Hoje:', new Date().toLocaleDateString('pt-BR', { weekday: 'long' }));
+        
+        const dadosTeste = generateWeeklyDataCorrect();
+        console.log('🔍 Dados gerados:');
+        dadosTeste.forEach((d, i) => {
+            console.log(`  ${i}: ${d.dia} (${d.data_real}) - Atual: ${d.volume_atual}, Anterior: ${d.volume_anterior}`);
+        });
+        
+        volumeComparativo = dadosTeste;
+        createWeeklyComparison();
+        console.log('✅ Teste concluído!');
+    };
 
-    // === SISTEMA DE ALERTAS VISUAL ===
-    function showAlert(message, type = 'info') {
-        const alert = document.createElement('div');
-        alert.style.cssText = `
-            position: fixed;
-            top: 20px;
-            right: 20px;
-            background: ${type === 'error' ? '#f8d7da' : type === 'success' ? '#d4edda' : '#cce5ff'};
-            color: ${type === 'error' ? '#721c24' : type === 'success' ? '#155724' : '#004085'};
-            border: 1px solid ${type === 'error' ? '#f5c6cb' : type === 'success' ? '#c3e6cb' : '#b8daff'};
-            border-radius: 8px;
-            padding: 15px 20px;
-            max-width: 300px;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
-            z-index: 10000;
-            animation: slideInRight 0.3s ease;
-        `;
-        alert.textContent = message;
-
-        document.body.appendChild(alert);
-
-        setTimeout(() => {
-            alert.style.animation = 'slideOutRight 0.3s ease';
-            setTimeout(() => alert.remove(), 300);
-        }, 4000);
-    }
-
-    // === VALIDAÇÕES DE FORMULÁRIO ===
-    function setupFormValidation() {
+    // === INICIALIZAÇÃO ===
+    setTimeout(() => {
+        animateKPIs();
+        createMonthHeatmap();
+        createWeeklyComparison();
+        
+        // Setup do formulário
         const form = document.getElementById('dateFilterForm');
-        const dataInicio = document.getElementById('data_inicio');
-        const dataFim = document.getElementById('data_fim');
-        
-        if (!form || !dataInicio || !dataFim) {
-            console.warn('⚠️ Elementos do formulário não encontrados para validação');
-            return;
-        }
-        
-        form.addEventListener('submit', function(e) {
-            const inicio = dataInicio.value;
-            const fim = dataFim.value;
-            
-            if (!inicio || !fim) {
-                e.preventDefault();
-                showAlert('Por favor, preencha ambas as datas.', 'error');
-                return;
-            }
-            
-            if (inicio > fim) {
-                e.preventDefault();
-                showAlert('A data de início deve ser menor ou igual à data de fim.', 'error');
-                return;
-            }
-            
-            // Verifica período muito longo
-            const diffTime = Math.abs(new Date(fim) - new Date(inicio));
-            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-            
-            if (diffDays > 90) {
-                const confirmar = confirm(`Período muito longo (${diffDays} dias). Continuar?`);
-                if (!confirmar) {
+        if (form) {
+            form.addEventListener('submit', function(e) {
+                const inicio = document.getElementById('data_inicio')?.value;
+                const fim = document.getElementById('data_fim')?.value;
+                
+                if (!inicio || !fim) {
                     e.preventDefault();
+                    alert('Preencha ambas as datas.');
                     return;
                 }
-            }
-            
-            showAlert('Aplicando filtro...', 'success');
-        });
-    }
-
-    // === ATALHOS DE TECLADO ===
-    function setupKeyboardShortcuts() {
-        document.addEventListener('keydown', function(e) {
-            if (e.ctrlKey && e.key === 'f') {
-                e.preventDefault();
-                toggleDateFilter();
-            }
-            
-            if (e.key === 'Escape') {
-                const container = document.getElementById('dateFilterContainer');
-                if (container && container.classList.contains('active')) {
-                    toggleDateFilter();
+                
+                if (inicio > fim) {
+                    e.preventDefault();
+                    alert('Data de início deve ser menor que data fim.');
+                    return;
                 }
-            }
-        });
-    }
-
-    // === EFEITOS VISUAIS ===
-    function setupVisualEffects() {
-        // Hover nos cartões
-        document.querySelectorAll('.coord-card').forEach(card => {
-            card.addEventListener('mouseenter', function() {
-                this.style.transform = 'translateY(-3px)';
             });
-            
-            card.addEventListener('mouseleave', function() {
-                this.style.transform = 'translateY(0)';
-            });
-        });
-
-        // Hover nas barras de comparação
-        document.addEventListener('mouseover', function (e) {
-            if (e.target.classList.contains('comparison-bar')) {
-                e.target.style.transform = 'scaleY(1.05) scale(1.05)';
-                e.target.style.filter = 'brightness(1.1)';
-                e.target.style.zIndex = '10';
-            }
-        });
-
-        document.addEventListener('mouseout', function (e) {
-            if (e.target.classList.contains('comparison-bar')) {
-                e.target.style.transform = 'scaleY(1) scale(1)';
-                e.target.style.filter = 'brightness(1)';
-                e.target.style.zIndex = '1';
-            }
-        });
-
-        // Hover nos dias do heatmap
-        document.addEventListener('mouseover', function (e) {
-            if (e.target.classList.contains('heatmap-day')) {
-                e.target.style.transform = 'scale(1.15)';
-                e.target.style.zIndex = '10';
-                e.target.style.boxShadow = '0 8px 25px rgba(0, 0, 0, 0.3)';
-            }
-        });
-
-        document.addEventListener('mouseout', function (e) {
-            if (e.target.classList.contains('heatmap-day')) {
-                e.target.style.transform = 'scale(1)';
-                e.target.style.zIndex = '1';
-                e.target.style.boxShadow = 'none';
-            }
-        });
-    }
-
-    // === FUNÇÃO DE DEBUG COMPLETA ===
-    function debugSystem() {
-        console.log('🔍 === DEBUG COMPLETO DO SISTEMA ===');
-        console.log('📊 Volume comparativo:', volumeComparativo);
-        console.log('🔥 Heatmap mês:', heatmapMes ? `${heatmapMes.length} dias` : 'null');
-        console.log('🎯 Tem dados reais:', temDadosReais);
-        
-        // Verifica elementos DOM
-        const elementos = {
-            'heatmapCalendar': document.getElementById('heatmapCalendar'),
-            'comparisonChart': document.getElementById('comparisonChart'),
-            'dateFilterContainer': document.getElementById('dateFilterContainer'),
-            'filtro-btn': document.querySelector('.filtro-btn'),
-            'data_inicio': document.getElementById('data_inicio'),
-            'data_fim': document.getElementById('data_fim'),
-            'kpis': document.querySelectorAll('.exec-kpi-value[data-target]')
-        };
-        
-        console.log('📍 Elementos DOM encontrados:');
-        Object.entries(elementos).forEach(([nome, elemento]) => {
-            console.log(`  - ${nome}: ${!!elemento} ${elemento && elemento.length !== undefined ? `(${elemento.length})` : ''}`);
-        });
-        
-        console.log('=================================');
-    }
-
-    // === INICIALIZAÇÃO PRINCIPAL ===
-    console.log('🎯 Iniciando sistema...');
-    
-    // Aguarda DOM estar completamente carregado
-    setTimeout(() => {
-        try {
-            // 1. Debug inicial
-            debugSystem();
-            
-            // 2. Anima KPIs
-            animateKPIs();
-            
-            // 3. Cria visualizações
-            createMonthHeatmap();
-            createWeeklyComparison();
-            
-            // 4. Configura filtros e validações
-            setupFormValidation();
-            setupKeyboardShortcuts();
-            setupVisualEffects();
-            
-            // 5. Define data máxima como hoje
-            const hoje = new Date().toISOString().split('T')[0];
-            const dataFim = document.getElementById('data_fim');
-            if (dataFim) {
-                dataFim.max = hoje;
-            }
-            
-            console.log('✅ Sistema inicializado com sucesso!');
-            
-            // Mostra informações para o usuário
-            if (!temDadosReais) {
-                showAlert('Usando dados de demonstração. Configure dados reais no sistema.', 'info');
-            }
-            
-        } catch (error) {
-            console.error('❌ Erro durante a inicialização:', error);
-            showAlert('Erro durante inicialização do painel.', 'error');
         }
+        
+        console.log('✅ Painel compacto inicializado!');
+        console.log('🧪 Para testar: testComparativo()');
+        
     }, 100);
-
-    // === DISPONIBILIZA FUNÇÕES GLOBALMENTE PARA TESTE ===
-    window.toggleDateFilter = toggleDateFilter;
-    window.clearDateFilter = clearDateFilter;
-    window.setDateRange = setDateRange;
-    window.setCurrentMonth = setCurrentMonth;
-    window.setLastMonth = setLastMonth;
-    window.debugSystem = debugSystem;
-    
-    // === ANIMAÇÕES CSS ===
-    const style = document.createElement('style');
-    style.textContent = `
-        @keyframes slideInRight {
-            from { transform: translateX(100%); opacity: 0; }
-            to { transform: translateX(0); opacity: 1; }
-        }
-        @keyframes slideOutRight {
-            from { transform: translateX(0); opacity: 1; }
-            to { transform: translateX(100%); opacity: 0; }
-        }
-    `;
-    document.head.appendChild(style);
-
-    console.log('🎉 Painel da Coordenação carregado com todas as correções!');
 });
 </script>
 

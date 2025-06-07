@@ -1098,32 +1098,22 @@ def admin_panel():
 @app.route('/painel_coordenacao')
 @login_required  
 def painel_coordenacao():
-    """Painel da Coordenação - VERSÃO CORRIGIDA PARA PROBLEMAS IDENTIFICADOS"""
+    """Painel da Coordenação - VERSÃO CORRIGIDA compatível com template"""
     if current_user.tipo not in ['admin', 'coordenadora']:
         flash('Acesso negado.', 'danger')
         return redirect(url_for('dashboard'))
     
     try:
         # Pega filtros da URL (período em dias)
-        periodo = request.args.get('periodo', '7')
-        try:
-            periodo = int(periodo)
-        except (ValueError, TypeError):
-            periodo = 7
-        
-        # Validação do período
-        if periodo < 1:
-            periodo = 1
-        elif periodo > 90:
-            periodo = 90
+        periodo = request.args.get('periodo', '7', type=int)
         
         # Calcula datas baseado no período
         data_fim = datetime.now()
         data_inicio = data_fim - timedelta(days=periodo)
         
-        # === 1. KPIs BÁSICOS ===
-        # CORRIGIDO: Incluir coordenadora na contagem de supervisores
-        total_supervisores = User.query.filter(User.tipo.in_(['supervisor', 'coordenadora'])).count()
+        # === 1. KPIs PRINCIPAIS ===
+        supervisores_query = User.query.filter(User.tipo.in_(['supervisor', 'coordenadora']))
+        total_supervisores = supervisores_query.count()
         total_agentes = Agente.query.filter_by(ativo=True).count()
         
         # Atendimentos no período
@@ -1133,313 +1123,229 @@ def painel_coordenacao():
         ).count()
         
         # Média por supervisor
-        if total_supervisores > 0:
-            media_por_supervisor = round(float(atendimentos_periodo) / float(total_supervisores), 1)
-        else:
-            media_por_supervisor = 0.0
-            total_supervisores = 1
+        media_por_supervisor = round(atendimentos_periodo / total_supervisores, 1) if total_supervisores > 0 else 0
         
-        # === 2. TOP 5 AGENTES POR SUPERVISOR ===
+        # === 2. TOP 5 AGENTES POR SUPERVISOR (CORRIGIDO) ===
         supervisores_top_agentes = []
-        
-        # CORRIGIDO: Buscar supervisores E coordenadoras
-        supervisores = User.query.filter(User.tipo.in_(['supervisor', 'coordenadora'])).all()
-        
-        # Se não há supervisores, usa o admin atual
-        if not supervisores:
-            supervisores = [current_user]
+        supervisores = supervisores_query.all()
         
         for supervisor in supervisores:
-            try:
-                # CORRIGIDO: Buscar agentes que têm este supervisor como supervisor_id
-                agentes_supervisor = Agente.query.filter_by(supervisor_id=supervisor.id, ativo=True).all()
-                
-                agentes_stats = []
-                for agente in agentes_supervisor:
-                    # Conta atendimentos do agente no período
-                    count_atendimentos = Atendimento.query.filter(
-                        Atendimento.agente_id == agente.id,
-                        Atendimento.data_hora >= data_inicio,
-                        Atendimento.data_hora <= data_fim
-                    ).count()
-                    
-                    agentes_stats.append({
-                        'id': int(agente.id),
-                        'nome': str(agente.nome),
-                        'total_atendimentos': int(count_atendimentos)
-                    })
-                
-                # Ordena por total de atendimentos (decrescente) e pega top 5
-                agentes_stats.sort(key=lambda x: x['total_atendimentos'], reverse=True)
-                top_5_agentes = agentes_stats[:5]
-                
-                # Soma total de atendimentos deste supervisor através dos agentes
-                total_atendimentos_supervisor = sum(a['total_atendimentos'] for a in agentes_stats)
-                
-                supervisores_top_agentes.append({
-                    'id': int(supervisor.id),
-                    'nome': str(supervisor.nome),
-                    'tipo': str(supervisor.tipo),
-                    'top_agentes': top_5_agentes,
-                    'total_agentes': len(agentes_supervisor),
-                    'total_atendimentos_via_agentes': int(total_atendimentos_supervisor)
+            # CORREÇÃO: Conta atendimentos baseado em quem prestou (supervisor_id)
+            atendimentos_sup = Atendimento.query.filter(
+                Atendimento.supervisor_id == supervisor.id,
+                Atendimento.data_hora >= data_inicio,
+                Atendimento.data_hora <= data_fim
+            ).all()
+            
+            # Conta agentes por atendimentos prestados
+            agentes_contador = defaultdict(int)
+            for atendimento in atendimentos_sup:
+                if hasattr(atendimento, 'agente_rel') and atendimento.agente_rel:
+                    agente_nome = atendimento.agente_rel.nome
+                    agentes_contador[agente_nome] += 1
+            
+            # Top 5 agentes
+            top_agentes_ordenados = sorted(agentes_contador.items(), key=lambda x: x[1], reverse=True)[:5]
+            
+            top_agentes_formatados = []
+            for agente_nome, qtd_atendimentos in top_agentes_ordenados:
+                top_agentes_formatados.append({
+                    'nome': agente_nome,
+                    'total_atendimentos': qtd_atendimentos
                 })
-                
-            except Exception as e:
-                app.logger.error(f'Erro ao processar agentes do supervisor {supervisor.id}: {e}')
-                supervisores_top_agentes.append({
-                    'id': int(supervisor.id),
-                    'nome': str(supervisor.nome),
-                    'tipo': str(supervisor.tipo),
-                    'top_agentes': [],
-                    'total_agentes': 0,
-                    'total_atendimentos_via_agentes': 0
-                })
+            
+            supervisor_data = {
+                'nome': supervisor.nome,
+                'tipo': supervisor.tipo,
+                'total_agentes': len(set(agentes_contador.keys())),  # Agentes únicos
+                'top_agentes': top_agentes_formatados
+            }
+            
+            supervisores_top_agentes.append(supervisor_data)
         
-        # === 3. PERCENTUAIS DE COMPLEXIDADE POR SUPERVISOR ===
+        # === 3. COMPLEXIDADE POR SUPERVISOR (CORRIGIDO) ===
         supervisores_complexidade = []
         
         for supervisor in supervisores:
-            try:
-                # CORRIGIDO: Buscar atendimentos através dos agentes do supervisor
-                # Primeiro, pega todos os agentes deste supervisor
-                agentes_ids = [a.id for a in Agente.query.filter_by(supervisor_id=supervisor.id, ativo=True).all()]
-                
-                # Busca atendimentos dos agentes deste supervisor no período
-                atendimentos_supervisor = Atendimento.query.filter(
-                    Atendimento.agente_id.in_(agentes_ids),
-                    Atendimento.data_hora >= data_inicio,
-                    Atendimento.data_hora <= data_fim
-                ).all()
-                
-                # Conta por complexidade
-                basicos = 0
-                medios = 0
-                complexos = 0
-                sem_classificacao = 0
-                
-                for atendimento in atendimentos_supervisor:
-                    classificacao = str(atendimento.classificacao).lower() if atendimento.classificacao else ''
-                    if classificacao == 'basico':
-                        basicos += 1
-                    elif classificacao == 'medio':
-                        medios += 1
-                    elif classificacao == 'complexo':
-                        complexos += 1
-                    else:
-                        sem_classificacao += 1
-                
-                total_supervisor = len(atendimentos_supervisor)
-                
-                # Calcula percentuais
-                if total_supervisor > 0:
-                    perc_basicos = round((float(basicos) / float(total_supervisor)) * 100, 1)
-                    perc_medios = round((float(medios) / float(total_supervisor)) * 100, 1)
-                    perc_complexos = round((float(complexos) / float(total_supervisor)) * 100, 1)
-                else:
-                    perc_basicos = perc_medios = perc_complexos = 0.0
-                
-                supervisores_complexidade.append({
-                    'id': int(supervisor.id),
-                    'nome': str(supervisor.nome),
-                    'tipo': str(supervisor.tipo),
-                    'total_atendimentos': int(total_supervisor),
-                    'basicos': {
-                        'quantidade': int(basicos),
-                        'percentual': float(perc_basicos)
-                    },
-                    'medios': {
-                        'quantidade': int(medios),
-                        'percentual': float(perc_medios)
-                    },
-                    'complexos': {
-                        'quantidade': int(complexos),
-                        'percentual': float(perc_complexos)
-                    },
-                    'sem_classificacao': int(sem_classificacao)
-                })
-                
-            except Exception as e:
-                app.logger.error(f'Erro ao processar complexidade do supervisor {supervisor.id}: {e}')
-                supervisores_complexidade.append({
-                    'id': int(supervisor.id),
-                    'nome': str(supervisor.nome),
-                    'tipo': str(supervisor.tipo),
-                    'total_atendimentos': 0,
-                    'basicos': {'quantidade': 0, 'percentual': 0.0},
-                    'medios': {'quantidade': 0, 'percentual': 0.0},
-                    'complexos': {'quantidade': 0, 'percentual': 0.0},
-                    'sem_classificacao': 0
-                })
+            atendimentos_sup = Atendimento.query.filter(
+                Atendimento.supervisor_id == supervisor.id,
+                Atendimento.data_hora >= data_inicio,
+                Atendimento.data_hora <= data_fim
+            ).all()
+            
+            total_atendimentos_sup = len(atendimentos_sup)
+            
+            # CORREÇÃO: Conta apenas os classificados
+            complexidade_counts = {'basico': 0, 'medio': 0, 'complexo': 0}
+            
+            for atendimento in atendimentos_sup:
+                if atendimento.classificacao:
+                    classificacao = atendimento.classificacao.lower().strip()
+                    if classificacao in ['básico', 'basico']:
+                        complexidade_counts['basico'] += 1
+                    elif classificacao in ['médio', 'medio']:
+                        complexidade_counts['medio'] += 1
+                    elif classificacao in ['complexo']:
+                        complexidade_counts['complexo'] += 1
+            
+            # Total de classificados
+            total_classificados = sum(complexidade_counts.values())
+            
+            # Calcula percentuais baseados nos classificados
+            if total_classificados > 0:
+                percentual_basico = round((complexidade_counts['basico'] / total_classificados) * 100, 1)
+                percentual_medio = round((complexidade_counts['medio'] / total_classificados) * 100, 1)
+                percentual_complexo = round((complexidade_counts['complexo'] / total_classificados) * 100, 1)
+            else:
+                percentual_basico = percentual_medio = percentual_complexo = 0.0
+            
+            supervisor_complexidade = {
+                'nome': supervisor.nome,
+                'tipo': supervisor.tipo,
+                'total_atendimentos': total_atendimentos_sup,
+                'total_classificados': total_classificados,
+                'basicos': {
+                    'quantidade': complexidade_counts['basico'],
+                    'percentual': percentual_basico
+                },
+                'medios': {
+                    'quantidade': complexidade_counts['medio'],
+                    'percentual': percentual_medio
+                },
+                'complexos': {
+                    'quantidade': complexidade_counts['complexo'],
+                    'percentual': percentual_complexo
+                }
+            }
+            
+            supervisores_complexidade.append(supervisor_complexidade)
         
-        # === 4. DADOS COMPARATIVOS SEMANAIS (MANTÉM) ===
-        volume_semanal_comparativo = []
-        nomes_dias = {
-            'Monday': 'Seg', 'Tuesday': 'Ter', 'Wednesday': 'Qua', 
-            'Thursday': 'Qui', 'Friday': 'Sex', 'Saturday': 'Sab', 'Sunday': 'Dom'
-        }
-        
-        for i in range(7):
-            try:
-                dia_atual = data_fim - timedelta(days=(6-i))
-                dia_anterior = dia_atual - timedelta(days=7)
-                
-                # Contagem atual
-                inicio_atual = dia_atual.replace(hour=0, minute=0, second=0, microsecond=0)
-                fim_atual = dia_atual.replace(hour=23, minute=59, second=59, microsecond=999999)
-                
-                count_atual = Atendimento.query.filter(
-                    Atendimento.data_hora >= inicio_atual,
-                    Atendimento.data_hora <= fim_atual
-                ).count()
-                
-                # Contagem semana anterior
-                inicio_anterior = dia_anterior.replace(hour=0, minute=0, second=0, microsecond=0)
-                fim_anterior = dia_anterior.replace(hour=23, minute=59, second=59, microsecond=999999)
-                
-                count_anterior = Atendimento.query.filter(
-                    Atendimento.data_hora >= inicio_anterior,
-                    Atendimento.data_hora <= fim_anterior
-                ).count()
-                
-                # Nome do dia
-                dia_nome = nomes_dias.get(dia_atual.strftime('%A'), dia_atual.strftime('%A')[:3])
-                
-                volume_semanal_comparativo.append({
-                    'dia': str(dia_nome),
-                    'data': inicio_atual.strftime('%d/%m'),
-                    'volume_atual': int(count_atual),
-                    'volume_anterior': int(count_anterior),
-                    'data_completa': inicio_atual.strftime('%Y-%m-%d')
-                })
-            except Exception as e:
-                app.logger.error(f'Erro ao processar comparativo dia {i}: {e}')
-                continue
-        
-        # === 5. HEATMAP DO MÊS CALENDÁRIO ===
-        heatmap_mes = []
-        
-        # Primeiro dia do mês atual
+        # === 4. HEATMAP DO MÊS ===
+        # Gera dados do mês atual
         hoje = datetime.now()
-        primeiro_dia_mes = hoje.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+        primeiro_dia_mes = hoje.replace(day=1)
         
-        # Último dia do mês atual
+        # Próximo mês para calcular último dia
         if hoje.month == 12:
-            ultimo_dia_mes = hoje.replace(year=hoje.year + 1, month=1, day=1) - timedelta(days=1)
+            proximo_mes = hoje.replace(year=hoje.year + 1, month=1, day=1)
         else:
-            ultimo_dia_mes = hoje.replace(month=hoje.month + 1, day=1) - timedelta(days=1)
+            proximo_mes = hoje.replace(month=hoje.month + 1, day=1)
         
-        # Gera dados para todos os dias do mês
+        ultimo_dia_mes = proximo_mes - timedelta(days=1)
+        
+        heatmap_mes = []
         dia_atual = primeiro_dia_mes
-        while dia_atual <= ultimo_dia_mes:
-            try:
-                inicio_dia = dia_atual.replace(hour=0, minute=0, second=0, microsecond=0)
-                fim_dia = dia_atual.replace(hour=23, minute=59, second=59, microsecond=999999)
-                
-                count = Atendimento.query.filter(
-                    Atendimento.data_hora >= inicio_dia,
-                    Atendimento.data_hora <= fim_dia
-                ).count()
-                
-                heatmap_mes.append({
-                    'data': inicio_dia.strftime('%Y-%m-%d'),
-                    'dia_mes': int(dia_atual.day),
-                    'dia_semana': int(dia_atual.weekday()),
-                    'volume': int(count),
-                    'eh_hoje': dia_atual.date() == hoje.date()
-                })
-                
-                dia_atual += timedelta(days=1)
-            except Exception as e:
-                app.logger.error(f'Erro ao processar heatmap dia {dia_atual}: {e}')
-                dia_atual += timedelta(days=1)
-                continue
         
-        # === 6. COMPARATIVO DE PERÍODOS (para resumo executivo) ===
-        periodo_anterior_inicio = data_inicio - timedelta(days=periodo)
-        periodo_anterior_fim = data_inicio
+        while dia_atual <= ultimo_dia_mes:
+            # Conta atendimentos do dia
+            atendimentos_dia = Atendimento.query.filter(
+                db.func.date(Atendimento.data_hora) == dia_atual.date()
+            ).count()
+            
+            heatmap_mes.append({
+                'dia_mes': dia_atual.day,
+                'dia_semana': dia_atual.weekday(),  # 0=Segunda, 6=Domingo
+                'volume': atendimentos_dia,
+                'eh_hoje': dia_atual.date() == hoje.date()
+            })
+            
+            dia_atual += timedelta(days=1)
+        
+        # === 5. VOLUME COMPARATIVO SEMANAL ===
+        dias_semana = ['Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb', 'Dom']
+        volume_comparativo = []
+        
+        # Semana atual vs semana anterior
+        for i in range(7):
+            # Dia da semana atual
+            dia_semana_atual = data_inicio + timedelta(days=i)
+            
+            # Mesmo dia da semana anterior
+            dia_semana_anterior = dia_semana_atual - timedelta(days=7)
+            
+            # Conta atendimentos
+            volume_atual = Atendimento.query.filter(
+                db.func.date(Atendimento.data_hora) == dia_semana_atual.date()
+            ).count()
+            
+            volume_anterior = Atendimento.query.filter(
+                db.func.date(Atendimento.data_hora) == dia_semana_anterior.date()
+            ).count()
+            
+            volume_comparativo.append({
+                'dia': dias_semana[i],
+                'volume_atual': volume_atual,
+                'volume_anterior': volume_anterior
+            })
+        
+        # === 6. RESUMO EXECUTIVO ===
+        # Compara com período anterior
+        data_inicio_anterior = data_inicio - timedelta(days=periodo)
+        data_fim_anterior = data_inicio
         
         atendimentos_anterior = Atendimento.query.filter(
-            Atendimento.data_hora >= periodo_anterior_inicio,
-            Atendimento.data_hora < periodo_anterior_fim
+            Atendimento.data_hora >= data_inicio_anterior,
+            Atendimento.data_hora < data_fim_anterior
         ).count()
         
-        # Calcula mudança percentual
         if atendimentos_anterior > 0:
-            mudanca_percentual = round(((float(atendimentos_periodo) - float(atendimentos_anterior)) / float(atendimentos_anterior)) * 100, 1)
+            mudanca_percentual = round(((atendimentos_periodo - atendimentos_anterior) / atendimentos_anterior) * 100, 1)
+            if mudanca_percentual > 0:
+                mudanca_tipo = 'aumento'
+            elif mudanca_percentual < 0:
+                mudanca_tipo = 'reducao'
+            else:
+                mudanca_tipo = 'estavel'
         else:
-            mudanca_percentual = 100.0 if atendimentos_periodo > 0 else 0.0
-        
-        # Determina o tipo de mudança
-        if mudanca_percentual > 5.0:
-            mudanca_tipo = 'aumento'
-        elif mudanca_percentual < -5.0:
-            mudanca_tipo = 'reducao'
-        else:
+            mudanca_percentual = 0
             mudanca_tipo = 'estavel'
         
-        # === CONTEXTO PARA O TEMPLATE ===
+        resumo_dados = {
+            'mudanca_percentual': abs(mudanca_percentual),
+            'mudanca_tipo': mudanca_tipo
+        }
+        
+        # === 7. DADOS FINAIS PARA O TEMPLATE ===
         periodo_label = "Hoje" if periodo == 1 else "Semana" if periodo == 7 else f"Últimos {periodo} dias"
+        mes_atual = hoje.strftime('%B %Y')
+        timestamp_atualizacao = datetime.now().strftime('%d/%m/%Y às %H:%M')
+        
+        # Verifica se há dados reais
+        tem_dados_reais = total_supervisores > 0 and total_agentes > 0
         
         context = {
             # KPIs principais
             'kpis': {
-                'total_supervisores': int(total_supervisores),
-                'total_agentes': int(total_agentes),
-                'total_atendimentos': int(atendimentos_periodo),
-                'media_supervisor': float(media_por_supervisor)
+                'total_supervisores': total_supervisores,
+                'total_agentes': total_agentes,
+                'total_atendimentos': atendimentos_periodo,
+                'media_supervisor': media_por_supervisor
             },
             
-            # Dados corrigidos
+            # Dados dos supervisores (compatível com template)
             'supervisores_top_agentes': supervisores_top_agentes,
             'supervisores_complexidade': supervisores_complexidade,
-            'volume_comparativo': volume_semanal_comparativo,
+            
+            # Dados para JavaScript
+            'volume_comparativo': volume_comparativo,
             'heatmap_mes': heatmap_mes,
             
-            # Dados para resumo executivo
-            'resumo_dados': {
-                'mudanca_percentual': float(mudanca_percentual),
-                'mudanca_tipo': str(mudanca_tipo),
-                'atendimentos_anterior': int(atendimentos_anterior)
-            },
-            
             # Metadados
-            'periodo_atual': int(periodo),
-            'data_inicio': data_inicio.strftime('%Y-%m-%d'),
-            'data_fim': data_fim.strftime('%Y-%m-%d'),
-            'periodo_label': str(periodo_label),
-            'tem_dados_reais': bool(len(supervisores) > 0 or total_agentes > 0),
-            'timestamp_atualizacao': datetime.now().strftime('%d/%m/%Y às %H:%M'),
-            'usuario_atual': str(current_user.nome),
-            'mes_atual': hoje.strftime('%B %Y')
+            'periodo_atual': periodo,
+            'periodo_label': periodo_label,
+            'mes_atual': mes_atual,
+            'timestamp_atualizacao': timestamp_atualizacao,
+            'tem_dados_reais': tem_dados_reais,
+            'resumo_dados': resumo_dados
         }
-        
-        # Log de debug
-        app.logger.info(f'Painel coordenação CORRIGIDO - Supervisores encontrados: {[s.nome for s in supervisores]}')
-        app.logger.info(f'Total atendimentos período: {atendimentos_periodo}')
         
         return render_template('painel_coordenacao.html', **context)
         
     except Exception as e:
-        app.logger.error(f'ERRO no painel coordenação: {e}')
-        import traceback
-        app.logger.error(f'Traceback: {traceback.format_exc()}')
-        
-        # Fallback básico
-        context_fallback = {
-            'kpis': {'total_supervisores': 0, 'total_agentes': 0, 'total_atendimentos': 0, 'media_supervisor': 0.0},
-            'supervisores_top_agentes': [], 'supervisores_complexidade': [], 'volume_comparativo': [], 'heatmap_mes': [],
-            'resumo_dados': {'mudanca_percentual': 0.0, 'mudanca_tipo': 'estavel', 'atendimentos_anterior': 0},
-            'periodo_atual': 7, 'data_inicio': '2025-06-01', 'data_fim': '2025-06-07', 'periodo_label': 'Semana',
-            'tem_dados_reais': False, 'timestamp_atualizacao': datetime.now().strftime('%d/%m/%Y às %H:%M'),
-            'usuario_atual': str(getattr(current_user, 'nome', 'Usuário')), 'mes_atual': datetime.now().strftime('%B %Y')
-        }
-        
-        try:
-            return render_template('painel_coordenacao.html', **context_fallback)
-        except Exception as e2:
-            flash(f'Erro crítico no painel da coordenação: {str(e)}', 'danger')
-            return redirect(url_for('dashboard'))
+        app.logger.error(f'Erro no painel coordenação: {e}')
+        flash('Erro ao carregar painel da coordenação. Tente novamente.', 'danger')
+        return redirect(url_for('dashboard'))
+            
 
 
 # API para estatísticas em tempo real

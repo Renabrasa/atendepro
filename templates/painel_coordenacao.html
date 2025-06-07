@@ -1,4 +1,4 @@
-<!-- TEMPLATE COMPLETO FINAL - Substitua o templates/painel_coordenacao.html -->
+<!-- TEMPLATE AJUSTADO CONFORME SOLICITAÇÃO - Substitua o templates/painel_coordenacao.html -->
 
 {% extends 'base.html' %}
 {% block title %}Painel da Coordenação - AtendePro{% endblock %}
@@ -145,8 +145,8 @@
     margin-bottom: 30px;
   }
 
-  /* === QUADRO DOS 7 DIAS DA SEMANA === */
-  .week-overview {
+  /* === HEATMAP DO MÊS === */
+  .heatmap-month {
     background: white;
     border-radius: 15px;
     padding: 25px;
@@ -154,7 +154,7 @@
     border: 1px solid var(--coord-border);
   }
 
-  .week-title {
+  .heatmap-title {
     font-size: 1.4rem;
     font-weight: 600;
     color: var(--coord-primary);
@@ -166,75 +166,82 @@
     gap: 10px;
   }
 
-  .week-grid {
+  .heatmap-calendar {
     display: grid;
     grid-template-columns: repeat(7, 1fr);
-    gap: 8px;
+    gap: 4px;
+    margin-bottom: 15px;
   }
 
-  .week-day {
+  .heatmap-day-header {
     text-align: center;
-    padding: 15px 8px;
-    border-radius: 12px;
-    transition: all 0.3s ease;
-    cursor: pointer;
-    position: relative;
-    overflow: hidden;
-  }
-
-  .week-day::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: linear-gradient(135deg, var(--coord-accent), var(--coord-secondary));
-    opacity: 0;
-    transition: opacity 0.3s ease;
-    z-index: 1;
-  }
-
-  .week-day:hover::before {
-    opacity: 0.1;
-  }
-
-  .week-day-content {
-    position: relative;
-    z-index: 2;
-  }
-
-  .week-day-name {
-    font-size: 0.8rem;
+    font-size: 0.7rem;
     font-weight: 600;
     color: var(--coord-muted);
-    margin-bottom: 8px;
+    padding: 8px 4px;
     text-transform: uppercase;
   }
 
-  .week-day-count {
-    font-size: 1.8rem;
-    font-weight: 700;
-    color: var(--coord-primary);
-    margin-bottom: 4px;
+  .heatmap-day {
+    aspect-ratio: 1;
+    border-radius: 6px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.7rem;
+    font-weight: 600;
+    transition: all 0.3s ease;
+    cursor: pointer;
+    position: relative;
+    min-height: 30px;
   }
 
-  .week-day-date {
+  .heatmap-day:hover {
+    transform: scale(1.1);
+    z-index: 10;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+  }
+
+  .heatmap-day-number {
     font-size: 0.7rem;
+    margin-bottom: 2px;
+  }
+
+  .heatmap-day-count {
+    font-size: 0.6rem;
+    font-weight: 700;
+  }
+
+  .heatmap-day.today {
+    border: 2px solid var(--coord-accent);
+    box-shadow: 0 0 10px rgba(0, 122, 204, 0.3);
+  }
+
+  /* Intensidades do heatmap */
+  .heat-0 { background: #eee; color: #999; }
+  .heat-1 { background: #c6e48b; color: #333; }
+  .heat-2 { background: #7bc96f; color: white; }
+  .heat-3 { background: #239a3b; color: white; }
+  .heat-4 { background: #196127; color: white; }
+
+  .heatmap-legend {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 0.8rem;
     color: var(--coord-muted);
   }
 
-  .week-day.today {
-    background: linear-gradient(135deg, var(--coord-accent), var(--coord-secondary));
-    color: white;
-    transform: scale(1.05);
-    box-shadow: 0 8px 25px rgba(0, 122, 204, 0.3);
+  .heatmap-scale {
+    display: flex;
+    gap: 2px;
   }
 
-  .week-day.today .week-day-name,
-  .week-day.today .week-day-count,
-  .week-day.today .week-day-date {
-    color: white;
+  .heatmap-scale-item {
+    width: 12px;
+    height: 12px;
+    border-radius: 2px;
   }
 
   /* === GRÁFICO COMPARATIVO SEMANAL === */
@@ -351,82 +358,6 @@
     opacity: 1;
   }
 
-  /* === HEATMAP === */
-  .heatmap-section {
-    background: white;
-    border-radius: 15px;
-    padding: 25px;
-    box-shadow: 0 5px 20px rgba(0, 0, 0, 0.1);
-    border: 1px solid var(--coord-border);
-    margin-bottom: 25px;
-  }
-
-  .heatmap-title {
-    font-size: 1.4rem;
-    font-weight: 600;
-    color: var(--coord-primary);
-    margin-bottom: 20px;
-    text-align: center;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 10px;
-  }
-
-  .heatmap-grid {
-    display: grid;
-    grid-template-columns: repeat(7, 1fr);
-    grid-template-rows: repeat(4, 1fr);
-    gap: 4px;
-    height: 120px;
-  }
-
-  .heatmap-cell {
-    border-radius: 6px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 0.7rem;
-    font-weight: 600;
-    color: white;
-    transition: all 0.3s ease;
-    cursor: pointer;
-    position: relative;
-  }
-
-  .heatmap-cell:hover {
-    transform: scale(1.1);
-    z-index: 10;
-    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
-  }
-
-  /* Intensidades do heatmap */
-  .heat-0 { background: #eee; color: #999; }
-  .heat-1 { background: #c6e48b; }
-  .heat-2 { background: #7bc96f; }
-  .heat-3 { background: #239a3b; }
-  .heat-4 { background: #196127; }
-
-  .heatmap-legend {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-top: 15px;
-    font-size: 0.8rem;
-    color: var(--coord-muted);
-  }
-
-  .heatmap-scale {
-    display: flex;
-    gap: 2px;
-  }
-
-  .heatmap-scale-item {
-    width: 12px;
-    height: 12px;
-    border-radius: 2px;
-  }
-
   /* === GRID PRINCIPAL === */
   .main-content-grid {
     display: grid;
@@ -468,38 +399,17 @@
     padding: 25px;
   }
 
-  /* === SUPERVISORES === */
-  .supervisor-item {
-    background: linear-gradient(145deg, #f8f9fa 0%, #e9ecef 100%);
-    border: 1px solid var(--coord-border);
-    border-radius: 12px;
-    padding: 20px;
-    margin-bottom: 20px;
-    transition: all 0.3s ease;
-    position: relative;
-    overflow: hidden;
+  /* === TOP 5 AGENTES POR SUPERVISOR === */
+  .supervisor-section {
+    margin-bottom: 30px;
+    border-bottom: 1px solid var(--coord-border);
+    padding-bottom: 25px;
   }
 
-  .supervisor-item::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 4px;
-    height: 100%;
-    background: var(--coord-accent);
-    opacity: 0;
-    transition: opacity 0.3s ease;
-  }
-
-  .supervisor-item:hover {
-    background: linear-gradient(145deg, #e3f2fd 0%, #bbdefb 100%);
-    border-color: var(--coord-accent);
-    transform: translateX(5px);
-  }
-
-  .supervisor-item:hover::before {
-    opacity: 1;
+  .supervisor-section:last-child {
+    border-bottom: none;
+    margin-bottom: 0;
+    padding-bottom: 0;
   }
 
   .supervisor-header {
@@ -507,6 +417,8 @@
     justify-content: space-between;
     align-items: center;
     margin-bottom: 15px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid #e9ecef;
   }
 
   .supervisor-name {
@@ -515,43 +427,108 @@
     color: var(--coord-primary);
   }
 
-  .supervisor-total {
-    background: linear-gradient(135deg, var(--coord-primary) 0%, var(--coord-secondary) 100%);
-    color: white;
-    padding: 8px 16px;
-    border-radius: 20px;
+  .supervisor-stats {
     font-size: 0.9rem;
+    color: var(--coord-muted);
+  }
+
+  .agent-ranking {
+    display: grid;
+    gap: 8px;
+  }
+
+  .agent-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 15px;
+    background: #f8f9fa;
+    border-radius: 8px;
+    transition: all 0.3s ease;
+  }
+
+  .agent-item:hover {
+    background: var(--coord-lighter);
+    transform: translateX(5px);
+  }
+
+  .agent-position {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    background: var(--coord-accent);
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.8rem;
     font-weight: 600;
-    box-shadow: 0 2px 10px rgba(0, 51, 102, 0.3);
+    margin-right: 12px;
+  }
+
+  .agent-name {
+    font-weight: 500;
+    color: var(--coord-text);
+    flex: 1;
+  }
+
+  .agent-count {
+    background: var(--coord-primary);
+    color: white;
+    padding: 4px 10px;
+    border-radius: 12px;
+    font-size: 0.8rem;
+    font-weight: 600;
+  }
+
+  .agent-row {
+    display: flex;
+    align-items: center;
+  }
+
+  /* === PERCENTUAIS DE COMPLEXIDADE === */
+  .complexity-section {
+    margin-bottom: 25px;
+  }
+
+  .complexity-supervisor {
+    margin-bottom: 20px;
+    padding: 15px;
+    background: #f8f9fa;
+    border-radius: 10px;
+    border-left: 4px solid var(--coord-accent);
+  }
+
+  .complexity-supervisor-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+  }
+
+  .complexity-supervisor-name {
+    font-weight: 600;
+    color: var(--coord-primary);
+  }
+
+  .complexity-supervisor-total {
+    font-size: 0.9rem;
+    color: var(--coord-muted);
   }
 
   .complexity-bars {
     display: grid;
     grid-template-columns: 1fr 1fr 1fr;
-    gap: 15px;
-    margin: 15px 0;
+    gap: 12px;
   }
 
   .complexity-bar {
     text-align: center;
-    padding: 12px;
-    border-radius: 10px;
+    padding: 10px;
+    border-radius: 8px;
     transition: all 0.3s ease;
-  }
-
-  .complexity-basic {
-    background: linear-gradient(135deg, #d4edda 0%, #c3e6cb 100%);
-    border: 1px solid #28a745;
-  }
-
-  .complexity-medium {
-    background: linear-gradient(135deg, #fff3cd 0%, #ffeaa7 100%);
-    border: 1px solid #ffc107;
-  }
-
-  .complexity-complex {
-    background: linear-gradient(135deg, #f8d7da 0%, #f5c6cb 100%);
-    border: 1px solid #dc3545;
+    position: relative;
+    overflow: hidden;
   }
 
   .complexity-bar:hover {
@@ -559,10 +536,28 @@
     box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
   }
 
-  .complexity-value {
-    font-size: 1.6rem;
+  .complexity-basic {
+    background: linear-gradient(135deg, #d4edda 0%, #c3e6cb 100%);
+    border: 1px solid #28a745;
+    color: #155724;
+  }
+
+  .complexity-medium {
+    background: linear-gradient(135deg, #fff3cd 0%, #ffeaa7 100%);
+    border: 1px solid #ffc107;
+    color: #856404;
+  }
+
+  .complexity-complex {
+    background: linear-gradient(135deg, #f8d7da 0%, #f5c6cb 100%);
+    border: 1px solid #dc3545;
+    color: #721c24;
+  }
+
+  .complexity-percentage {
+    font-size: 1.4rem;
     font-weight: 700;
-    margin-bottom: 5px;
+    margin-bottom: 4px;
   }
 
   .complexity-label {
@@ -570,6 +565,33 @@
     font-weight: 600;
     text-transform: uppercase;
     letter-spacing: 0.5px;
+    margin-bottom: 4px;
+  }
+
+  .complexity-count {
+    font-size: 0.7rem;
+    opacity: 0.8;
+  }
+
+  /* Barra de progresso visual */
+  .complexity-progress {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    height: 3px;
+    transition: width 0.3s ease;
+  }
+
+  .complexity-basic .complexity-progress {
+    background: #28a745;
+  }
+
+  .complexity-medium .complexity-progress {
+    background: #ffc107;
+  }
+
+  .complexity-complex .complexity-progress {
+    background: #dc3545;
   }
 
   /* === RESPONSIVIDADE === */
@@ -600,17 +622,13 @@
       font-size: 2rem;
     }
 
-    .week-grid {
-      grid-template-columns: repeat(7, 1fr);
-      gap: 4px;
+    .heatmap-calendar {
+      gap: 2px;
     }
 
-    .week-day {
-      padding: 10px 4px;
-    }
-
-    .week-day-count {
-      font-size: 1.4rem;
+    .heatmap-day {
+      min-height: 25px;
+      font-size: 0.6rem;
     }
 
     .comparison-chart {
@@ -623,7 +641,7 @@
 
     .complexity-bars {
       grid-template-columns: 1fr;
-      gap: 10px;
+      gap: 8px;
     }
 
     .period-filters {
@@ -683,13 +701,24 @@
 
   <!-- Grid de Visualizações -->
   <div class="visualizations-grid">
-    <!-- Quadro dos 7 Dias da Semana -->
-    <div class="week-overview">
-      <div class="week-title">
-        📅 Visão Semanal
+    <!-- Heatmap do Mês Calendário -->
+    <div class="heatmap-month">
+      <div class="heatmap-title">
+        🔥 Mapa de Calor - {{ mes_atual }}
       </div>
-      <div class="week-grid" id="weekGrid">
+      <div id="heatmapCalendar">
         <!-- Preenchido pelo JavaScript -->
+      </div>
+      <div class="heatmap-legend">
+        <span>Menos</span>
+        <div class="heatmap-scale">
+          <div class="heatmap-scale-item heat-0"></div>
+          <div class="heatmap-scale-item heat-1"></div>
+          <div class="heatmap-scale-item heat-2"></div>
+          <div class="heatmap-scale-item heat-3"></div>
+          <div class="heatmap-scale-item heat-4"></div>
+        </div>
+        <span>Mais</span>
       </div>
     </div>
 
@@ -714,34 +743,13 @@
     </div>
   </div>
 
-  <!-- Heatmap de Atividade -->
-  <div class="heatmap-section">
-    <div class="heatmap-title">
-      🔥 Mapa de Calor - Últimas 4 Semanas
-    </div>
-    <div class="heatmap-grid" id="heatmapGrid">
-      <!-- Preenchido pelo JavaScript -->
-    </div>
-    <div class="heatmap-legend">
-      <span>Menos</span>
-      <div class="heatmap-scale">
-        <div class="heatmap-scale-item heat-0"></div>
-        <div class="heatmap-scale-item heat-1"></div>
-        <div class="heatmap-scale-item heat-2"></div>
-        <div class="heatmap-scale-item heat-3"></div>
-        <div class="heatmap-scale-item heat-4"></div>
-      </div>
-      <span>Mais</span>
-    </div>
-  </div>
-
-  <!-- Grid Principal: Supervisores + Sidebar -->
+  <!-- Grid Principal -->
   <div class="main-content-grid">
-    <!-- Seção Principal: Supervisores -->
+    <!-- Top 5 Agentes por Supervisor -->
     <div class="coord-card">
       <div class="coord-card-header">
         <h3 class="coord-card-title">
-          📊 Desempenho Detalhado por Supervisor
+          👥 Top 5 Agentes por Supervisor
         </h3>
       </div>
       <div class="coord-card-content">
@@ -760,30 +768,37 @@
         </div>
         {% endif %}
 
-        {% if supervisores_data %}
-        <!-- Lista de Supervisores -->
-        {% for supervisor in supervisores_data %}
-        <div class="supervisor-item">
+        {% if supervisores_top_agentes %}
+        <!-- Lista de Supervisores com Top 5 Agentes -->
+        {% for supervisor in supervisores_top_agentes %}
+        <div class="supervisor-section">
           <div class="supervisor-header">
-            <span class="supervisor-name">{{ supervisor.nome }}</span>
-            <span class="supervisor-total" title="Total de atendimentos">{{ supervisor.total_atendimentos }}</span>
+            <div class="supervisor-name">
+              {{ supervisor.nome }}
+              {% if supervisor.tipo == 'coordenadora' %}
+              <span style="background: var(--coord-warning); color: white; padding: 2px 8px; border-radius: 12px; font-size: 0.7rem; margin-left: 8px;">COORD</span>
+              {% endif %}
+            </div>
+            <div class="supervisor-stats">
+              {{ supervisor.total_agentes }} agente(s)
+            </div>
           </div>
           
-          {% if supervisor.total_atendimentos > 0 %}
-          <!-- Barras de Complexidade -->
-          <div class="complexity-bars">
-            <div class="complexity-bar complexity-basic" title="Atendimentos básicos">
-              <div class="complexity-value">{{ supervisor.atendimentos_basicos }}</div>
-              <div class="complexity-label">Básicos</div>
+          {% if supervisor.top_agentes %}
+          <div class="agent-ranking">
+            {% for agente in supervisor.top_agentes %}
+            <div class="agent-item">
+              <div class="agent-row">
+                <div class="agent-position">{{ loop.index }}</div>
+                <div class="agent-name">{{ agente.nome }}</div>
+              </div>
+              <div class="agent-count">{{ agente.total_atendimentos }}</div>
             </div>
-            <div class="complexity-bar complexity-medium" title="Atendimentos médios">
-              <div class="complexity-value">{{ supervisor.atendimentos_medios }}</div>
-              <div class="complexity-label">Médios</div>
-            </div>
-            <div class="complexity-bar complexity-complex" title="Atendimentos complexos">
-              <div class="complexity-value">{{ supervisor.atendimentos_complexos }}</div>
-              <div class="complexity-label">Complexos</div>
-            </div>
+            {% endfor %}
+          </div>
+          {% else %}
+          <div style="text-align: center; color: #6c757d; font-style: italic; padding: 20px;">
+            Nenhum agente com atendimentos no período
           </div>
           {% endif %}
         </div>
@@ -793,34 +808,55 @@
       </div>
     </div>
 
-    <!-- Sidebar: Métricas Resumidas -->
+    <!-- Sidebar -->
     <div>
-      <!-- Comparativo de Períodos -->
+      <!-- Percentuais de Complexidade por Supervisor -->
       <div class="coord-card">
         <div class="coord-card-header">
-          <h3 class="coord-card-title">📈 Análise Comparativa</h3>
+          <h3 class="coord-card-title">📊 Complexidade por Supervisor</h3>
         </div>
         <div class="coord-card-content">
-          <div style="text-align: center;">
-            <div style="font-size: 2.5rem; font-weight: 700; color: var(--coord-primary); margin-bottom: 10px;">{{ comparativo.periodo_atual }}</div>
-            <div style="font-size: 1rem; color: var(--coord-muted); margin-bottom: 15px;">{{ periodo_label }}</div>
-            
-            {% if comparativo.periodo_anterior > 0 %}
-            <div style="font-size: 0.9rem; color: #6c757d; margin-bottom: 15px;">
-              Período anterior: {{ comparativo.periodo_anterior }}
-            </div>
-            
-            <div style="padding: 8px 16px; border-radius: 20px; font-size: 0.9rem; font-weight: 600; display: inline-block; {% if comparativo.mudanca_tipo == 'aumento' %}background: linear-gradient(135deg, #d4edda 0%, #c3e6cb 100%); color: #155724; border: 1px solid #28a745;{% elif comparativo.mudanca_tipo == 'reducao' %}background: linear-gradient(135deg, #f8d7da 0%, #f5c6cb 100%); color: #721c24; border: 1px solid #dc3545;{% else %}background: linear-gradient(135deg, #fff3cd 0%, #ffeaa7 100%); color: #856404; border: 1px solid #ffc107;{% endif %}">
-              {% if comparativo.mudanca_tipo == 'aumento' %}
-                📈 +{{ comparativo.mudanca_percentual }}%
-              {% elif comparativo.mudanca_tipo == 'reducao' %}
-                📉 {{ comparativo.mudanca_percentual }}%
-              {% else %}
-                ➡️ Estável
-              {% endif %}
+          
+          {% if supervisores_complexidade %}
+          <div class="complexity-section">
+            {% for supervisor in supervisores_complexidade %}
+            {% if supervisor.total_atendimentos > 0 %}
+            <div class="complexity-supervisor">
+              <div class="complexity-supervisor-header">
+                <div class="complexity-supervisor-name">{{ supervisor.nome }}</div>
+                <div class="complexity-supervisor-total">{{ supervisor.total_atendimentos }} atend.</div>
+              </div>
+              
+              <div class="complexity-bars">
+                <div class="complexity-bar complexity-basic">
+                  <div class="complexity-percentage">{{ supervisor.basicos.percentual }}%</div>
+                  <div class="complexity-label">Básicos</div>
+                  <div class="complexity-count">({{ supervisor.basicos.quantidade }})</div>
+                  <div class="complexity-progress" style="width: {{ supervisor.basicos.percentual }}%"></div>
+                </div>
+                <div class="complexity-bar complexity-medium">
+                  <div class="complexity-percentage">{{ supervisor.medios.percentual }}%</div>
+                  <div class="complexity-label">Médios</div>
+                  <div class="complexity-count">({{ supervisor.medios.quantidade }})</div>
+                  <div class="complexity-progress" style="width: {{ supervisor.medios.percentual }}%"></div>
+                </div>
+                <div class="complexity-bar complexity-complex">
+                  <div class="complexity-percentage">{{ supervisor.complexos.percentual }}%</div>
+                  <div class="complexity-label">Complexos</div>
+                  <div class="complexity-count">({{ supervisor.complexos.quantidade }})</div>
+                  <div class="complexity-progress" style="width: {{ supervisor.complexos.percentual }}%"></div>
+                </div>
+              </div>
             </div>
             {% endif %}
+            {% endfor %}
           </div>
+          {% else %}
+          <div style="text-align: center; color: #6c757d; font-style: italic; padding: 20px;">
+            Aguardando dados de atendimentos
+          </div>
+          {% endif %}
+          
         </div>
       </div>
 
@@ -838,10 +874,10 @@
             
             <p><strong>⚡ Produtividade:</strong> Média de {{ kpis.media_supervisor }} atendimentos por supervisor.</p>
             
-            {% if comparativo.mudanca_tipo == 'aumento' %}
-            <p><strong>📈 Tendência:</strong> Crescimento de {{ comparativo.mudanca_percentual }}% em relação ao período anterior.</p>
-            {% elif comparativo.mudanca_tipo == 'reducao' %}
-            <p><strong>📉 Tendência:</strong> Redução de {{ comparativo.mudanca_percentual|abs }}% em relação ao período anterior.</p>
+            {% if resumo_dados.mudanca_tipo == 'aumento' %}
+            <p><strong>📈 Tendência:</strong> Crescimento de {{ resumo_dados.mudanca_percentual }}% em relação ao período anterior.</p>
+            {% elif resumo_dados.mudanca_tipo == 'reducao' %}
+            <p><strong>📉 Tendência:</strong> Redução de {{ resumo_dados.mudanca_percentual|abs }}% em relação ao período anterior.</p>
             {% else %}
             <p><strong>➡️ Tendência:</strong> Performance estável em relação ao período anterior.</p>
             {% endif %}
@@ -851,25 +887,6 @@
               Aguardando dados de atendimentos para análise detalhada.
             </p>
             {% endif %}
-          </div>
-        </div>
-      </div>
-
-      <!-- Métricas Adicionais -->
-      <div class="coord-card" style="margin-top: 20px;">
-        <div class="coord-card-header">
-          <h3 class="coord-card-title">📊 Métricas Rápidas</h3>
-        </div>
-        <div class="coord-card-content">
-          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; font-size: 0.9rem;">
-            <div style="text-align: center; padding: 10px; background: #f8f9fa; border-radius: 8px;">
-              <div style="font-size: 1.2rem; font-weight: 700; color: var(--coord-primary);">{{ kpis.total_agentes }}</div>
-              <div style="font-size: 0.8rem; color: #6c757d;">Agentes Ativos</div>
-            </div>
-            <div style="text-align: center; padding: 10px; background: #f8f9fa; border-radius: 8px;">
-              <div style="font-size: 1.2rem; font-weight: 700; color: var(--coord-success);">{{ "%.1f"|format(kpis.media_supervisor) }}</div>
-              <div style="font-size: 0.8rem; color: #6c757d;">Média/Sup.</div>
-            </div>
           </div>
           
           {% if timestamp_atualizacao %}
@@ -885,12 +902,11 @@
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-  console.log('🚀 Painel da Coordenação Avançado carregado!');
+  console.log('🚀 Painel da Coordenação Ajustado carregado!');
   
   // === DADOS DO BACKEND ===
-  const volumeData = {{ volume_semanal|tojson|safe }};
-  const volumeComparativo = {{ volume_comparativo|tojson|safe if volume_comparativo is defined else '[]'|safe }};
-  const heatmapData = {{ heatmap_data|tojson|safe if heatmap_data is defined else '[]'|safe }};
+  const volumeComparativo = {{ volume_comparativo|tojson|safe }};
+  const heatmapMes = {{ heatmap_mes|tojson|safe }};
   const temDadosReais = {{ tem_dados_reais|tojson }};
   
   // === ANIMAÇÃO DOS KPIs ===
@@ -917,63 +933,78 @@ document.addEventListener('DOMContentLoaded', function() {
     });
   }
   
-  // === QUADRO DOS 7 DIAS DA SEMANA ===
-  function createWeekOverview() {
-    const weekGrid = document.getElementById('weekGrid');
-    const today = new Date();
+  // === HEATMAP DO MÊS CALENDÁRIO ===
+  function createMonthHeatmap() {
+    const container = document.getElementById('heatmapCalendar');
+    container.innerHTML = '';
+    
+    // Cabeçalhos dos dias da semana
     const diasSemana = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sab'];
+    const calendar = document.createElement('div');
+    calendar.className = 'heatmap-calendar';
     
-    weekGrid.innerHTML = '';
+    // Adiciona cabeçalhos
+    diasSemana.forEach(dia => {
+      const header = document.createElement('div');
+      header.className = 'heatmap-day-header';
+      header.textContent = dia;
+      calendar.appendChild(header);
+    });
     
-    for (let i = 6; i >= 0; i--) {
-      const dia = new Date(today);
-      dia.setDate(today.getDate() - i);
+    if (heatmapMes && heatmapMes.length > 0) {
+      // Encontra o primeiro dia do mês e seu dia da semana
+      const primeiroDia = heatmapMes[0];
+      const primeiroDiaSemana = primeiroDia.dia_semana; // 0=Segunda, 6=Domingo
+      const ajusteDiaSemana = primeiroDiaSemana === 6 ? 0 : primeiroDiaSemana + 1; // Ajusta para Dom=0
       
-      const diaSemana = diasSemana[dia.getDay()];
-      const dataFormatada = dia.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
+      // Adiciona células vazias no início se necessário
+      for (let i = 0; i < ajusteDiaSemana; i++) {
+        const emptyCell = document.createElement('div');
+        emptyCell.className = 'heatmap-day heat-0';
+        calendar.appendChild(emptyCell);
+      }
       
-      // Busca dados do volume para este dia
-      const dadosDia = volumeData.find(v => {
-        const dataVolume = new Date(v.data_completa || '2025-01-01');
-        return dataVolume.toDateString() === dia.toDateString();
+      // Adiciona os dias do mês
+      heatmapMes.forEach(function(dia) {
+        const volume = dia.volume || 0;
+        
+        // Determina intensidade (0-4)
+        let intensity = 0;
+        if (volume > 0) {
+          if (volume <= 5) intensity = 1;
+          else if (volume <= 10) intensity = 2;
+          else if (volume <= 20) intensity = 3;
+          else intensity = 4;
+        }
+        
+        const dayElement = document.createElement('div');
+        dayElement.className = `heatmap-day heat-${intensity} ${dia.eh_hoje ? 'today' : ''}`;
+        dayElement.innerHTML = `
+          <div class="heatmap-day-number">${dia.dia_mes}</div>
+          <div class="heatmap-day-count">${volume > 0 ? volume : ''}</div>
+        `;
+        dayElement.title = `${dia.dia_mes}: ${volume} atendimentos`;
+        
+        calendar.appendChild(dayElement);
       });
-      
-      const volume = dadosDia ? dadosDia.volume : 0;
-      const isToday = dia.toDateString() === today.toDateString();
-      
-      const dayElement = document.createElement('div');
-      dayElement.className = `week-day ${isToday ? 'today' : ''}`;
-      dayElement.innerHTML = `
-        <div class="week-day-content">
-          <div class="week-day-name">${diaSemana}</div>
-          <div class="week-day-count">${volume}</div>
-          <div class="week-day-date">${dataFormatada}</div>
-        </div>
-      `;
-      
-      // Adiciona tooltip
-      dayElement.title = `${diaSemana}, ${dataFormatada}: ${volume} atendimentos`;
-      
-      weekGrid.appendChild(dayElement);
     }
+    
+    container.appendChild(calendar);
   }
   
   // === GRÁFICO COMPARATIVO SEMANAL ===
   function createWeeklyComparison() {
     const comparisonChart = document.getElementById('comparisonChart');
-    const diasSemana = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sab'];
-    
     comparisonChart.innerHTML = '';
     
-    // Se há dados de comparativo, usa os dados reais
     if (volumeComparativo && volumeComparativo.length > 0) {
-      volumeComparativo.forEach(function(dadosDia, index) {
+      volumeComparativo.forEach(function(dadosDia) {
         const volumeAtual = dadosDia.volume_atual || 0;
         const volumeAnterior = dadosDia.volume_anterior || 0;
         
         // Calcula altura das barras (máximo 150px)
         const maxValue = Math.max(volumeAtual, volumeAnterior, 1);
-        const escala = Math.max(maxValue, 20); // Escala mínima de 20
+        const escala = Math.max(maxValue, 20);
         const alturaAtual = Math.max((volumeAtual / escala) * 150, 4);
         const alturaAnterior = Math.max((volumeAnterior / escala) * 150, 4);
         
@@ -993,112 +1024,28 @@ document.addEventListener('DOMContentLoaded', function() {
         
         comparisonChart.appendChild(dayElement);
       });
-    } else {
-      // Fallback: cria com dados simulados baseado no volume atual
-      for (let i = 0; i < 7; i++) {
-        const diaSemana = diasSemana[i];
-        const dadosAtual = volumeData[i] || { volume: 0 };
-        const volumeAtual = dadosAtual.volume;
-        const volumeAnterior = Math.max(0, volumeAtual + Math.floor(Math.random() * 10 - 5)); // Simulado
-        
-        const maxValue = Math.max(volumeAtual, volumeAnterior, 1);
-        const escala = Math.max(maxValue, 20);
-        const alturaAtual = Math.max((volumeAtual / escala) * 150, 4);
-        const alturaAnterior = Math.max((volumeAnterior / escala) * 150, 4);
-        
-        const dayElement = document.createElement('div');
-        dayElement.className = 'comparison-day';
-        dayElement.innerHTML = `
-          <div class="comparison-bars">
-            <div class="comparison-bar previous" style="height: ${alturaAnterior}px;">
-              <div class="tooltip">Semana passada: ${volumeAnterior}</div>
-            </div>
-            <div class="comparison-bar current" style="height: ${alturaAtual}px;">
-              <div class="tooltip">Esta semana: ${volumeAtual}</div>
-            </div>
-          </div>
-          <div class="comparison-day-label">${diaSemana}</div>
-        `;
-        
-        comparisonChart.appendChild(dayElement);
-      }
     }
   }
   
-  // === HEATMAP DE ATIVIDADE ===
-  function createHeatmap() {
-    const heatmapGrid = document.getElementById('heatmapGrid');
-    const today = new Date();
+  // === ANIMAÇÃO DAS BARRAS DE COMPLEXIDADE ===
+  function animateComplexityBars() {
+    const progressBars = document.querySelectorAll('.complexity-progress');
     
-    heatmapGrid.innerHTML = '';
-    
-    // Se há dados de heatmap, usa os dados reais
-    if (heatmapData && heatmapData.length > 0) {
-      // Usa os dados reais do backend
-      heatmapData.slice(0, 28).forEach(function(dadosDia) {
-        const volume = dadosDia.volume || 0;
-        
-        // Determina intensidade (0-4)
-        let intensity = 0;
-        if (volume > 0) {
-          if (volume <= 5) intensity = 1;
-          else if (volume <= 10) intensity = 2;
-          else if (volume <= 20) intensity = 3;
-          else intensity = 4;
-        }
-        
-        const cell = document.createElement('div');
-        cell.className = `heatmap-cell heat-${intensity}`;
-        cell.textContent = volume > 0 ? volume : '';
-        cell.title = `${dadosDia.data}: ${volume} atendimentos`;
-        
-        heatmapGrid.appendChild(cell);
-      });
-    } else {
-      // Fallback: gera dados para últimas 4 semanas (28 dias)
-      for (let week = 3; week >= 0; week--) {
-        for (let day = 0; day < 7; day++) {
-          const cellDate = new Date(today);
-          cellDate.setDate(today.getDate() - (week * 7 + (6 - day)));
-          
-          // Busca dados reais ou simula
-          const dadosDia = volumeData.find(v => {
-            const dataVolume = new Date(v.data_completa || '2025-01-01');
-            return dataVolume.toDateString() === cellDate.toDateString();
-          });
-          
-          let volume = dadosDia ? dadosDia.volume : 0;
-          
-          // Se não há dados reais e não há dados do volume, simula
-          if (!temDadosReais && volume === 0) {
-            volume = Math.floor(Math.random() * 25);
-          }
-          
-          // Determina intensidade (0-4)
-          let intensity = 0;
-          if (volume > 0) {
-            if (volume <= 5) intensity = 1;
-            else if (volume <= 10) intensity = 2;
-            else if (volume <= 20) intensity = 3;
-            else intensity = 4;
-          }
-          
-          const cell = document.createElement('div');
-          cell.className = `heatmap-cell heat-${intensity}`;
-          cell.textContent = volume > 0 ? volume : '';
-          cell.title = `${cellDate.toLocaleDateString('pt-BR')}: ${volume} atendimentos`;
-          
-          heatmapGrid.appendChild(cell);
-        }
-      }
-    }
+    progressBars.forEach(function(bar) {
+      const targetWidth = bar.style.width;
+      bar.style.width = '0%';
+      
+      setTimeout(() => {
+        bar.style.width = targetWidth;
+      }, 500);
+    });
   }
   
   // === INICIALIZAÇÃO ===
   animateKPIs();
-  createWeekOverview();
+  createMonthHeatmap();
   createWeeklyComparison();
-  createHeatmap();
+  animateComplexityBars();
   
   // === EFEITOS INTERATIVOS ===
   
@@ -1117,71 +1064,25 @@ document.addEventListener('DOMContentLoaded', function() {
     }
   });
   
-  // === FUNÇÕES UTILITÁRIAS ===
-  
-  // Exportação de dados
-  window.exportVisualizationData = function() {
-    const dadosVisualizacao = {
-      timestamp: new Date().toISOString(),
-      volume_semanal: volumeData,
-      volume_comparativo: volumeComparativo,
-      heatmap_data: heatmapData,
-      resumo: {
-        total_atendimentos: {{ kpis.total_atendimentos }},
-        total_supervisores: {{ kpis.total_supervisores }},
-        total_agentes: {{ kpis.total_agentes }},
-        periodo: '{{ periodo_label }}'
-      }
-    };
+  // Hover nos itens de agentes
+  document.querySelectorAll('.agent-item').forEach(item => {
+    item.addEventListener('mouseenter', function() {
+      this.style.transform = 'translateX(10px)';
+      this.style.boxShadow = '0 4px 15px rgba(0, 122, 204, 0.2)';
+    });
     
-    const blob = new Blob([JSON.stringify(dadosVisualizacao, null, 2)], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `painel_visualizacoes_${new Date().toISOString().split('T')[0]}.json`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-    
-    console.log('📁 Dados de visualização exportados!');
-  };
+    item.addEventListener('mouseleave', function() {
+      this.style.transform = 'translateX(0)';
+      this.style.boxShadow = 'none';
+    });
+  });
   
-  // Atualização automática (opcional)
-  let autoRefreshEnabled = false;
-  
-  window.toggleAutoRefresh = function() {
-    autoRefreshEnabled = !autoRefreshEnabled;
-    if (autoRefreshEnabled) {
-      console.log('🔄 Auto-refresh ativado (5 minutos)');
-      setTimeout(() => {
-        if (autoRefreshEnabled) {
-          window.location.reload();
-        }
-      }, 300000); // 5 minutos
-    } else {
-      console.log('⏹️ Auto-refresh desativado');
-    }
-  };
-  
-  // Atalhos de teclado
+  // === ATALHOS DE TECLADO ===
   document.addEventListener('keydown', function(e) {
-    // Ctrl + E para exportar
-    if (e.ctrlKey && e.key === 'e') {
-      e.preventDefault();
-      window.exportVisualizationData();
-    }
-    
     // Ctrl + R para atualizar
     if (e.ctrlKey && e.key === 'r') {
       e.preventDefault();
       window.location.reload();
-    }
-    
-    // Ctrl + A para auto-refresh
-    if (e.ctrlKey && e.key === 'a') {
-      e.preventDefault();
-      window.toggleAutoRefresh();
     }
     
     // Teclas 1, 2, 3 para períodos
@@ -1195,21 +1096,18 @@ document.addEventListener('DOMContentLoaded', function() {
   });
   
   // Log das funcionalidades
-  console.log('🎯 Visualizações carregadas:');
-  console.log('   📅 Quadro semanal');
-  console.log('   📊 Gráfico comparativo');
-  console.log('   🔥 Heatmap de atividade');
+  console.log('🎯 Painel ajustado com:');
+  console.log('   📅 Heatmap do mês calendário');
+  console.log('   📊 Gráfico comparativo semanal');
+  console.log('   👥 Top 5 agentes por supervisor');
+  console.log('   📊 Percentuais de complexidade');
+  console.log('   📋 Resumo executivo');
   console.log('');
-  console.log('⌨️  Atalhos disponíveis:');
-  console.log('   Ctrl+E: Exportar dados');
-  console.log('   Ctrl+R: Atualizar painel');
-  console.log('   Ctrl+A: Toggle auto-refresh');
-  console.log('   1, 2, 3: Alternar períodos');
+  console.log('⌨️  Atalhos: 1/2/3 para períodos, Ctrl+R para atualizar');
   
   // Dados para debug
-  console.log('📊 Dados do volume:', volumeData);
-  console.log('📊 Dados comparativo:', volumeComparativo);
-  console.log('🔥 Dados heatmap:', heatmapData);
+  console.log('📊 Volume comparativo:', volumeComparativo);
+  console.log('🔥 Heatmap mês:', heatmapMes);
   console.log('🎯 Tem dados reais:', temDadosReais);
 });
 </script>

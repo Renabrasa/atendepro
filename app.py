@@ -1098,7 +1098,7 @@ def admin_panel():
 @app.route('/painel_coordenacao')
 @login_required  
 def painel_coordenacao():
-    """Painel da Coordenação - VERSÃO CORRIGIDA (Erro timedelta)"""
+    """Painel da Coordenação - VERSÃO CORRIGIDA (Datas e dados reais)"""
     if current_user.tipo not in ['admin', 'coordenadora']:
         flash('Acesso negado.', 'danger')
         return redirect(url_for('dashboard'))
@@ -1107,52 +1107,35 @@ def painel_coordenacao():
         # === CORREÇÃO: Garantir que período seja sempre int ===
         try:
             periodo_raw = request.args.get('periodo', '7')
-            periodo = int(periodo_raw)  # Força conversão para int
-            
-            # Validação adicional
+            periodo = int(periodo_raw)
             if periodo not in [1, 7, 30, 90]:
-                periodo = 7  # Default seguro
-                
+                periodo = 7
         except (ValueError, TypeError):
-            app.logger.warning(f"Período inválido recebido: {request.args.get('periodo')}")
-            periodo = 7  # Default seguro
-        
-        app.logger.info(f"Período validado: {periodo} (tipo: {type(periodo)})")
+            periodo = 7
         
         # === CORREÇÃO: Cálculo de datas mais seguro ===
-        try:
-            data_fim = datetime.now()
-            data_inicio = data_fim - timedelta(days=int(periodo))  # Força int novamente
-            
-            app.logger.info(f"Datas calculadas: {data_inicio} até {data_fim}")
-            
-        except Exception as e:
-            app.logger.error(f"Erro no cálculo de datas: {e}")
-            # Fallback seguro
-            data_fim = datetime.now()
-            data_inicio = data_fim - timedelta(days=7)
+        data_fim = datetime.now()
+        data_inicio = data_fim - timedelta(days=int(periodo))
         
-        # === 1. KPIs PRINCIPAIS (Simplificado) ===
+        app.logger.info(f"Período: {data_inicio.strftime('%Y-%m-%d')} até {data_fim.strftime('%Y-%m-%d')}")
+        
+        # === 1. KPIs PRINCIPAIS ===
         try:
             total_supervisores = User.query.filter(User.tipo.in_(['supervisor', 'coordenadora'])).count()
             total_agentes = Agente.query.filter_by(ativo=True).count()
             
-            # Atendimentos no período
             atendimentos_periodo = Atendimento.query.filter(
                 Atendimento.data_hora >= data_inicio,
                 Atendimento.data_hora <= data_fim
             ).count()
             
-            # Média por supervisor
             media_por_supervisor = round(atendimentos_periodo / total_supervisores, 1) if total_supervisores > 0 else 0
-            
-            app.logger.info(f"KPIs: {total_supervisores} sup, {total_agentes} agentes, {atendimentos_periodo} atendimentos")
             
         except Exception as e:
             app.logger.error(f"Erro nos KPIs: {e}")
             total_supervisores = total_agentes = atendimentos_periodo = media_por_supervisor = 0
         
-        # === 2. DADOS DOS SUPERVISORES (Simplificado) ===
+        # === 2. DADOS DOS SUPERVISORES ===
         supervisores_top_agentes = []
         supervisores_complexidade = []
         
@@ -1185,7 +1168,7 @@ def painel_coordenacao():
                         for nome, qtd in top_agentes_ordenados
                     ]
                     
-                    # === COMPLEXIDADE ===
+                    # === COMPLEXIDADE COM RAZÃO ===
                     complexidade_counts = {'basico': 0, 'medio': 0, 'complexo': 0}
                     
                     for atendimento in atendimentos_sup:
@@ -1200,7 +1183,13 @@ def painel_coordenacao():
                     
                     total_classificados = sum(complexidade_counts.values())
                     
-                    # Percentuais
+                    # NOVO: Calcula razão classificados/total
+                    if total_atendimentos_sup > 0:
+                        razao_classificados = round((total_classificados / total_atendimentos_sup) * 100, 1)
+                    else:
+                        razao_classificados = 0.0
+                    
+                    # Percentuais baseados nos classificados
                     if total_classificados > 0:
                         percentual_basico = round((complexidade_counts['basico'] / total_classificados) * 100, 1)
                         percentual_medio = round((complexidade_counts['medio'] / total_classificados) * 100, 1)
@@ -1221,6 +1210,7 @@ def painel_coordenacao():
                         'tipo': str(supervisor.tipo),
                         'total_atendimentos': total_atendimentos_sup,
                         'total_classificados': total_classificados,
+                        'razao_classificados': razao_classificados,  # NOVO
                         'basicos': {'quantidade': complexidade_counts['basico'], 'percentual': percentual_basico},
                         'medios': {'quantidade': complexidade_counts['medio'], 'percentual': percentual_medio},
                         'complexos': {'quantidade': complexidade_counts['complexo'], 'percentual': percentual_complexo}
@@ -1233,33 +1223,157 @@ def painel_coordenacao():
         except Exception as e:
             app.logger.error(f"Erro geral nos supervisores: {e}")
         
-        # === 3. DADOS PARA JAVASCRIPT (Simples e Seguros) ===
-        volume_comparativo = [
-            {'dia': 'Seg', 'volume_atual': 5, 'volume_anterior': 3},
-            {'dia': 'Ter', 'volume_atual': 7, 'volume_anterior': 5},
-            {'dia': 'Qua', 'volume_atual': 9, 'volume_anterior': 7},
-            {'dia': 'Qui', 'volume_atual': 11, 'volume_anterior': 9},
-            {'dia': 'Sex', 'volume_atual': 13, 'volume_anterior': 11},
-            {'dia': 'Sáb', 'volume_atual': 8, 'volume_anterior': 6},
-            {'dia': 'Dom', 'volume_atual': 4, 'volume_anterior': 2}
-        ]
-        
+        # === 3. HEATMAP DO MÊS (CORRIGIDO) ===
         heatmap_mes = []
         try:
-            hoje = datetime.now()
-            for i in range(30):
-                dia = hoje - timedelta(days=29-i)
-                heatmap_mes.append({
-                    'dia_mes': dia.day,
-                    'dia_semana': dia.weekday(),
-                    'volume': (i % 10) + 1,  # Dados de exemplo
-                    'eh_hoje': dia.date() == hoje.date()
-                })
+            app.logger.info("Gerando heatmap do mês - CORRIGIDO")
+            hoje = datetime.now().date()
+            
+            # CORREÇÃO: Usar primeiro dia do mês atual até hoje
+            primeiro_dia_mes = hoje.replace(day=1)
+            
+            # Gera apenas os dias que já passaram no mês atual
+            dia_atual = primeiro_dia_mes
+            while dia_atual <= hoje:
+                try:
+                    # CORREÇÃO: Busca atendimentos reais do dia
+                    inicio_dia = datetime.combine(dia_atual, datetime.min.time())
+                    fim_dia = inicio_dia + timedelta(days=1)
+                    
+                    atendimentos_dia = Atendimento.query.filter(
+                        Atendimento.data_hora >= inicio_dia,
+                        Atendimento.data_hora < fim_dia
+                    ).count()
+                    
+                    heatmap_mes.append({
+                        'dia_mes': int(dia_atual.day),
+                        'dia_semana': int(dia_atual.weekday()),  # 0=Segunda, 6=Domingo
+                        'volume': int(atendimentos_dia),
+                        'eh_hoje': dia_atual == hoje
+                    })
+                    
+                    app.logger.debug(f"Dia {dia_atual}: {atendimentos_dia} atendimentos")
+                    
+                except Exception as e:
+                    app.logger.warning(f"Erro no dia {dia_atual}: {e}")
+                    # Dia com dados vazios
+                    heatmap_mes.append({
+                        'dia_mes': int(dia_atual.day),
+                        'dia_semana': int(dia_atual.weekday()),
+                        'volume': 0,
+                        'eh_hoje': dia_atual == hoje
+                    })
+                
+                dia_atual += timedelta(days=1)
+                    
         except Exception as e:
             app.logger.error(f"Erro no heatmap: {e}")
             heatmap_mes = []
         
-        # === 4. CONTEXT FINAL (Tipos Seguros) ===
+        # === 4. VOLUME COMPARATIVO SEMANAL (CORRIGIDO) ===
+        volume_comparativo = []
+        try:
+            app.logger.info("Gerando volume comparativo - CORRIGIDO")
+            dias_semana = ['Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb', 'Dom']
+            hoje = datetime.now().date()
+            
+            # CORREÇÃO: Só incluir dias que já passaram esta semana
+            for i in range(7):
+                try:
+                    # Calcula que dia da semana é (0=Segunda)
+                    dias_desde_segunda = hoje.weekday()  # 0=Segunda, 6=Domingo
+                    
+                    # Data do dia i desta semana
+                    dia_esta_semana = hoje - timedelta(days=dias_desde_segunda - i)
+                    
+                    # Data do mesmo dia da semana passada
+                    dia_semana_passada = dia_esta_semana - timedelta(days=7)
+                    
+                    # CORREÇÃO: Só contar se o dia já passou
+                    if dia_esta_semana <= hoje:
+                        # Conta atendimentos do dia desta semana
+                        inicio_dia_atual = datetime.combine(dia_esta_semana, datetime.min.time())
+                        fim_dia_atual = inicio_dia_atual + timedelta(days=1)
+                        
+                        volume_atual = Atendimento.query.filter(
+                            Atendimento.data_hora >= inicio_dia_atual,
+                            Atendimento.data_hora < fim_dia_atual
+                        ).count()
+                        
+                        # Conta atendimentos do mesmo dia semana passada
+                        inicio_dia_anterior = datetime.combine(dia_semana_passada, datetime.min.time())
+                        fim_dia_anterior = inicio_dia_anterior + timedelta(days=1)
+                        
+                        volume_anterior = Atendimento.query.filter(
+                            Atendimento.data_hora >= inicio_dia_anterior,
+                            Atendimento.data_hora < fim_dia_anterior
+                        ).count()
+                        
+                        app.logger.debug(f"{dias_semana[i]} ({dia_esta_semana}): atual={volume_atual}, anterior={volume_anterior}")
+                    else:
+                        # Dia ainda não aconteceu
+                        volume_atual = 0
+                        volume_anterior = 0
+                        app.logger.debug(f"{dias_semana[i]}: dia futuro, zerando")
+                    
+                    volume_comparativo.append({
+                        'dia': str(dias_semana[i]),
+                        'volume_atual': int(volume_atual),
+                        'volume_anterior': int(volume_anterior)
+                    })
+                    
+                except Exception as e:
+                    app.logger.warning(f"Erro no dia {i} ({dias_semana[i]}): {e}")
+                    volume_comparativo.append({
+                        'dia': str(dias_semana[i]),
+                        'volume_atual': 0,
+                        'volume_anterior': 0
+                    })
+                    
+        except Exception as e:
+            app.logger.error(f"Erro no volume comparativo: {e}")
+            volume_comparativo = []
+        
+        # === 5. RESUMO EXECUTIVO ===
+        try:
+            # Compara com período anterior para tendência
+            data_inicio_anterior = data_inicio - timedelta(days=periodo)
+            data_fim_anterior = data_inicio
+            
+            atendimentos_anterior = Atendimento.query.filter(
+                Atendimento.data_hora >= data_inicio_anterior,
+                Atendimento.data_hora < data_fim_anterior
+            ).count()
+            
+            if atendimentos_anterior > 0:
+                mudanca_percentual = round(((atendimentos_periodo - atendimentos_anterior) / atendimentos_anterior) * 100, 1)
+                if mudanca_percentual > 0:
+                    mudanca_tipo = 'aumento'
+                elif mudanca_percentual < 0:
+                    mudanca_tipo = 'reducao'
+                else:
+                    mudanca_tipo = 'estavel'
+            else:
+                mudanca_percentual = 0
+                mudanca_tipo = 'estavel'
+            
+            resumo_dados = {
+                'mudanca_percentual': abs(mudanca_percentual),
+                'mudanca_tipo': mudanca_tipo
+            }
+        except Exception as e:
+            app.logger.error(f"Erro no resumo: {e}")
+            resumo_dados = {
+                'mudanca_percentual': 0.0,
+                'mudanca_tipo': 'estavel'
+            }
+        
+        # === 6. DADOS FINAIS PARA O TEMPLATE ===
+        periodo_label = "Hoje" if periodo == 1 else "Semana" if periodo == 7 else f"Últimos {periodo} dias"
+        mes_atual = datetime.now().strftime('%B %Y')
+        timestamp_atualizacao = datetime.now().strftime('%d/%m/%Y às %H:%M')
+        tem_dados_reais = total_supervisores > 0 and total_agentes > 0
+        
         context = {
             'kpis': {
                 'total_supervisores': int(total_supervisores),
@@ -1272,17 +1386,17 @@ def painel_coordenacao():
             'volume_comparativo': volume_comparativo,
             'heatmap_mes': heatmap_mes,
             'periodo_atual': int(periodo),
-            'periodo_label': f"Últimos {periodo} dias" if periodo != 7 else "Semana",
-            'mes_atual': datetime.now().strftime('%B %Y'),
-            'timestamp_atualizacao': datetime.now().strftime('%d/%m/%Y às %H:%M'),
-            'tem_dados_reais': bool(total_supervisores > 0),
-            'resumo_dados': {
-                'mudanca_percentual': 10.5,
-                'mudanca_tipo': 'aumento'
-            }
+            'periodo_label': str(periodo_label),
+            'mes_atual': str(mes_atual),
+            'timestamp_atualizacao': str(timestamp_atualizacao),
+            'tem_dados_reais': bool(tem_dados_reais),
+            'resumo_dados': resumo_dados
         }
         
-        app.logger.info("Painel coordenação carregado com sucesso!")
+        app.logger.info("=== PAINEL COORDENAÇÃO CONCLUÍDO COM DADOS REAIS ===")
+        app.logger.info(f"Heatmap: {len(heatmap_mes)} dias")
+        app.logger.info(f"Comparativo: {len(volume_comparativo)} dias da semana")
+        
         return render_template('painel_coordenacao.html', **context)
         
     except Exception as e:

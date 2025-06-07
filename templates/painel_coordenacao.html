@@ -654,7 +654,167 @@
       font-size: 0.9rem;
     }
   }
+
+  /* === CORREÇÕES VISUAIS === */
+  
+  /* HEATMAP - Melhor separação entre dia e quantidade */
+  .heatmap-day {
+    aspect-ratio: 1;
+    border-radius: 8px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: space-between;
+    font-size: 0.7rem;
+    font-weight: 600;
+    transition: all 0.3s ease;
+    cursor: pointer;
+    position: relative;
+    min-height: 35px;
+    padding: 4px 2px;
+  }
+
+  .heatmap-day-number {
+    font-size: 0.8rem;
+    font-weight: 700;
+    color: inherit;
+    line-height: 1;
+    margin-bottom: 2px;
+  }
+
+  .heatmap-day-count {
+    font-size: 0.6rem;
+    font-weight: 600;
+    color: inherit;
+    opacity: 0.9;
+    background: rgba(0, 0, 0, 0.1);
+    padding: 1px 4px;
+    border-radius: 4px;
+    line-height: 1;
+    min-width: 12px;
+    text-align: center;
+  }
+
+  .heatmap-day.today .heatmap-day-count {
+    background: rgba(255, 255, 255, 0.3);
+    color: white;
+  }
+
+  /* Ajustes específicos por intensidade */
+  .heat-0 .heatmap-day-count { 
+    background: rgba(0, 0, 0, 0.1); 
+    color: #666; 
+  }
+  
+  .heat-1 .heatmap-day-count { 
+    background: rgba(0, 0, 0, 0.15); 
+    color: #333; 
+  }
+  
+  .heat-2 .heatmap-day-count,
+  .heat-3 .heatmap-day-count,
+  .heat-4 .heatmap-day-count { 
+    background: rgba(255, 255, 255, 0.3); 
+    color: white; 
+  }
+
+  /* COMPARATIVO SEMANAL - Barras maiores */
+  .comparison-chart {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 15px;
+    align-items: end;
+    height: 280px; /* AUMENTADO de 200px para 280px */
+    padding: 0 15px;
+  }
+
+  .comparison-bars {
+    display: flex;
+    gap: 6px; /* AUMENTADO de 4px para 6px */
+    align-items: end;
+    height: 220px; /* AUMENTADO de 150px para 220px */
+    margin-bottom: 15px;
+  }
+
+  .comparison-bar {
+    width: 22px; /* AUMENTADO de 18px para 22px */
+    border-radius: 6px 6px 0 0;
+    transition: all 0.3s ease;
+    cursor: pointer;
+    position: relative;
+    min-height: 8px; /* AUMENTADO de 4px para 8px */
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  }
+
+  .comparison-bar:hover {
+    transform: scaleY(1.05) scale(1.05);
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.25);
+    z-index: 10;
+  }
+
+  .comparison-bar.current { 
+    background: linear-gradient(to top, #1976D2, #2196F3); 
+  }
+  
+  .comparison-bar.previous { 
+    background: linear-gradient(to top, #C62828, #f44336); 
+  }
+
+  /* SUPERVISORES - Badge para coordenadora */
+  .coord-badge {
+    background: linear-gradient(135deg, #ff9800, #f57c00);
+    color: white;
+    padding: 3px 8px;
+    border-radius: 12px;
+    font-size: 0.7rem;
+    font-weight: 600;
+    margin-left: 8px;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+  }
+
+  /* COMPLEXIDADE - Destaque para coordenadora */
+  .complexity-supervisor.is-coordenadora {
+    border-left: 4px solid #ff9800;
+    background: linear-gradient(135deg, #fff3e0 0%, #ffe0b2 100%);
+  }
+
+  .complexity-supervisor.is-coordenadora .complexity-supervisor-name {
+    color: #ef6c00;
+  }
+
+  /* Responsividade melhorada */
+  @media (max-width: 768px) {
+    .heatmap-day {
+      min-height: 30px;
+      padding: 2px 1px;
+    }
+    
+    .heatmap-day-number {
+      font-size: 0.7rem;
+    }
+    
+    .heatmap-day-count {
+      font-size: 0.55rem;
+      padding: 1px 3px;
+    }
+
+    .comparison-chart {
+      height: 220px;
+      gap: 10px;
+      padding: 0 10px;
+    }
+
+    .comparison-bars {
+      height: 160px;
+      gap: 4px;
+    }
+
+    .comparison-bar {
+      width: 18px;
+    }
+  }
 </style>
+
 {% endblock %}
 
 {% block content %}
@@ -900,9 +1060,11 @@
   </div>
 </div>
 
+// SUBSTITUA o JavaScript no final do template por este código corrigido
+
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-  console.log('🚀 Painel da Coordenação Ajustado carregado!');
+  console.log('🚀 Painel da Coordenação Corrigido carregado!');
   
   // === DADOS DO BACKEND ===
   const volumeComparativo = {{ volume_comparativo|tojson|safe }};
@@ -933,7 +1095,7 @@ document.addEventListener('DOMContentLoaded', function() {
     });
   }
   
-  // === HEATMAP DO MÊS CALENDÁRIO ===
+  // === HEATMAP DO MÊS CALENDÁRIO (CORRIGIDO) ===
   function createMonthHeatmap() {
     const container = document.getElementById('heatmapCalendar');
     container.innerHTML = '';
@@ -979,10 +1141,13 @@ document.addEventListener('DOMContentLoaded', function() {
         
         const dayElement = document.createElement('div');
         dayElement.className = `heatmap-day heat-${intensity} ${dia.eh_hoje ? 'today' : ''}`;
+        
+        // CORRIGIDO: Melhor estrutura visual
         dayElement.innerHTML = `
           <div class="heatmap-day-number">${dia.dia_mes}</div>
-          <div class="heatmap-day-count">${volume > 0 ? volume : ''}</div>
+          ${volume > 0 ? `<div class="heatmap-day-count">${volume}</div>` : '<div class="heatmap-day-count" style="opacity: 0;">0</div>'}
         `;
+        
         dayElement.title = `${dia.dia_mes}: ${volume} atendimentos`;
         
         calendar.appendChild(dayElement);
@@ -992,21 +1157,23 @@ document.addEventListener('DOMContentLoaded', function() {
     container.appendChild(calendar);
   }
   
-  // === GRÁFICO COMPARATIVO SEMANAL ===
+  // === GRÁFICO COMPARATIVO SEMANAL (CORRIGIDO - BARRAS MAIORES) ===
   function createWeeklyComparison() {
     const comparisonChart = document.getElementById('comparisonChart');
     comparisonChart.innerHTML = '';
     
     if (volumeComparativo && volumeComparativo.length > 0) {
+      // CORRIGIDO: Escala dinâmica melhor
+      const maxVolume = Math.max(...volumeComparativo.map(d => Math.max(d.volume_atual, d.volume_anterior)));
+      const escalaBase = Math.max(maxVolume, 10); // Escala mínima de 10
+      
       volumeComparativo.forEach(function(dadosDia) {
         const volumeAtual = dadosDia.volume_atual || 0;
         const volumeAnterior = dadosDia.volume_anterior || 0;
         
-        // Calcula altura das barras (máximo 150px)
-        const maxValue = Math.max(volumeAtual, volumeAnterior, 1);
-        const escala = Math.max(maxValue, 20);
-        const alturaAtual = Math.max((volumeAtual / escala) * 150, 4);
-        const alturaAnterior = Math.max((volumeAnterior / escala) * 150, 4);
+        // CORRIGIDO: Altura máxima de 220px (aumentado)
+        const alturaAtual = Math.max((volumeAtual / escalaBase) * 220, 8);
+        const alturaAnterior = Math.max((volumeAnterior / escalaBase) * 220, 8);
         
         const dayElement = document.createElement('div');
         dayElement.className = 'comparison-day';
@@ -1027,6 +1194,33 @@ document.addEventListener('DOMContentLoaded', function() {
     }
   }
   
+  // === DESTAQUE PARA COORDENADORAS ===
+  function highlightCoordenadoras() {
+    // Adiciona badges para coordenadoras no top 5
+    const supervisorSections = document.querySelectorAll('.supervisor-section');
+    supervisorSections.forEach(section => {
+      const supervisorName = section.querySelector('.supervisor-name');
+      if (supervisorName && supervisorName.textContent.includes('Meire')) {
+        // Adiciona badge de coordenadora
+        if (!supervisorName.querySelector('.coord-badge')) {
+          const badge = document.createElement('span');
+          badge.className = 'coord-badge';
+          badge.textContent = 'COORD';
+          supervisorName.appendChild(badge);
+        }
+      }
+    });
+    
+    // Destaca seções de coordenadoras na complexidade
+    const complexitySupervisors = document.querySelectorAll('.complexity-supervisor');
+    complexitySupervisors.forEach(supervisor => {
+      const nameElement = supervisor.querySelector('.complexity-supervisor-name');
+      if (nameElement && nameElement.textContent.includes('Meire')) {
+        supervisor.classList.add('is-coordenadora');
+      }
+    });
+  }
+  
   // === ANIMAÇÃO DAS BARRAS DE COMPLEXIDADE ===
   function animateComplexityBars() {
     const progressBars = document.querySelectorAll('.complexity-progress');
@@ -1041,38 +1235,91 @@ document.addEventListener('DOMContentLoaded', function() {
     });
   }
   
+  // === VALIDAÇÃO E DEBUG DOS DADOS ===
+  function debugData() {
+    console.log('🔍 Debug dos dados:');
+    console.log('📊 Volume comparativo:', volumeComparativo);
+    console.log('🔥 Heatmap mês:', heatmapMes);
+    console.log('🎯 Tem dados reais:', temDadosReais);
+    
+    // Verifica se há supervisores/coordenadoras
+    const supervisorSections = document.querySelectorAll('.supervisor-section');
+    console.log(`👥 Seções de supervisores encontradas: ${supervisorSections.length}`);
+    
+    // Verifica dados de complexidade
+    const complexitySections = document.querySelectorAll('.complexity-supervisor');
+    console.log(`📊 Seções de complexidade encontradas: ${complexitySections.length}`);
+    
+    // Soma total de atendimentos por complexidade
+    let totalBasicos = 0, totalMedios = 0, totalComplexos = 0;
+    complexitySections.forEach(section => {
+      const basicos = section.querySelector('.complexity-basic .complexity-count');
+      const medios = section.querySelector('.complexity-medium .complexity-count');
+      const complexos = section.querySelector('.complexity-complex .complexity-count');
+      
+      if (basicos) totalBasicos += parseInt(basicos.textContent.replace(/[()]/g, '')) || 0;
+      if (medios) totalMedios += parseInt(medios.textContent.replace(/[()]/g, '')) || 0;
+      if (complexos) totalComplexos += parseInt(complexos.textContent.replace(/[()]/g, '')) || 0;
+    });
+    
+    const totalGeral = totalBasicos + totalMedios + totalComplexos;
+    console.log(`📈 Totais por complexidade: Básicos=${totalBasicos}, Médios=${totalMedios}, Complexos=${totalComplexos}`);
+    console.log(`📊 Total geral calculado: ${totalGeral}`);
+  }
+  
   // === INICIALIZAÇÃO ===
   animateKPIs();
   createMonthHeatmap();
   createWeeklyComparison();
+  highlightCoordenadoras();
   animateComplexityBars();
+  debugData();
   
-  // === EFEITOS INTERATIVOS ===
+  // === EFEITOS INTERATIVOS MELHORADOS ===
   
   // Hover nas barras de comparação
   document.addEventListener('mouseover', function(e) {
     if (e.target.classList.contains('comparison-bar')) {
-      e.target.style.transform = 'scaleY(1.1)';
+      e.target.style.transform = 'scaleY(1.05) scale(1.05)';
       e.target.style.filter = 'brightness(1.1)';
+      e.target.style.zIndex = '10';
     }
   });
   
   document.addEventListener('mouseout', function(e) {
     if (e.target.classList.contains('comparison-bar')) {
-      e.target.style.transform = 'scaleY(1)';
+      e.target.style.transform = 'scaleY(1) scale(1)';
       e.target.style.filter = 'brightness(1)';
+      e.target.style.zIndex = '1';
+    }
+  });
+  
+  // Hover aprimorado nos dias do heatmap
+  document.addEventListener('mouseover', function(e) {
+    if (e.target.classList.contains('heatmap-day')) {
+      e.target.style.transform = 'scale(1.15)';
+      e.target.style.zIndex = '10';
+      e.target.style.boxShadow = '0 8px 25px rgba(0, 0, 0, 0.3)';
+    }
+  });
+  
+  document.addEventListener('mouseout', function(e) {
+    if (e.target.classList.contains('heatmap-day')) {
+      e.target.style.transform = 'scale(1)';
+      e.target.style.zIndex = '1';
+      e.target.style.boxShadow = 'none';
     }
   });
   
   // Hover nos itens de agentes
   document.querySelectorAll('.agent-item').forEach(item => {
     item.addEventListener('mouseenter', function() {
-      this.style.transform = 'translateX(10px)';
-      this.style.boxShadow = '0 4px 15px rgba(0, 122, 204, 0.2)';
+      this.style.transform = 'translateX(10px) scale(1.02)';
+      this.style.boxShadow = '0 6px 20px rgba(0, 122, 204, 0.25)';
     });
     
     item.addEventListener('mouseleave', function() {
-      this.style.transform = 'translateX(0)';
+      this.style.transform = 'translateX(0) scale(1)';
       this.style.boxShadow = 'none';
     });
   });
@@ -1085,6 +1332,12 @@ document.addEventListener('DOMContentLoaded', function() {
       window.location.reload();
     }
     
+    // Ctrl + D para debug
+    if (e.ctrlKey && e.key === 'd') {
+      e.preventDefault();
+      debugData();
+    }
+    
     // Teclas 1, 2, 3 para períodos
     if (e.key === '1') {
       window.location.href = '{{ url_for("painel_coordenacao") }}?periodo=1';
@@ -1095,20 +1348,47 @@ document.addEventListener('DOMContentLoaded', function() {
     }
   });
   
-  // Log das funcionalidades
-  console.log('🎯 Painel ajustado com:');
-  console.log('   📅 Heatmap do mês calendário');
-  console.log('   📊 Gráfico comparativo semanal');
-  console.log('   👥 Top 5 agentes por supervisor');
-  console.log('   📊 Percentuais de complexidade');
-  console.log('   📋 Resumo executivo');
-  console.log('');
-  console.log('⌨️  Atalhos: 1/2/3 para períodos, Ctrl+R para atualizar');
+  // === FUNCTION PARA EXPORTAR DADOS (OPCIONAL) ===
+  window.exportPainelData = function() {
+    const dadosExport = {
+      timestamp: new Date().toISOString(),
+      volume_comparativo: volumeComparativo,
+      heatmap_mes: heatmapMes,
+      debug_info: {
+        total_supervisores: {{ kpis.total_supervisores }},
+        total_agentes: {{ kpis.total_agentes }},
+        total_atendimentos: {{ kpis.total_atendimentos }},
+        periodo: '{{ periodo_label }}'
+      }
+    };
+    
+    const blob = new Blob([JSON.stringify(dadosExport, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `painel_coordenacao_${new Date().toISOString().split('T')[0]}.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    
+    console.log('📁 Dados do painel exportados!');
+  };
   
-  // Dados para debug
-  console.log('📊 Volume comparativo:', volumeComparativo);
-  console.log('🔥 Heatmap mês:', heatmapMes);
-  console.log('🎯 Tem dados reais:', temDadosReais);
+  // Log final das funcionalidades
+  console.log('🎯 Painel corrigido com:');
+  console.log('   🔥 Heatmap do mês com melhor separação visual');
+  console.log('   📊 Gráfico comparativo com barras maiores');
+  console.log('   👥 Top 5 agentes incluindo coordenadoras');
+  console.log('   📊 Percentuais de complexidade corrigidos');
+  console.log('   🔍 Sistema de debug integrado');
+  console.log('');
+  console.log('⌨️  Atalhos disponíveis:');
+  console.log('   1, 2, 3: Alternar períodos');
+  console.log('   Ctrl+R: Atualizar painel');
+  console.log('   Ctrl+D: Debug dos dados');
+  console.log('');
+  console.log('💡 Use window.exportPainelData() para exportar dados');
 });
 </script>
 

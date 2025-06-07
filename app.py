@@ -1059,27 +1059,26 @@ def admin_panel():
     
     return render_template('admin_panel.html', stats=stats)
 
-# SUBSTITUA a rota '/painel_coordenacao' por esta versão corrigida
 
-# SUBSTITUA a rota '/painel_coordenacao' por esta versão ajustada
+
 
 @app.route('/painel_coordenacao')
 @login_required  
 def painel_coordenacao():
-    """Painel da Coordenação - VERSÃO AJUSTADA CONFORME SOLICITAÇÃO"""
+    """Painel da Coordenação - VERSÃO CORRIGIDA PARA PROBLEMAS IDENTIFICADOS"""
     if current_user.tipo not in ['admin', 'coordenadora']:
         flash('Acesso negado.', 'danger')
         return redirect(url_for('dashboard'))
     
     try:
-        # Pega filtros da URL (período em dias) - CONVERSÃO SEGURA
+        # Pega filtros da URL (período em dias)
         periodo = request.args.get('periodo', '7')
         try:
             periodo = int(periodo)
         except (ValueError, TypeError):
             periodo = 7
         
-        # Validação do período (entre 1 e 90 dias)
+        # Validação do período
         if periodo < 1:
             periodo = 1
         elif periodo > 90:
@@ -1090,6 +1089,7 @@ def painel_coordenacao():
         data_inicio = data_fim - timedelta(days=periodo)
         
         # === 1. KPIs BÁSICOS ===
+        # CORRIGIDO: Incluir coordenadora na contagem de supervisores
         total_supervisores = User.query.filter(User.tipo.in_(['supervisor', 'coordenadora'])).count()
         total_agentes = Agente.query.filter_by(ativo=True).count()
         
@@ -1099,24 +1099,26 @@ def painel_coordenacao():
             Atendimento.data_hora <= data_fim
         ).count()
         
-        # Média por supervisor - CONVERSÃO SEGURA
+        # Média por supervisor
         if total_supervisores > 0:
             media_por_supervisor = round(float(atendimentos_periodo) / float(total_supervisores), 1)
         else:
-            media_por_supervisor = round(float(atendimentos_periodo), 1) if atendimentos_periodo > 0 else 0.0
+            media_por_supervisor = 0.0
             total_supervisores = 1
         
         # === 2. TOP 5 AGENTES POR SUPERVISOR ===
         supervisores_top_agentes = []
+        
+        # CORRIGIDO: Buscar supervisores E coordenadoras
         supervisores = User.query.filter(User.tipo.in_(['supervisor', 'coordenadora'])).all()
         
-        # Se não há supervisores cadastrados, usa o admin atual
+        # Se não há supervisores, usa o admin atual
         if not supervisores:
             supervisores = [current_user]
         
         for supervisor in supervisores:
             try:
-                # Busca todos os agentes deste supervisor
+                # CORRIGIDO: Buscar agentes que têm este supervisor como supervisor_id
                 agentes_supervisor = Agente.query.filter_by(supervisor_id=supervisor.id, ativo=True).all()
                 
                 agentes_stats = []
@@ -1138,12 +1140,16 @@ def painel_coordenacao():
                 agentes_stats.sort(key=lambda x: x['total_atendimentos'], reverse=True)
                 top_5_agentes = agentes_stats[:5]
                 
+                # Soma total de atendimentos deste supervisor através dos agentes
+                total_atendimentos_supervisor = sum(a['total_atendimentos'] for a in agentes_stats)
+                
                 supervisores_top_agentes.append({
                     'id': int(supervisor.id),
                     'nome': str(supervisor.nome),
                     'tipo': str(supervisor.tipo),
                     'top_agentes': top_5_agentes,
-                    'total_agentes': len(agentes_supervisor)
+                    'total_agentes': len(agentes_supervisor),
+                    'total_atendimentos_via_agentes': int(total_atendimentos_supervisor)
                 })
                 
             except Exception as e:
@@ -1153,7 +1159,8 @@ def painel_coordenacao():
                     'nome': str(supervisor.nome),
                     'tipo': str(supervisor.tipo),
                     'top_agentes': [],
-                    'total_agentes': 0
+                    'total_agentes': 0,
+                    'total_atendimentos_via_agentes': 0
                 })
         
         # === 3. PERCENTUAIS DE COMPLEXIDADE POR SUPERVISOR ===
@@ -1161,9 +1168,13 @@ def painel_coordenacao():
         
         for supervisor in supervisores:
             try:
-                # Busca atendimentos deste supervisor no período
+                # CORRIGIDO: Buscar atendimentos através dos agentes do supervisor
+                # Primeiro, pega todos os agentes deste supervisor
+                agentes_ids = [a.id for a in Agente.query.filter_by(supervisor_id=supervisor.id, ativo=True).all()]
+                
+                # Busca atendimentos dos agentes deste supervisor no período
                 atendimentos_supervisor = Atendimento.query.filter(
-                    Atendimento.supervisor_id == supervisor.id,
+                    Atendimento.agente_id.in_(agentes_ids),
                     Atendimento.data_hora >= data_inicio,
                     Atendimento.data_hora <= data_fim
                 ).all()
@@ -1172,6 +1183,7 @@ def painel_coordenacao():
                 basicos = 0
                 medios = 0
                 complexos = 0
+                sem_classificacao = 0
                 
                 for atendimento in atendimentos_supervisor:
                     classificacao = str(atendimento.classificacao).lower() if atendimento.classificacao else ''
@@ -1181,6 +1193,8 @@ def painel_coordenacao():
                         medios += 1
                     elif classificacao == 'complexo':
                         complexos += 1
+                    else:
+                        sem_classificacao += 1
                 
                 total_supervisor = len(atendimentos_supervisor)
                 
@@ -1195,6 +1209,7 @@ def painel_coordenacao():
                 supervisores_complexidade.append({
                     'id': int(supervisor.id),
                     'nome': str(supervisor.nome),
+                    'tipo': str(supervisor.tipo),
                     'total_atendimentos': int(total_supervisor),
                     'basicos': {
                         'quantidade': int(basicos),
@@ -1207,7 +1222,8 @@ def painel_coordenacao():
                     'complexos': {
                         'quantidade': int(complexos),
                         'percentual': float(perc_complexos)
-                    }
+                    },
+                    'sem_classificacao': int(sem_classificacao)
                 })
                 
             except Exception as e:
@@ -1215,10 +1231,12 @@ def painel_coordenacao():
                 supervisores_complexidade.append({
                     'id': int(supervisor.id),
                     'nome': str(supervisor.nome),
+                    'tipo': str(supervisor.tipo),
                     'total_atendimentos': 0,
                     'basicos': {'quantidade': 0, 'percentual': 0.0},
                     'medios': {'quantidade': 0, 'percentual': 0.0},
-                    'complexos': {'quantidade': 0, 'percentual': 0.0}
+                    'complexos': {'quantidade': 0, 'percentual': 0.0},
+                    'sem_classificacao': 0
                 })
         
         # === 4. DADOS COMPARATIVOS SEMANAIS (MANTÉM) ===
@@ -1339,7 +1357,7 @@ def painel_coordenacao():
                 'media_supervisor': float(media_por_supervisor)
             },
             
-            # Novos dados conforme solicitação
+            # Dados corrigidos
             'supervisores_top_agentes': supervisores_top_agentes,
             'supervisores_complexidade': supervisores_complexidade,
             'volume_comparativo': volume_semanal_comparativo,
@@ -1352,7 +1370,7 @@ def painel_coordenacao():
                 'atendimentos_anterior': int(atendimentos_anterior)
             },
             
-            # Filtros e metadados
+            # Metadados
             'periodo_atual': int(periodo),
             'data_inicio': data_inicio.strftime('%Y-%m-%d'),
             'data_fim': data_fim.strftime('%Y-%m-%d'),
@@ -1363,48 +1381,30 @@ def painel_coordenacao():
             'mes_atual': hoje.strftime('%B %Y')
         }
         
-        # Log de sucesso
-        app.logger.info(f'Painel coordenação ajustado carregado: {total_supervisores} supervisores, {total_agentes} agentes, {atendimentos_periodo} atendimentos')
+        # Log de debug
+        app.logger.info(f'Painel coordenação CORRIGIDO - Supervisores encontrados: {[s.nome for s in supervisores]}')
+        app.logger.info(f'Total atendimentos período: {atendimentos_periodo}')
         
         return render_template('painel_coordenacao.html', **context)
         
     except Exception as e:
-        # Log de erro detalhado
         app.logger.error(f'ERRO no painel coordenação: {e}')
         import traceback
         app.logger.error(f'Traceback: {traceback.format_exc()}')
         
-        # Template básico de fallback
+        # Fallback básico
         context_fallback = {
-            'kpis': {
-                'total_supervisores': 0, 
-                'total_agentes': 0, 
-                'total_atendimentos': 0, 
-                'media_supervisor': 0.0
-            },
-            'supervisores_top_agentes': [],
-            'supervisores_complexidade': [],
-            'volume_comparativo': [],
-            'heatmap_mes': [],
-            'resumo_dados': {
-                'mudanca_percentual': 0.0,
-                'mudanca_tipo': 'estavel',
-                'atendimentos_anterior': 0
-            },
-            'periodo_atual': 7,
-            'data_inicio': '2025-06-01',
-            'data_fim': '2025-06-07',
-            'periodo_label': 'Semana',
-            'tem_dados_reais': False,
-            'timestamp_atualizacao': datetime.now().strftime('%d/%m/%Y às %H:%M'),
-            'usuario_atual': str(getattr(current_user, 'nome', 'Usuário')),
-            'mes_atual': datetime.now().strftime('%B %Y')
+            'kpis': {'total_supervisores': 0, 'total_agentes': 0, 'total_atendimentos': 0, 'media_supervisor': 0.0},
+            'supervisores_top_agentes': [], 'supervisores_complexidade': [], 'volume_comparativo': [], 'heatmap_mes': [],
+            'resumo_dados': {'mudanca_percentual': 0.0, 'mudanca_tipo': 'estavel', 'atendimentos_anterior': 0},
+            'periodo_atual': 7, 'data_inicio': '2025-06-01', 'data_fim': '2025-06-07', 'periodo_label': 'Semana',
+            'tem_dados_reais': False, 'timestamp_atualizacao': datetime.now().strftime('%d/%m/%Y às %H:%M'),
+            'usuario_atual': str(getattr(current_user, 'nome', 'Usuário')), 'mes_atual': datetime.now().strftime('%B %Y')
         }
         
         try:
             return render_template('painel_coordenacao.html', **context_fallback)
         except Exception as e2:
-            app.logger.error(f'Falha no template fallback: {e2}')
             flash(f'Erro crítico no painel da coordenação: {str(e)}', 'danger')
             return redirect(url_for('dashboard'))
 

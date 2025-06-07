@@ -189,8 +189,8 @@
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    font-size: 0.7rem;
-    font-weight: 600;
+    font-size: 1.4rem;
+    font-weight: 800;
     transition: all 0.3s ease;
     cursor: pointer;
     position: relative;
@@ -209,7 +209,7 @@
   }
 
   .heatmap-day-count {
-    font-size: 0.6rem;
+    font-size: 1.6rem;
     font-weight: 700;
   }
 
@@ -683,11 +683,11 @@
   }
 
   .heatmap-day-count {
-    font-size: 0.6rem;
+    font-size: 1.2rem;
     font-weight: 600;
     color: inherit;
     opacity: 0.9;
-    background: rgba(0, 0, 0, 0.1);
+    background: rgba(0, 0, 0, 0);
     padding: 1px 4px;
     border-radius: 4px;
     line-height: 1;
@@ -696,25 +696,25 @@
   }
 
   .heatmap-day.today .heatmap-day-count {
-    background: rgba(255, 255, 255, 0.3);
+    background: rgba(255, 255, 255, 0);
     color: white;
   }
 
   /* Ajustes específicos por intensidade */
   .heat-0 .heatmap-day-count { 
-    background: rgba(0, 0, 0, 0.1); 
+    background: rgba(0, 0, 0, 0); 
     color: #666; 
   }
   
   .heat-1 .heatmap-day-count { 
-    background: rgba(0, 0, 0, 0.15); 
+    background: rgba(0, 0, 0, 0); 
     color: #333; 
   }
   
   .heat-2 .heatmap-day-count,
   .heat-3 .heatmap-day-count,
   .heat-4 .heatmap-day-count { 
-    background: rgba(255, 255, 255, 0.3); 
+    background: rgba(255, 255, 255, 0); 
     color: white; 
   }
 
@@ -1060,7 +1060,7 @@
   </div>
 </div>
 
-// SUBSTITUA o JavaScript no final do template por este código corrigido
+
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {

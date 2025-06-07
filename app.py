@@ -1059,19 +1059,25 @@ def admin_panel():
     
     return render_template('admin_panel.html', stats=stats)
 
-# SUBSTITUA a rota '/painel_coordenacao' no seu app.py por esta versão corrigida
+# SUBSTITUA a rota '/painel_coordenacao' por esta versão que inclui dados comparativos semanais
 
 @app.route('/painel_coordenacao')
 @login_required  
 def painel_coordenacao():
-    """Painel da Coordenação com dados reais do sistema - VERSÃO CORRIGIDA COMPLETA"""
+    """Painel da Coordenação - VERSÃO COM GRÁFICOS AVANÇADOS"""
     if current_user.tipo not in ['admin', 'coordenadora']:
         flash('Acesso negado.', 'danger')
         return redirect(url_for('dashboard'))
     
     try:
         # Pega filtros da URL (período em dias)
-        periodo = request.args.get('periodo', '7', type=int)  # Default: 7 dias
+        periodo = request.args.get('periodo', '7', type=int)
+        
+        # Validação do período (entre 1 e 90 dias)
+        if periodo < 1:
+            periodo = 1
+        elif periodo > 90:
+            periodo = 90
         
         # Calcula datas baseado no período
         data_fim = datetime.now()
@@ -1088,14 +1094,18 @@ def painel_coordenacao():
         ).count()
         
         # Média por supervisor
-        media_por_supervisor = round(atendimentos_periodo / total_supervisores, 1) if total_supervisores > 0 else 0
+        if total_supervisores > 0:
+            media_por_supervisor = round(atendimentos_periodo / total_supervisores, 1)
+        else:
+            media_por_supervisor = round(atendimentos_periodo / 1, 1) if atendimentos_periodo > 0 else 0
+            total_supervisores = 1
         
         # === 2. DADOS DOS SUPERVISORES ===
         supervisores_data = []
         supervisores = User.query.filter_by(tipo='supervisor').all()
         
-        for supervisor in supervisores:
-            # Busca atendimentos deste supervisor no período
+        def calcular_dados_supervisor(supervisor, nome_display=None):
+            """Calcula métricas de um supervisor específico"""
             atendimentos_supervisor = Atendimento.query.filter(
                 Atendimento.supervisor_id == supervisor.id,
                 Atendimento.data_hora >= data_inicio,
@@ -1111,22 +1121,39 @@ def painel_coordenacao():
             # Busca agentes do supervisor
             agentes_supervisor = Agente.query.filter_by(supervisor_id=supervisor.id, ativo=True).count()
             
-            supervisores_data.append({
+            return {
                 'id': supervisor.id,
-                'nome': supervisor.nome,
+                'nome': nome_display or supervisor.nome,
                 'total_atendimentos': total,
                 'atendimentos_basicos': basicos,
                 'atendimentos_medios': medios,
                 'atendimentos_complexos': complexos,
                 'total_agentes': agentes_supervisor,
-                'media_por_agente': round(total / agentes_supervisor, 1) if agentes_supervisor > 0 else 0
-            })
+                'media_por_agente': round(total / agentes_supervisor, 1) if agentes_supervisor > 0 else 0,
+                'percentual_do_total': round((total / atendimentos_periodo * 100), 1) if atendimentos_periodo > 0 else 0
+            }
+        
+        # Se não há supervisores cadastrados, usa o admin atual
+        if not supervisores:
+            supervisor_atual = current_user
+            dados_admin = calcular_dados_supervisor(supervisor_atual, f'{supervisor_atual.nome} (Admin)')
+            supervisores_data.append(dados_admin)
+        else:
+            for supervisor in supervisores:
+                dados_supervisor = calcular_dados_supervisor(supervisor)
+                supervisores_data.append(dados_supervisor)
         
         # Ordena por total de atendimentos (decrescente)
         supervisores_data.sort(key=lambda x: x['total_atendimentos'], reverse=True)
         
-        # === 3. ANÁLISE TEMPORAL (últimos 7 dias) ===
+        # === 3. ANÁLISE TEMPORAL AVANÇADA (ÚLTIMOS 7 DIAS) ===
         volume_semanal = []
+        nomes_dias = {
+            'Monday': 'Seg', 'Tuesday': 'Ter', 'Wednesday': 'Qua', 
+            'Thursday': 'Qui', 'Friday': 'Sex', 'Saturday': 'Sab', 'Sunday': 'Dom'
+        }
+        
+        # Gera dados para os últimos 7 dias
         for i in range(7):
             dia = data_fim - timedelta(days=i)
             inicio_dia = dia.replace(hour=0, minute=0, second=0, microsecond=0)
@@ -1137,23 +1164,88 @@ def painel_coordenacao():
                 Atendimento.data_hora <= fim_dia
             ).count()
             
+            # Nome do dia em português
+            dia_en = dia.strftime('%A')
+            dia_pt = nomes_dias.get(dia_en, dia_en[:3])
+            
             volume_semanal.append({
-                'dia': inicio_dia.strftime('%a'),
+                'dia': dia_pt,
                 'data': inicio_dia.strftime('%d/%m'),
-                'volume': count
+                'volume': count,
+                'data_completa': inicio_dia.strftime('%Y-%m-%d'),
+                'percentual': round((count / atendimentos_periodo * 100), 1) if atendimentos_periodo > 0 else 0,
+                'dia_semana': dia.weekday()  # 0=Segunda, 6=Domingo
             })
         
         # Inverte para mostrar do mais antigo para o mais recente
         volume_semanal.reverse()
         
-        # Formata para JSON seguro no template
-        volume_semanal_formatted = [{
-            'dia': item['dia'],
-            'data': item['data'],
-            'volume': int(item['volume'])
-        } for item in volume_semanal]
+        # === 4. DADOS COMPARATIVOS SEMANAIS ===
+        volume_semanal_comparativo = []
         
-        # === 4. COMPARATIVO COM PERÍODO ANTERIOR ===
+        # Para cada dia da semana atual, busca o mesmo dia da semana anterior
+        for i in range(7):
+            dia_atual = data_fim - timedelta(days=(6-i))
+            
+            # Mesmo dia da semana anterior (7 dias atrás)
+            dia_anterior = dia_atual - timedelta(days=7)
+            
+            # Contagem atual
+            inicio_atual = dia_atual.replace(hour=0, minute=0, second=0, microsecond=0)
+            fim_atual = dia_atual.replace(hour=23, minute=59, second=59, microsecond=999999)
+            
+            count_atual = Atendimento.query.filter(
+                Atendimento.data_hora >= inicio_atual,
+                Atendimento.data_hora <= fim_atual
+            ).count()
+            
+            # Contagem semana anterior
+            inicio_anterior = dia_anterior.replace(hour=0, minute=0, second=0, microsecond=0)
+            fim_anterior = dia_anterior.replace(hour=23, minute=59, second=59, microsecond=999999)
+            
+            count_anterior = Atendimento.query.filter(
+                Atendimento.data_hora >= inicio_anterior,
+                Atendimento.data_hora <= fim_anterior
+            ).count()
+            
+            # Nome do dia
+            dia_nome = nomes_dias.get(dia_atual.strftime('%A'), dia_atual.strftime('%A')[:3])
+            
+            volume_semanal_comparativo.append({
+                'dia': dia_nome,
+                'data': inicio_atual.strftime('%d/%m'),
+                'volume_atual': count_atual,
+                'volume_anterior': count_anterior,
+                'data_completa': inicio_atual.strftime('%Y-%m-%d'),
+                'diferenca': count_atual - count_anterior,
+                'diferenca_percentual': round(((count_atual - count_anterior) / count_anterior * 100), 1) if count_anterior > 0 else (100 if count_atual > 0 else 0)
+            })
+        
+        # === 5. DADOS PARA HEATMAP (ÚLTIMAS 4 SEMANAS) ===
+        heatmap_data = []
+        
+        # Gera dados para últimas 4 semanas (28 dias)
+        for i in range(28):
+            dia = data_fim - timedelta(days=i)
+            inicio_dia = dia.replace(hour=0, minute=0, second=0, microsecond=0)
+            fim_dia = dia.replace(hour=23, minute=59, second=59, microsecond=999999)
+            
+            count = Atendimento.query.filter(
+                Atendimento.data_hora >= inicio_dia,
+                Atendimento.data_hora <= fim_dia
+            ).count()
+            
+            heatmap_data.append({
+                'data': inicio_dia.strftime('%Y-%m-%d'),
+                'volume': count,
+                'dia_semana': dia.weekday(),
+                'semana': i // 7
+            })
+        
+        # Inverte para ordem cronológica
+        heatmap_data.reverse()
+        
+        # === 6. COMPARATIVO DE PERÍODOS ===
         periodo_anterior_inicio = data_inicio - timedelta(days=periodo)
         periodo_anterior_fim = data_inicio
         
@@ -1168,16 +1260,56 @@ def painel_coordenacao():
         else:
             mudanca_percentual = 100 if atendimentos_periodo > 0 else 0
         
+        # Determina o tipo de mudança
+        if mudanca_percentual > 5:
+            mudanca_tipo = 'aumento'
+            mudanca_icon = '📈'
+        elif mudanca_percentual < -5:
+            mudanca_tipo = 'reducao'
+            mudanca_icon = '📉'
+        else:
+            mudanca_tipo = 'estavel'
+            mudanca_icon = '➡️'
+        
         comparativo_data = {
-            'periodo_atual': atendimentos_periodo,
-            'periodo_anterior': atendimentos_anterior,
-            'mudanca_percentual': mudanca_percentual,
-            'mudanca_tipo': 'aumento' if mudanca_percentual > 0 else 'reducao' if mudanca_percentual < 0 else 'estavel'
+            'periodo_atual': int(atendimentos_periodo),
+            'periodo_anterior': int(atendimentos_anterior),
+            'mudanca_percentual': float(mudanca_percentual),
+            'mudanca_absoluta': int(atendimentos_periodo - atendimentos_anterior),
+            'mudanca_tipo': mudanca_tipo,
+            'mudanca_icon': mudanca_icon
         }
         
-        # === DADOS PARA O TEMPLATE (FORMATO SEGURO) ===
-        periodo_label = "Semana" if periodo == 7 else f"Últimos {periodo} dias"
+        # === FORMATAÇÃO FINAL DOS DADOS ===
+        periodo_label = "Hoje" if periodo == 1 else "Semana" if periodo == 7 else f"Últimos {periodo} dias"
         
+        # Formata para JSON seguro no template
+        volume_semanal_formatted = [{
+            'dia': str(item['dia']),
+            'data': str(item['data']),
+            'volume': int(item['volume']),
+            'data_completa': str(item['data_completa']),
+            'percentual': float(item['percentual'])
+        } for item in volume_semanal]
+        
+        volume_comparativo_formatted = [{
+            'dia': str(item['dia']),
+            'data': str(item['data']),
+            'volume_atual': int(item['volume_atual']),
+            'volume_anterior': int(item['volume_anterior']),
+            'data_completa': str(item['data_completa']),
+            'diferenca': int(item['diferenca']),
+            'diferenca_percentual': float(item['diferenca_percentual'])
+        } for item in volume_semanal_comparativo]
+        
+        heatmap_formatted = [{
+            'data': str(item['data']),
+            'volume': int(item['volume']),
+            'dia_semana': int(item['dia_semana']),
+            'semana': int(item['semana'])
+        } for item in heatmap_data]
+        
+        # === CONTEXTO PARA O TEMPLATE ===
         context = {
             # KPIs principais
             'kpis': {
@@ -1192,70 +1324,70 @@ def painel_coordenacao():
             
             # Análise temporal
             'volume_semanal': volume_semanal_formatted,
+            'volume_comparativo': volume_comparativo_formatted,
+            'heatmap_data': heatmap_formatted,
             
             # Comparativo
             'comparativo': comparativo_data,
             
-            # Filtros
+            # Filtros e metadados
             'periodo_atual': int(periodo),
             'data_inicio': data_inicio.strftime('%Y-%m-%d'),
             'data_fim': data_fim.strftime('%Y-%m-%d'),
-            'periodo_label': str(periodo_label)
+            'periodo_label': str(periodo_label),
+            'tem_dados_reais': len(supervisores) > 0 or total_agentes > 0,
+            
+            # Informações adicionais
+            'timestamp_atualizacao': datetime.now().strftime('%d/%m/%Y às %H:%M'),
+            'usuario_atual': current_user.nome
         }
+        
+        # Log de sucesso
+        app.logger.info(f'Painel coordenação carregado com gráficos: {total_supervisores} supervisores, {total_agentes} agentes, {atendimentos_periodo} atendimentos')
         
         return render_template('painel_coordenacao.html', **context)
         
     except Exception as e:
-        app.logger.error(f'Erro geral no painel coordenação: {e}')
-        # Log mais detalhado para debug
+        # Log de erro
+        app.logger.error(f'ERRO no painel coordenação: {e}')
         import traceback
-        app.logger.error(f'Traceback completo: {traceback.format_exc()}')
+        app.logger.error(f'Traceback: {traceback.format_exc()}')
         
-        flash('Erro ao carregar painel da coordenação. Tente novamente.', 'danger')
-        return redirect(url_for('dashboard'))
-
-
-# ADICIONE também esta rota de API para suporte
-@app.route('/api/painel_coordenacao/dados')
-@login_required
-def api_painel_coordenacao_dados():
-    """API para buscar dados do painel em tempo real"""
-    if current_user.tipo not in ['admin', 'coordenadora']:
-        return jsonify({'error': 'Acesso negado'}), 403
-    
-    try:
-        periodo = request.args.get('periodo', '7', type=int)
-        
-        # Mesma lógica da rota principal, mas retorna JSON
-        data_fim = datetime.now()
-        data_inicio = data_fim - timedelta(days=periodo)
-        
-        # KPIs básicos
-        total_supervisores = User.query.filter(User.tipo.in_(['supervisor', 'coordenadora'])).count()
-        total_agentes = Agente.query.filter_by(ativo=True).count()
-        total_atendimentos = Atendimento.query.filter(
-            Atendimento.data_hora >= data_inicio,
-            Atendimento.data_hora <= data_fim
-        ).count()
-        
-        media_supervisor = round(total_atendimentos / total_supervisores, 1) if total_supervisores > 0 else 0
-        
-        return jsonify({
-            'success': True,
+        # Template básico de fallback
+        context_fallback = {
             'kpis': {
-                'supervisores': total_supervisores,
-                'agentes': total_agentes,
-                'atendimentos': total_atendimentos,
-                'media': media_supervisor
+                'total_supervisores': 0, 
+                'total_agentes': 0, 
+                'total_atendimentos': 0, 
+                'media_supervisor': 0
             },
-            'periodo': periodo,
-            'timestamp': datetime.now().isoformat()
-        })
+            'supervisores_data': [],
+            'volume_semanal': [],
+            'volume_comparativo': [],
+            'heatmap_data': [],
+            'comparativo': {
+                'periodo_atual': 0, 
+                'periodo_anterior': 0, 
+                'mudanca_percentual': 0, 
+                'mudanca_absoluta': 0,
+                'mudanca_tipo': 'estavel',
+                'mudanca_icon': '➡️'
+            },
+            'periodo_atual': 7,
+            'data_inicio': '2025-06-01',
+            'data_fim': '2025-06-07',
+            'periodo_label': 'Semana',
+            'tem_dados_reais': False,
+            'timestamp_atualizacao': datetime.now().strftime('%d/%m/%Y às %H:%M'),
+            'usuario_atual': current_user.nome if hasattr(current_user, 'nome') else 'Usuário'
+        }
         
-    except Exception as e:
-        app.logger.error(f'Erro na API painel coordenação: {e}')
-        return jsonify({'error': 'Erro interno'}), 500
-
+        try:
+            return render_template('painel_coordenacao.html', **context_fallback)
+        except Exception as e2:
+            app.logger.error(f'Falha no template fallback: {e2}')
+            flash(f'Erro crítico no painel da coordenação: {str(e)}', 'danger')
+            return redirect(url_for('dashboard'))
 
 
 # API para estatísticas em tempo real
@@ -1783,7 +1915,8 @@ def check_bot_status():
         })
 
 
+
 if __name__ == '__main__':
-    app.run(debug=False)
+    app.run(debug=True)
 
 

@@ -728,7 +728,7 @@ from flask_login import login_required, current_user
 @app.route('/cadastros/agentes', methods=['GET', 'POST'])
 @login_required
 def agentes():
-    supervisores = User.query.filter_by(tipo='supervisor').all()
+    supervisores = User.query.filter(User.tipo.in_(['supervisor', 'coordenadora'])).all()
     
     # CORREÇÃO: SEMPRE mostrar todas as equipes para permitir compartilhamento
     # Independente do tipo de usuário, mostra todas as equipes
@@ -822,7 +822,7 @@ from datetime import datetime
 @login_required
 def editar_agente(agente_id):
     agente = Agente.query.get_or_404(agente_id)
-    supervisores = User.query.filter_by(tipo='supervisor').all()
+    supervisores = User.query.filter(User.tipo.in_(['supervisor', 'coordenadora'])).all()
     
     # CORREÇÃO: SEMPRE mostrar todas as equipes para permitir compartilhamento
     equipes = Equipe.query.all()
@@ -1627,7 +1627,7 @@ def recalculate_stats():
         
         # Estatísticas por supervisor
         supervisores_stats = []
-        supervisores = User.query.filter_by(tipo='supervisor').all()
+        supervisores = User.query.filter(User.tipo.in_(['supervisor', 'coordenadora'])).all()
         
         for supervisor in supervisores:
             atendimentos_supervisor = Atendimento.query.filter_by(supervisor_id=supervisor.id).count()

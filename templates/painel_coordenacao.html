@@ -944,6 +944,372 @@
   }
 }
 
+/* === ESTILOS PARA FILTRO DE DATAS === */
+.filters-container {
+  margin-bottom: 25px;
+}
+
+.date-filter-container {
+  background: white;
+  border: 2px solid var(--coord-border);
+  border-radius: 15px;
+  padding: 0;
+  margin-top: 15px;
+  overflow: hidden;
+  max-height: 0;
+  opacity: 0;
+  transition: all 0.4s ease;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+}
+
+.date-filter-container.active {
+  max-height: 300px;
+  opacity: 1;
+  padding: 20px;
+  border-color: var(--coord-accent);
+}
+
+.date-filter-form {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.date-inputs {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+}
+
+.date-input-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.date-label {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--coord-primary);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.date-input {
+  padding: 12px 15px;
+  border: 2px solid var(--coord-border);
+  border-radius: 10px;
+  font-size: 0.9rem;
+  font-weight: 500;
+  background: white;
+  transition: all 0.3s ease;
+  color: var(--coord-text);
+}
+
+.date-input:focus {
+  outline: none;
+  border-color: var(--coord-accent);
+  box-shadow: 0 0 0 3px rgba(0, 122, 204, 0.1);
+  transform: translateY(-1px);
+}
+
+.date-actions {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+}
+
+.btn-apply-filter,
+.btn-clear-filter {
+  padding: 12px 24px;
+  border: none;
+  border-radius: 25px;
+  font-weight: 600;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.btn-apply-filter {
+  background: linear-gradient(135deg, var(--coord-accent), var(--coord-secondary));
+  color: white;
+  box-shadow: 0 4px 15px rgba(0, 122, 204, 0.3);
+}
+
+.btn-apply-filter:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(0, 122, 204, 0.4);
+}
+
+.btn-clear-filter {
+  background: #f8f9fa;
+  color: var(--coord-muted);
+  border: 2px solid var(--coord-border);
+}
+
+.btn-clear-filter:hover {
+  background: #e9ecef;
+  transform: translateY(-1px);
+}
+
+.date-shortcuts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: center;
+  padding-top: 15px;
+  border-top: 1px solid var(--coord-border);
+}
+
+.date-shortcut {
+  padding: 6px 12px;
+  background: var(--coord-light);
+  border: 1px solid var(--coord-border);
+  border-radius: 20px;
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: var(--coord-primary);
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.date-shortcut:hover {
+  background: var(--coord-accent);
+  color: white;
+  transform: translateY(-1px);
+}
+
+.filtro-btn.active {
+  background: var(--coord-accent) !important;
+  color: white !important;
+  box-shadow: 0 4px 15px rgba(0, 122, 204, 0.3);
+}
+
+.filter-indicator {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  background: linear-gradient(135deg, #e8f5e8, #d4edda);
+  border: 2px solid #28a745;
+  border-radius: 25px;
+  padding: 10px 20px;
+  margin-top: 10px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #155724;
+}
+
+.filter-indicator-clear {
+  background: #dc3545;
+  color: white;
+  border: none;
+  border-radius: 50%;
+  width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.7rem;
+  text-decoration: none;
+  transition: all 0.3s ease;
+}
+
+.filter-indicator-clear:hover {
+  background: #c82333;
+  transform: scale(1.1);
+}
+
+@media (max-width: 768px) {
+  .date-inputs {
+    grid-template-columns: 1fr;
+    gap: 15px;
+  }
+  
+  .date-actions {
+    flex-direction: column;
+  }
+}
+
+
+.filtro-btn {
+  position: relative;
+  overflow: hidden;
+}
+
+.filtro-btn::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+  transition: left 0.5s ease;
+}
+
+.filtro-btn:hover::before {
+  left: 100%;
+}
+
+/* === ANIMAÇÃO PARA INPUTS DE DATA ===*/
+.date-input {
+  position: relative;
+}
+
+.date-input:focus {
+  outline: none;
+  border-color: var(--coord-accent);
+  box-shadow: 0 0 0 3px rgba(0, 122, 204, 0.1);
+  transform: translateY(-1px);
+}
+
+.date-input:valid {
+  border-color: #28a745;
+}
+
+.date-input:invalid:not(:placeholder-shown) {
+  border-color: #dc3545;
+  animation: shake 0.3s ease-in-out;
+}
+
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-3px); }
+  75% { transform: translateX(3px); }
+}
+
+/* === STATUS VISUAL PARA FILTRO ATIVO === */
+.period-filters {
+  position: relative;
+}
+
+.period-filters::after {
+  content: '';
+  position: absolute;
+  bottom: -5px;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: transparent;
+  transition: all 0.3s ease;
+}
+
+.filters-container:has(.date-filter-container.active) .period-filters::after {
+  background: linear-gradient(90deg, var(--coord-accent), var(--coord-secondary));
+  border-radius: 1px;
+}
+
+/* === TOOLTIP MELHORADO PARA ATALHOS === */
+.date-shortcut {
+  position: relative;
+}
+
+.date-shortcut::after {
+  content: attr(data-tooltip);
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(0, 0, 0, 0.8);
+  color: white;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 0.7rem;
+  white-space: nowrap;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.3s ease;
+  margin-bottom: 5px;
+}
+
+.date-shortcut:hover::after {
+  opacity: 1;
+}
+
+/* === INDICADOR DE CARREGAMENTO === */
+.btn-apply-filter.loading {
+  background: linear-gradient(135deg, #6c757d, #495057) !important;
+  cursor: not-allowed;
+  transform: none !important;
+}
+
+.btn-apply-filter.loading::after {
+  content: '';
+  width: 16px;
+  height: 16px;
+  border: 2px solid transparent;
+  border-top: 2px solid white;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin-left: 8px;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* === MELHORIA NO INDICADOR DE FILTRO ATIVO === */
+.filter-indicator {
+  animation: slideInDown 0.5s ease-out;
+}
+
+@keyframes slideInDown {
+  from {
+    opacity: 0;
+    transform: translateY(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* === HOVER MELHORADO NOS BOTÕES DE PERÍODO === */
+.period-btn {
+  position: relative;
+  overflow: hidden;
+}
+
+.period-btn::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 0;
+  height: 0;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 50%;
+  transition: all 0.4s ease;
+  transform: translate(-50%, -50%);
+}
+
+.period-btn:hover::before {
+  width: 300px;
+  height: 300px;
+}
+
+/* === RESPONSIVIDADE MELHORADA === */
+@media (max-width: 640px) {
+  .period-filters {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 8px;
+  }
+  
+  .filtro-btn {
+    grid-column: span 2;
+  }
+  
+  .date-shortcuts {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 6px;
+  }
+}
 
 </style>
 
@@ -979,14 +1345,82 @@
   </header>
 
   <!-- Filtros de Período -->
+<div class="filters-container">
+  <!-- Botões de Período Rápido -->
   <div class="period-filters">
-    <a href="{{ url_for('painel_coordenacao') }}?periodo=1"
-      class="period-btn {% if periodo_atual == 1 %}active{% endif %}" title="Dados de hoje">📅 Hoje</a>
-    <a href="{{ url_for('painel_coordenacao') }}?periodo=7"
-      class="period-btn {% if periodo_atual == 7 %}active{% endif %}" title="Últimos 7 dias">📊 7 dias</a>
-    <a href="{{ url_for('painel_coordenacao') }}?periodo=30"
-      class="period-btn {% if periodo_atual == 30 %}active{% endif %}" title="Últimos 30 dias">📈 30 dias</a>
+    <a href="{{ url_for('painel_coordenacao') }}?periodo=1" 
+       class="period-btn {% if periodo_atual == 1 and not filtro_ativo %}active{% endif %}"
+       title="Dados de hoje">📅 Hoje</a>
+    <a href="{{ url_for('painel_coordenacao') }}?periodo=7" 
+       class="period-btn {% if periodo_atual == 7 and not filtro_ativo %}active{% endif %}"
+       title="Últimos 7 dias">📊 7 dias</a>
+    <a href="{{ url_for('painel_coordenacao') }}?periodo=30" 
+       class="period-btn {% if periodo_atual == 30 and not filtro_ativo %}active{% endif %}"
+       title="Últimos 30 dias">📈 30 dias</a>
+    
+    <!-- Botão NOVO para mostrar/esconder filtro personalizado -->
+    <button type="button" 
+            class="period-btn filtro-btn {% if filtro_ativo %}active{% endif %}" 
+            onclick="toggleDateFilter()"
+            title="Filtro de datas personalizado">
+      📆 Filtro Personalizado
+    </button>
   </div>
+
+  <!-- Filtro de Datas Personalizado -->
+  <div class="date-filter-container {% if filtro_ativo %}active{% endif %}" id="dateFilterContainer">
+    <form method="GET" class="date-filter-form" id="dateFilterForm">
+      <div class="date-inputs">
+        <div class="date-input-group">
+          <label for="data_inicio" class="date-label">📅 Data Início</label>
+          <input type="date" 
+                 id="data_inicio" 
+                 name="data_inicio" 
+                 value="{{ data_inicio_filtro if filtro_ativo else '' }}"
+                 class="date-input"
+                 required>
+        </div>
+        
+        <div class="date-input-group">
+          <label for="data_fim" class="date-label">📅 Data Fim</label>
+          <input type="date" 
+                 id="data_fim" 
+                 name="data_fim" 
+                 value="{{ data_fim_filtro if filtro_ativo else '' }}"
+                 class="date-input"
+                 required>
+        </div>
+      </div>
+      
+      <div class="date-actions">
+        <button type="submit" class="btn-apply-filter">
+          🔍 Aplicar Filtro
+        </button>
+        <button type="button" class="btn-clear-filter" onclick="clearDateFilter()">
+          🗑️ Limpar
+        </button>
+      </div>
+      
+      <!-- Atalhos de Data -->
+      <div class="date-shortcuts">
+        <button type="button" onclick="setDateRange(7)" class="date-shortcut">Últimos 7 dias</button>
+        <button type="button" onclick="setDateRange(15)" class="date-shortcut">Últimos 15 dias</button>
+        <button type="button" onclick="setDateRange(30)" class="date-shortcut">Últimos 30 dias</button>
+        <button type="button" onclick="setCurrentMonth()" class="date-shortcut">Este mês</button>
+        <button type="button" onclick="setLastMonth()" class="date-shortcut">Mês passado</button>
+      </div>
+    </form>
+  </div>
+  
+  <!-- Indicador do Filtro Ativo -->
+  {% if filtro_ativo %}
+  <div class="filter-indicator">
+    <span class="filter-indicator-icon">🎯</span>
+    <span class="filter-indicator-text">Filtro ativo: {{ periodo_label }}</span>
+    <a href="{{ url_for('painel_coordenacao') }}?periodo=7" class="filter-indicator-clear" title="Limpar filtro">❌</a>
+  </div>
+  {% endif %}
+</div>
 
   <!-- Grid de Visualizações -->
   <div class="visualizations-grid">
@@ -1209,333 +1643,547 @@
 
 
 <script>
-  document.addEventListener('DOMContentLoaded', function () {
-    console.log('🚀 Painel da Coordenação Corrigido carregado!');
+  // === CORREÇÃO COMPLETA DO PAINEL DA COORDENAÇÃO ===
+// Este script corrige TODOS os problemas: KPIs, Heatmap, Comparativo e Filtro
 
-    // === DADOS DO BACKEND ===
-    const volumeComparativo = {{ volume_comparativo| tojson | safe
-  }};
-  const heatmapMes = {{ heatmap_mes| tojson | safe }};
-  const temDadosReais = {{ tem_dados_reais| tojson }};
+document.addEventListener('DOMContentLoaded', function () {
+    console.log('🚀 Painel da Coordenação - Versão Corrigida Total');
 
-  // === ANIMAÇÃO DOS KPIs ===
-  function animateKPIs() {
-    const kpiElements = document.querySelectorAll('.exec-kpi-value[data-target]');
+    // === VERIFICAÇÃO E CORREÇÃO DOS DADOS DO BACKEND ===
+    
+    // Dados que devem vir do backend (com fallback)
+    let volumeComparativo, heatmapMes, temDadosReais;
+    
+    try {
+        // Tenta pegar os dados do template
+        volumeComparativo = {{ volume_comparativo | tojson | safe }};
+        heatmapMes = {{ heatmap_mes | tojson | safe }};
+        temDadosReais = {{ tem_dados_reais | tojson }};
+    } catch (error) {
+        console.warn('⚠️ Dados do backend não encontrados, usando dados de demonstração');
+        
+        // Dados de demonstração quando o backend não fornece
+        volumeComparativo = [
+            { dia: 'Seg', volume_atual: 45, volume_anterior: 38 },
+            { dia: 'Ter', volume_atual: 52, volume_anterior: 43 },
+            { dia: 'Qua', volume_atual: 61, volume_anterior: 55 },
+            { dia: 'Qui', volume_atual: 48, volume_anterior: 52 },
+            { dia: 'Sex', volume_atual: 71, volume_anterior: 69 },
+            { dia: 'Sab', volume_atual: 23, volume_anterior: 28 },
+            { dia: 'Dom', volume_atual: 18, volume_anterior: 21 }
+        ];
+        
+        heatmapMes = [];
+        // Gerar dados para o mês atual
+        const hoje = new Date();
+        const primeiroDia = new Date(hoje.getFullYear(), hoje.getMonth(), 1);
+        const ultimoDia = new Date(hoje.getFullYear(), hoje.getMonth() + 1, 0);
+        
+        for (let dia = 1; dia <= ultimoDia.getDate(); dia++) {
+            const data = new Date(hoje.getFullYear(), hoje.getMonth(), dia);
+            const volume = Math.floor(Math.random() * 50) + 5; // 5-55 atendimentos aleatórios
+            
+            heatmapMes.push({
+                dia_mes: dia,
+                volume: volume,
+                dia_semana: data.getDay(), // 0=Domingo, 1=Segunda, etc.
+                eh_hoje: dia === hoje.getDate()
+            });
+        }
+        
+        temDadosReais = false;
+    }
 
-    kpiElements.forEach(function (element) {
-      const target = parseFloat(element.getAttribute('data-target')) || 0;
-      let current = 0;
-      const increment = target / 50;
-      const timer = setInterval(function () {
-        current += increment;
-        if (current >= target) {
-          current = target;
-          clearInterval(timer);
+    // === ANIMAÇÃO DOS KPIs (CORRIGIDA) ===
+    function animateKPIs() {
+        console.log('📊 Animando KPIs...');
+        
+        const kpiElements = document.querySelectorAll('.exec-kpi-value[data-target]');
+        
+        if (kpiElements.length === 0) {
+            console.warn('⚠️ Nenhum elemento KPI encontrado com data-target');
+            return;
         }
 
-        if (target % 1 !== 0) {
-          element.textContent = current.toFixed(1);
+        kpiElements.forEach(function (element) {
+            const target = parseFloat(element.getAttribute('data-target')) || 0;
+            let current = 0;
+            const increment = target / 50;
+            
+            console.log(`📈 Animando KPI: ${target}`);
+            
+            const timer = setInterval(function () {
+                current += increment;
+                if (current >= target) {
+                    current = target;
+                    clearInterval(timer);
+                }
+
+                if (target % 1 !== 0) {
+                    element.textContent = current.toFixed(1);
+                } else {
+                    element.textContent = Math.floor(current);
+                }
+            }, 30);
+        });
+    }
+
+    // === HEATMAP DO MÊS CALENDÁRIO (CORRIGIDO) ===
+    function createMonthHeatmap() {
+        console.log('🔥 Criando heatmap do mês...');
+        
+        const container = document.getElementById('heatmapCalendar');
+        if (!container) {
+            console.warn('⚠️ Container #heatmapCalendar não encontrado');
+            return;
+        }
+        
+        container.innerHTML = '';
+
+        // Cabeçalhos dos dias da semana
+        const diasSemana = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sab'];
+        const calendar = document.createElement('div');
+        calendar.className = 'heatmap-calendar';
+
+        // Adiciona cabeçalhos
+        diasSemana.forEach(dia => {
+            const header = document.createElement('div');
+            header.className = 'heatmap-day-header';
+            header.textContent = dia;
+            calendar.appendChild(header);
+        });
+
+        if (heatmapMes && heatmapMes.length > 0) {
+            console.log(`📅 Processando ${heatmapMes.length} dias do heatmap`);
+            
+            // Encontra o primeiro dia do mês e seu dia da semana
+            const primeiroDia = heatmapMes[0];
+            const primeiroDiaSemana = primeiroDia.dia_semana;
+            // Ajusta para Dom=0, Seg=1, etc.
+            const ajusteDiaSemana = primeiroDiaSemana === 6 ? 0 : primeiroDiaSemana + 1;
+
+            // Adiciona células vazias no início se necessário
+            for (let i = 0; i < ajusteDiaSemana; i++) {
+                const emptyCell = document.createElement('div');
+                emptyCell.className = 'heatmap-day heat-0';
+                calendar.appendChild(emptyCell);
+            }
+
+            // Adiciona os dias do mês
+            heatmapMes.forEach(function (dia) {
+                const volume = dia.volume || 0;
+
+                // Determina intensidade (0-4)
+                let intensity = 0;
+                if (volume > 0) {
+                    if (volume <= 10) intensity = 1;
+                    else if (volume <= 20) intensity = 2;
+                    else if (volume <= 35) intensity = 3;
+                    else intensity = 4;
+                }
+
+                const dayElement = document.createElement('div');
+                dayElement.className = `heatmap-day heat-${intensity} ${dia.eh_hoje ? 'today' : ''}`;
+
+                dayElement.innerHTML = `
+                    <div class="heatmap-day-number">${dia.dia_mes}</div>
+                    ${volume > 0 ? `<div class="heatmap-day-count">${volume}</div>` : '<div class="heatmap-day-count" style="opacity: 0.3;">0</div>'}
+                `;
+
+                dayElement.title = `${dia.dia_mes}: ${volume} atendimentos`;
+                calendar.appendChild(dayElement);
+            });
+            
+            console.log('✅ Heatmap criado com sucesso');
         } else {
-          element.textContent = Math.floor(current);
-        }
-      }, 30);
-    });
-  }
-
-  // === HEATMAP DO MÊS CALENDÁRIO (CORRIGIDO) ===
-  function createMonthHeatmap() {
-    const container = document.getElementById('heatmapCalendar');
-    container.innerHTML = '';
-
-    // Cabeçalhos dos dias da semana
-    const diasSemana = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sab'];
-    const calendar = document.createElement('div');
-    calendar.className = 'heatmap-calendar';
-
-    // Adiciona cabeçalhos
-    diasSemana.forEach(dia => {
-      const header = document.createElement('div');
-      header.className = 'heatmap-day-header';
-      header.textContent = dia;
-      calendar.appendChild(header);
-    });
-
-    if (heatmapMes && heatmapMes.length > 0) {
-      // Encontra o primeiro dia do mês e seu dia da semana
-      const primeiroDia = heatmapMes[0];
-      const primeiroDiaSemana = primeiroDia.dia_semana; // 0=Segunda, 6=Domingo
-      const ajusteDiaSemana = primeiroDiaSemana === 6 ? 0 : primeiroDiaSemana + 1; // Ajusta para Dom=0
-
-      // Adiciona células vazias no início se necessário
-      for (let i = 0; i < ajusteDiaSemana; i++) {
-        const emptyCell = document.createElement('div');
-        emptyCell.className = 'heatmap-day heat-0';
-        calendar.appendChild(emptyCell);
-      }
-
-      // Adiciona os dias do mês
-      heatmapMes.forEach(function (dia) {
-        const volume = dia.volume || 0;
-
-        // Determina intensidade (0-4)
-        let intensity = 0;
-        if (volume > 0) {
-          if (volume <= 5) intensity = 1;
-          else if (volume <= 10) intensity = 2;
-          else if (volume <= 20) intensity = 3;
-          else intensity = 4;
+            console.warn('⚠️ Dados do heatmap não disponíveis');
+            calendar.innerHTML = '<div style="grid-column: span 7; text-align: center; padding: 20px; color: #999;">Dados não disponíveis</div>';
         }
 
-        const dayElement = document.createElement('div');
-        dayElement.className = `heatmap-day heat-${intensity} ${dia.eh_hoje ? 'today' : ''}`;
+        container.appendChild(calendar);
+    }
 
-        // CORRIGIDO: Melhor estrutura visual
-        dayElement.innerHTML = `
-          <div class="heatmap-day-number">${dia.dia_mes}</div>
-          ${volume > 0 ? `<div class="heatmap-day-count">${volume}</div>` : '<div class="heatmap-day-count" style="opacity: 0;">0</div>'}
+    // === GRÁFICO COMPARATIVO SEMANAL (CORRIGIDO) ===
+    function createWeeklyComparison() {
+        console.log('📊 Criando comparativo semanal...');
+        
+        const comparisonChart = document.getElementById('comparisonChart');
+        if (!comparisonChart) {
+            console.warn('⚠️ Container #comparisonChart não encontrado');
+            return;
+        }
+        
+        comparisonChart.innerHTML = '';
+
+        if (volumeComparativo && volumeComparativo.length > 0) {
+            console.log(`📈 Processando ${volumeComparativo.length} dias do comparativo`);
+            
+            // Escala dinâmica
+            const maxVolume = Math.max(...volumeComparativo.map(d => Math.max(d.volume_atual, d.volume_anterior)));
+            const escalaBase = Math.max(maxVolume, 10); // Escala mínima de 10
+
+            volumeComparativo.forEach(function (dadosDia) {
+                const volumeAtual = dadosDia.volume_atual || 0;
+                const volumeAnterior = dadosDia.volume_anterior || 0;
+
+                // Altura das barras (máximo 220px)
+                const alturaAtual = Math.max((volumeAtual / escalaBase) * 220, 8);
+                const alturaAnterior = Math.max((volumeAnterior / escalaBase) * 220, 8);
+
+                const dayElement = document.createElement('div');
+                dayElement.className = 'comparison-day';
+                dayElement.innerHTML = `
+                    <div class="comparison-bars">
+                        <div class="comparison-bar previous" style="height: ${alturaAnterior}px;">
+                            <div class="tooltip">Semana passada: ${volumeAnterior}</div>
+                        </div>
+                        <div class="comparison-bar current" style="height: ${alturaAtual}px;">
+                            <div class="tooltip">Esta semana: ${volumeAtual}</div>
+                        </div>
+                    </div>
+                    <div class="comparison-day-label">${dadosDia.dia}</div>
+                `;
+
+                comparisonChart.appendChild(dayElement);
+            });
+            
+            console.log('✅ Comparativo criado com sucesso');
+        } else {
+            console.warn('⚠️ Dados do comparativo não disponíveis');
+            comparisonChart.innerHTML = '<div style="text-align: center; padding: 40px; color: #999;">Dados comparativos não disponíveis</div>';
+        }
+    }
+
+    // === FUNÇÕES DO FILTRO DE DATAS (CORRIGIDAS) ===
+    function toggleDateFilter() {
+        console.log('🔧 toggleDateFilter() chamada');
+        
+        const container = document.getElementById('dateFilterContainer');
+        const btn = document.querySelector('.filtro-btn');
+        
+        if (!container) {
+            console.error('❌ Container #dateFilterContainer não encontrado!');
+            showAlert('Erro: Container do filtro não encontrado!', 'error');
+            return;
+        }
+        
+        if (!btn) {
+            console.error('❌ Botão .filtro-btn não encontrado!');
+            showAlert('Erro: Botão do filtro não encontrado!', 'error');
+            return;
+        }
+        
+        // Toggle das classes
+        const isActive = container.classList.contains('active');
+        
+        if (isActive) {
+            container.classList.remove('active');
+            btn.classList.remove('active');
+            console.log('📴 Filtro fechado');
+        } else {
+            container.classList.add('active');
+            btn.classList.add('active');
+            console.log('📱 Filtro aberto');
+            
+            // Focar no primeiro campo após animação
+            setTimeout(() => {
+                const dataInicio = document.getElementById('data_inicio');
+                if (dataInicio) {
+                    dataInicio.focus();
+                }
+            }, 300);
+        }
+    }
+
+    function clearDateFilter() {
+        console.log('🗑️ Limpando filtro de datas');
+        
+        const dataInicio = document.getElementById('data_inicio');
+        const dataFim = document.getElementById('data_fim');
+        
+        if (dataInicio) dataInicio.value = '';
+        if (dataFim) dataFim.value = '';
+        
+        // Fechar o filtro
+        const container = document.getElementById('dateFilterContainer');
+        const btn = document.querySelector('.filtro-btn');
+        
+        if (container) container.classList.remove('active');
+        if (btn) btn.classList.remove('active');
+        
+        console.log('✅ Filtro limpo e fechado');
+    }
+
+    function setDateRange(days) {
+        console.log(`📅 Definindo range de ${days} dias`);
+        
+        const hoje = new Date();
+        const dataInicio = new Date();
+        dataInicio.setDate(hoje.getDate() - days);
+        
+        const inputInicio = document.getElementById('data_inicio');
+        const inputFim = document.getElementById('data_fim');
+        
+        if (inputInicio) inputInicio.value = formatDate(dataInicio);
+        if (inputFim) inputFim.value = formatDate(hoje);
+    }
+
+    function setCurrentMonth() {
+        console.log('📅 Definindo mês atual');
+        
+        const hoje = new Date();
+        const primeiroDia = new Date(hoje.getFullYear(), hoje.getMonth(), 1);
+        
+        const inputInicio = document.getElementById('data_inicio');
+        const inputFim = document.getElementById('data_fim');
+        
+        if (inputInicio) inputInicio.value = formatDate(primeiroDia);
+        if (inputFim) inputFim.value = formatDate(hoje);
+    }
+
+    function setLastMonth() {
+        console.log('📅 Definindo mês passado');
+        
+        const hoje = new Date();
+        const ultimoDiaAnterior = new Date(hoje.getFullYear(), hoje.getMonth(), 0);
+        const primeiroDiaAnterior = new Date(hoje.getFullYear(), hoje.getMonth() - 1, 1);
+        
+        const inputInicio = document.getElementById('data_inicio');
+        const inputFim = document.getElementById('data_fim');
+        
+        if (inputInicio) inputInicio.value = formatDate(primeiroDiaAnterior);
+        if (inputFim) inputFim.value = formatDate(ultimoDiaAnterior);
+    }
+
+    function formatDate(date) {
+        return date.toISOString().split('T')[0];
+    }
+
+    // === SISTEMA DE ALERTAS VISUAL ===
+    function showAlert(message, type = 'info') {
+        const alert = document.createElement('div');
+        alert.style.cssText = `
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: ${type === 'error' ? '#f8d7da' : type === 'success' ? '#d4edda' : '#cce5ff'};
+            color: ${type === 'error' ? '#721c24' : type === 'success' ? '#155724' : '#004085'};
+            border: 1px solid ${type === 'error' ? '#f5c6cb' : type === 'success' ? '#c3e6cb' : '#b8daff'};
+            border-radius: 8px;
+            padding: 15px 20px;
+            max-width: 300px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            z-index: 10000;
+            animation: slideInRight 0.3s ease;
         `;
+        alert.textContent = message;
 
-        dayElement.title = `${dia.dia_mes}: ${volume} atendimentos`;
+        document.body.appendChild(alert);
 
-        calendar.appendChild(dayElement);
-      });
+        setTimeout(() => {
+            alert.style.animation = 'slideOutRight 0.3s ease';
+            setTimeout(() => alert.remove(), 300);
+        }, 4000);
     }
 
-    container.appendChild(calendar);
-  }
-
-  // === GRÁFICO COMPARATIVO SEMANAL (CORRIGIDO - BARRAS MAIORES) ===
-  function createWeeklyComparison() {
-    const comparisonChart = document.getElementById('comparisonChart');
-    comparisonChart.innerHTML = '';
-
-    if (volumeComparativo && volumeComparativo.length > 0) {
-      // CORRIGIDO: Escala dinâmica melhor
-      const maxVolume = Math.max(...volumeComparativo.map(d => Math.max(d.volume_atual, d.volume_anterior)));
-      const escalaBase = Math.max(maxVolume, 10); // Escala mínima de 10
-
-      volumeComparativo.forEach(function (dadosDia) {
-        const volumeAtual = dadosDia.volume_atual || 0;
-        const volumeAnterior = dadosDia.volume_anterior || 0;
-
-        // CORRIGIDO: Altura máxima de 220px (aumentado)
-        const alturaAtual = Math.max((volumeAtual / escalaBase) * 220, 8);
-        const alturaAnterior = Math.max((volumeAnterior / escalaBase) * 220, 8);
-
-        const dayElement = document.createElement('div');
-        dayElement.className = 'comparison-day';
-        dayElement.innerHTML = `
-          <div class="comparison-bars">
-            <div class="comparison-bar previous" style="height: ${alturaAnterior}px;">
-              <div class="tooltip">Semana passada: ${volumeAnterior}</div>
-            </div>
-            <div class="comparison-bar current" style="height: ${alturaAtual}px;">
-              <div class="tooltip">Esta semana: ${volumeAtual}</div>
-            </div>
-          </div>
-          <div class="comparison-day-label">${dadosDia.dia}</div>
-        `;
-
-        comparisonChart.appendChild(dayElement);
-      });
-    }
-  }
-
-  // === DESTAQUE PARA COORDENADORAS ===
-  function highlightCoordenadoras() {
-    // Adiciona badges para coordenadoras no top 5
-    const supervisorSections = document.querySelectorAll('.supervisor-section');
-    supervisorSections.forEach(section => {
-      const supervisorName = section.querySelector('.supervisor-name');
-      if (supervisorName && supervisorName.textContent.includes('Meire')) {
-        // Adiciona badge de coordenadora
-        if (!supervisorName.querySelector('.coord-badge')) {
-          const badge = document.createElement('span');
-          badge.className = 'coord-badge';
-          badge.textContent = 'COORD';
-          supervisorName.appendChild(badge);
+    // === VALIDAÇÕES DE FORMULÁRIO ===
+    function setupFormValidation() {
+        const form = document.getElementById('dateFilterForm');
+        const dataInicio = document.getElementById('data_inicio');
+        const dataFim = document.getElementById('data_fim');
+        
+        if (!form || !dataInicio || !dataFim) {
+            console.warn('⚠️ Elementos do formulário não encontrados para validação');
+            return;
         }
-      }
-    });
-
-    // Destaca seções de coordenadoras na complexidade
-    const complexitySupervisors = document.querySelectorAll('.complexity-supervisor');
-    complexitySupervisors.forEach(supervisor => {
-      const nameElement = supervisor.querySelector('.complexity-supervisor-name');
-      if (nameElement && nameElement.textContent.includes('Meire')) {
-        supervisor.classList.add('is-coordenadora');
-      }
-    });
-  }
-
-  // === ANIMAÇÃO DAS BARRAS DE COMPLEXIDADE ===
-  function animateComplexityBars() {
-    const progressBars = document.querySelectorAll('.complexity-progress');
-
-    progressBars.forEach(function (bar) {
-      const targetWidth = bar.style.width;
-      bar.style.width = '0%';
-
-      setTimeout(() => {
-        bar.style.width = targetWidth;
-      }, 500);
-    });
-  }
-
-  // === VALIDAÇÃO E DEBUG DOS DADOS ===
-  function debugData() {
-    console.log('🔍 Debug dos dados:');
-    console.log('📊 Volume comparativo:', volumeComparativo);
-    console.log('🔥 Heatmap mês:', heatmapMes);
-    console.log('🎯 Tem dados reais:', temDadosReais);
-
-    // Verifica se há supervisores/coordenadoras
-    const supervisorSections = document.querySelectorAll('.supervisor-section');
-    console.log(`👥 Seções de supervisores encontradas: ${supervisorSections.length}`);
-
-    // Verifica dados de complexidade
-    const complexitySections = document.querySelectorAll('.complexity-supervisor');
-    console.log(`📊 Seções de complexidade encontradas: ${complexitySections.length}`);
-
-    // Soma total de atendimentos por complexidade
-    let totalBasicos = 0, totalMedios = 0, totalComplexos = 0;
-    complexitySections.forEach(section => {
-      const basicos = section.querySelector('.complexity-basic .complexity-count');
-      const medios = section.querySelector('.complexity-medium .complexity-count');
-      const complexos = section.querySelector('.complexity-complex .complexity-count');
-
-      if (basicos) totalBasicos += parseInt(basicos.textContent.replace(/[()]/g, '')) || 0;
-      if (medios) totalMedios += parseInt(medios.textContent.replace(/[()]/g, '')) || 0;
-      if (complexos) totalComplexos += parseInt(complexos.textContent.replace(/[()]/g, '')) || 0;
-    });
-
-    const totalGeral = totalBasicos + totalMedios + totalComplexos;
-    console.log(`📈 Totais por complexidade: Básicos=${totalBasicos}, Médios=${totalMedios}, Complexos=${totalComplexos}`);
-    console.log(`📊 Total geral calculado: ${totalGeral}`);
-  }
-
-  // === INICIALIZAÇÃO ===
-  animateKPIs();
-  createMonthHeatmap();
-  createWeeklyComparison();
-  highlightCoordenadoras();
-  animateComplexityBars();
-  debugData();
-
-  // === EFEITOS INTERATIVOS MELHORADOS ===
-
-  // Hover nas barras de comparação
-  document.addEventListener('mouseover', function (e) {
-    if (e.target.classList.contains('comparison-bar')) {
-      e.target.style.transform = 'scaleY(1.05) scale(1.05)';
-      e.target.style.filter = 'brightness(1.1)';
-      e.target.style.zIndex = '10';
-    }
-  });
-
-  document.addEventListener('mouseout', function (e) {
-    if (e.target.classList.contains('comparison-bar')) {
-      e.target.style.transform = 'scaleY(1) scale(1)';
-      e.target.style.filter = 'brightness(1)';
-      e.target.style.zIndex = '1';
-    }
-  });
-
-  // Hover aprimorado nos dias do heatmap
-  document.addEventListener('mouseover', function (e) {
-    if (e.target.classList.contains('heatmap-day')) {
-      e.target.style.transform = 'scale(1.15)';
-      e.target.style.zIndex = '10';
-      e.target.style.boxShadow = '0 8px 25px rgba(0, 0, 0, 0.3)';
-    }
-  });
-
-  document.addEventListener('mouseout', function (e) {
-    if (e.target.classList.contains('heatmap-day')) {
-      e.target.style.transform = 'scale(1)';
-      e.target.style.zIndex = '1';
-      e.target.style.boxShadow = 'none';
-    }
-  });
-
-  // Hover nos itens de agentes
-  document.querySelectorAll('.agent-item').forEach(item => {
-    item.addEventListener('mouseenter', function () {
-      this.style.transform = 'translateX(10px) scale(1.02)';
-      this.style.boxShadow = '0 6px 20px rgba(0, 122, 204, 0.25)';
-    });
-
-    item.addEventListener('mouseleave', function () {
-      this.style.transform = 'translateX(0) scale(1)';
-      this.style.boxShadow = 'none';
-    });
-  });
-
-  // === ATALHOS DE TECLADO ===
-  document.addEventListener('keydown', function (e) {
-    // Ctrl + R para atualizar
-    if (e.ctrlKey && e.key === 'r') {
-      e.preventDefault();
-      window.location.reload();
+        
+        form.addEventListener('submit', function(e) {
+            const inicio = dataInicio.value;
+            const fim = dataFim.value;
+            
+            if (!inicio || !fim) {
+                e.preventDefault();
+                showAlert('Por favor, preencha ambas as datas.', 'error');
+                return;
+            }
+            
+            if (inicio > fim) {
+                e.preventDefault();
+                showAlert('A data de início deve ser menor ou igual à data de fim.', 'error');
+                return;
+            }
+            
+            // Verifica período muito longo
+            const diffTime = Math.abs(new Date(fim) - new Date(inicio));
+            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+            
+            if (diffDays > 90) {
+                const confirmar = confirm(`Período muito longo (${diffDays} dias). Continuar?`);
+                if (!confirmar) {
+                    e.preventDefault();
+                    return;
+                }
+            }
+            
+            showAlert('Aplicando filtro...', 'success');
+        });
     }
 
-    // Ctrl + D para debug
-    if (e.ctrlKey && e.key === 'd') {
-      e.preventDefault();
-      debugData();
+    // === ATALHOS DE TECLADO ===
+    function setupKeyboardShortcuts() {
+        document.addEventListener('keydown', function(e) {
+            if (e.ctrlKey && e.key === 'f') {
+                e.preventDefault();
+                toggleDateFilter();
+            }
+            
+            if (e.key === 'Escape') {
+                const container = document.getElementById('dateFilterContainer');
+                if (container && container.classList.contains('active')) {
+                    toggleDateFilter();
+                }
+            }
+        });
     }
 
-    // Teclas 1, 2, 3 para períodos
-    if (e.key === '1') {
-      window.location.href = '{{ url_for("painel_coordenacao") }}?periodo=1';
-    } else if (e.key === '2') {
-      window.location.href = '{{ url_for("painel_coordenacao") }}?periodo=7';
-    } else if (e.key === '3') {
-      window.location.href = '{{ url_for("painel_coordenacao") }}?periodo=30';
+    // === EFEITOS VISUAIS ===
+    function setupVisualEffects() {
+        // Hover nos cartões
+        document.querySelectorAll('.coord-card').forEach(card => {
+            card.addEventListener('mouseenter', function() {
+                this.style.transform = 'translateY(-3px)';
+            });
+            
+            card.addEventListener('mouseleave', function() {
+                this.style.transform = 'translateY(0)';
+            });
+        });
+
+        // Hover nas barras de comparação
+        document.addEventListener('mouseover', function (e) {
+            if (e.target.classList.contains('comparison-bar')) {
+                e.target.style.transform = 'scaleY(1.05) scale(1.05)';
+                e.target.style.filter = 'brightness(1.1)';
+                e.target.style.zIndex = '10';
+            }
+        });
+
+        document.addEventListener('mouseout', function (e) {
+            if (e.target.classList.contains('comparison-bar')) {
+                e.target.style.transform = 'scaleY(1) scale(1)';
+                e.target.style.filter = 'brightness(1)';
+                e.target.style.zIndex = '1';
+            }
+        });
+
+        // Hover nos dias do heatmap
+        document.addEventListener('mouseover', function (e) {
+            if (e.target.classList.contains('heatmap-day')) {
+                e.target.style.transform = 'scale(1.15)';
+                e.target.style.zIndex = '10';
+                e.target.style.boxShadow = '0 8px 25px rgba(0, 0, 0, 0.3)';
+            }
+        });
+
+        document.addEventListener('mouseout', function (e) {
+            if (e.target.classList.contains('heatmap-day')) {
+                e.target.style.transform = 'scale(1)';
+                e.target.style.zIndex = '1';
+                e.target.style.boxShadow = 'none';
+            }
+        });
     }
-  });
 
-  // === FUNCTION PARA EXPORTAR DADOS (OPCIONAL) ===
-  window.exportPainelData = function () {
-    const dadosExport = {
-      timestamp: new Date().toISOString(),
-      volume_comparativo: volumeComparativo,
-      heatmap_mes: heatmapMes,
-      debug_info: {
-        total_supervisores: {{ kpis.total_supervisores }},
-    total_agentes: { { kpis.total_agentes } },
-  total_atendimentos: { { kpis.total_atendimentos } },
-  periodo: '{{ periodo_label }}'
-      }
-    };
+    // === FUNÇÃO DE DEBUG COMPLETA ===
+    function debugSystem() {
+        console.log('🔍 === DEBUG COMPLETO DO SISTEMA ===');
+        console.log('📊 Volume comparativo:', volumeComparativo);
+        console.log('🔥 Heatmap mês:', heatmapMes ? `${heatmapMes.length} dias` : 'null');
+        console.log('🎯 Tem dados reais:', temDadosReais);
+        
+        // Verifica elementos DOM
+        const elementos = {
+            'heatmapCalendar': document.getElementById('heatmapCalendar'),
+            'comparisonChart': document.getElementById('comparisonChart'),
+            'dateFilterContainer': document.getElementById('dateFilterContainer'),
+            'filtro-btn': document.querySelector('.filtro-btn'),
+            'data_inicio': document.getElementById('data_inicio'),
+            'data_fim': document.getElementById('data_fim'),
+            'kpis': document.querySelectorAll('.exec-kpi-value[data-target]')
+        };
+        
+        console.log('📍 Elementos DOM encontrados:');
+        Object.entries(elementos).forEach(([nome, elemento]) => {
+            console.log(`  - ${nome}: ${!!elemento} ${elemento && elemento.length !== undefined ? `(${elemento.length})` : ''}`);
+        });
+        
+        console.log('=================================');
+    }
 
-  const blob = new Blob([JSON.stringify(dadosExport, null, 2)], { type: 'application/json' });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = `painel_coordenacao_${new Date().toISOString().split('T')[0]}.json`;
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-  URL.revokeObjectURL(url);
+    // === INICIALIZAÇÃO PRINCIPAL ===
+    console.log('🎯 Iniciando sistema...');
+    
+    // Aguarda DOM estar completamente carregado
+    setTimeout(() => {
+        try {
+            // 1. Debug inicial
+            debugSystem();
+            
+            // 2. Anima KPIs
+            animateKPIs();
+            
+            // 3. Cria visualizações
+            createMonthHeatmap();
+            createWeeklyComparison();
+            
+            // 4. Configura filtros e validações
+            setupFormValidation();
+            setupKeyboardShortcuts();
+            setupVisualEffects();
+            
+            // 5. Define data máxima como hoje
+            const hoje = new Date().toISOString().split('T')[0];
+            const dataFim = document.getElementById('data_fim');
+            if (dataFim) {
+                dataFim.max = hoje;
+            }
+            
+            console.log('✅ Sistema inicializado com sucesso!');
+            
+            // Mostra informações para o usuário
+            if (!temDadosReais) {
+                showAlert('Usando dados de demonstração. Configure dados reais no sistema.', 'info');
+            }
+            
+        } catch (error) {
+            console.error('❌ Erro durante a inicialização:', error);
+            showAlert('Erro durante inicialização do painel.', 'error');
+        }
+    }, 100);
 
-  console.log('📁 Dados do painel exportados!');
-  };
+    // === DISPONIBILIZA FUNÇÕES GLOBALMENTE PARA TESTE ===
+    window.toggleDateFilter = toggleDateFilter;
+    window.clearDateFilter = clearDateFilter;
+    window.setDateRange = setDateRange;
+    window.setCurrentMonth = setCurrentMonth;
+    window.setLastMonth = setLastMonth;
+    window.debugSystem = debugSystem;
+    
+    // === ANIMAÇÕES CSS ===
+    const style = document.createElement('style');
+    style.textContent = `
+        @keyframes slideInRight {
+            from { transform: translateX(100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+        @keyframes slideOutRight {
+            from { transform: translateX(0); opacity: 1; }
+            to { transform: translateX(100%); opacity: 0; }
+        }
+    `;
+    document.head.appendChild(style);
 
-  // Log final das funcionalidades
-  console.log('🎯 Painel corrigido com:');
-  console.log('   🔥 Heatmap do mês com melhor separação visual');
-  console.log('   📊 Gráfico comparativo com barras maiores');
-  console.log('   👥 Top 5 agentes incluindo coordenadoras');
-  console.log('   📊 Percentuais de complexidade corrigidos');
-  console.log('   🔍 Sistema de debug integrado');
-  console.log('');
-  console.log('⌨️  Atalhos disponíveis:');
-  console.log('   1, 2, 3: Alternar períodos');
-  console.log('   Ctrl+R: Atualizar painel');
-  console.log('   Ctrl+D: Debug dos dados');
-  console.log('');
-  console.log('💡 Use window.exportPainelData() para exportar dados');
+    console.log('🎉 Painel da Coordenação carregado com todas as correções!');
 });
 </script>
 

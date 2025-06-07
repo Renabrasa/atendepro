@@ -1098,36 +1098,58 @@ def admin_panel():
 @app.route('/painel_coordenacao')
 @login_required  
 def painel_coordenacao():
-    """Painel da Coordenação - VERSÃO CORRIGIDA (Datas e dados reais)"""
+    """Painel da Coordenação - VERSÃO COM FILTRO DE DATAS"""
     if current_user.tipo not in ['admin', 'coordenadora']:
         flash('Acesso negado.', 'danger')
         return redirect(url_for('dashboard'))
     
     try:
-        # === CORREÇÃO: Garantir que período seja sempre int ===
-        try:
-            periodo_raw = request.args.get('periodo', '7')
-            periodo = int(periodo_raw)
+        # === SISTEMA DE FILTROS FLEXÍVEL ===
+        hoje = datetime.now()
+        
+        # Verifica se há filtro personalizado
+        data_inicio_str = request.args.get('data_inicio')
+        data_fim_str = request.args.get('data_fim')
+        periodo = request.args.get('periodo', '7', type=int)
+        
+        # LÓGICA DE PRIORIDADE: Filtro personalizado > Período predefinido
+        if data_inicio_str and data_fim_str:
+            # Usuário escolheu datas específicas
+            try:
+                data_inicio = datetime.strptime(data_inicio_str, '%Y-%m-%d')
+                data_fim = datetime.strptime(data_fim_str + ' 23:59:59', '%Y-%m-%d %H:%M:%S')
+                periodo_usado = 'personalizado'
+                app.logger.info(f"Filtro personalizado: {data_inicio_str} até {data_fim_str}")
+            except ValueError:
+                # Data inválida, volta para período padrão
+                data_fim = hoje
+                data_inicio = data_fim - timedelta(days=7)
+                periodo_usado = 'periodo'
+                app.logger.warning("Datas inválidas, usando período padrão de 7 dias")
+        else:
+            # Usuário escolheu período predefinido
             if periodo not in [1, 7, 30, 90]:
                 periodo = 7
-        except (ValueError, TypeError):
-            periodo = 7
+            
+            data_fim = hoje
+            data_inicio = data_fim - timedelta(days=periodo)
+            periodo_usado = 'periodo'
+            app.logger.info(f"Período predefinido: {periodo} dias")
         
-        # === CORREÇÃO: Cálculo de datas mais seguro ===
-        data_fim = datetime.now()
-        data_inicio = data_fim - timedelta(days=int(periodo))
-        
-        app.logger.info(f"Período: {data_inicio.strftime('%Y-%m-%d')} até {data_fim.strftime('%Y-%m-%d')}")
+        app.logger.info(f"Período final: {data_inicio.strftime('%Y-%m-%d %H:%M')} até {data_fim.strftime('%Y-%m-%d %H:%M')}")
         
         # === 1. KPIs PRINCIPAIS ===
         try:
             total_supervisores = User.query.filter(User.tipo.in_(['supervisor', 'coordenadora'])).count()
             total_agentes = Agente.query.filter_by(ativo=True).count()
             
+            # Busca atendimentos no período
             atendimentos_periodo = Atendimento.query.filter(
                 Atendimento.data_hora >= data_inicio,
                 Atendimento.data_hora <= data_fim
             ).count()
+            
+            app.logger.info(f"KPIs: {total_supervisores} sup, {total_agentes} agentes, {atendimentos_periodo} atendimentos")
             
             media_por_supervisor = round(atendimentos_periodo / total_supervisores, 1) if total_supervisores > 0 else 0
             
@@ -1144,7 +1166,7 @@ def painel_coordenacao():
             
             for supervisor in supervisores:
                 try:
-                    # Atendimentos do supervisor
+                    # Atendimentos do supervisor no período filtrado
                     atendimentos_sup = Atendimento.query.filter(
                         Atendimento.supervisor_id == supervisor.id,
                         Atendimento.data_hora >= data_inicio,
@@ -1183,7 +1205,7 @@ def painel_coordenacao():
                     
                     total_classificados = sum(complexidade_counts.values())
                     
-                    # NOVO: Calcula razão classificados/total
+                    # Razão classificados/total
                     if total_atendimentos_sup > 0:
                         razao_classificados = round((total_classificados / total_atendimentos_sup) * 100, 1)
                     else:
@@ -1210,7 +1232,7 @@ def painel_coordenacao():
                         'tipo': str(supervisor.tipo),
                         'total_atendimentos': total_atendimentos_sup,
                         'total_classificados': total_classificados,
-                        'razao_classificados': razao_classificados,  # NOVO
+                        'razao_classificados': razao_classificados,
                         'basicos': {'quantidade': complexidade_counts['basico'], 'percentual': percentual_basico},
                         'medios': {'quantidade': complexidade_counts['medio'], 'percentual': percentual_medio},
                         'complexos': {'quantidade': complexidade_counts['complexo'], 'percentual': percentual_complexo}
@@ -1223,20 +1245,20 @@ def painel_coordenacao():
         except Exception as e:
             app.logger.error(f"Erro geral nos supervisores: {e}")
         
-        # === 3. HEATMAP DO MÊS (CORRIGIDO) ===
+        # === 3. HEATMAP DINÂMICO ===
         heatmap_mes = []
         try:
-            app.logger.info("Gerando heatmap do mês - CORRIGIDO")
-            hoje = datetime.now().date()
-            
-            # CORREÇÃO: Usar primeiro dia do mês atual até hoje
-            primeiro_dia_mes = hoje.replace(day=1)
-            
-            # Gera apenas os dias que já passaram no mês atual
-            dia_atual = primeiro_dia_mes
-            while dia_atual <= hoje:
-                try:
-                    # CORREÇÃO: Busca atendimentos reais do dia
+            # Se é filtro personalizado, gera heatmap do período filtrado
+            if periodo_usado == 'personalizado':
+                # Heatmap do período selecionado
+                dias_no_periodo = (data_fim.date() - data_inicio.date()).days + 1
+                
+                for i in range(min(dias_no_periodo, 60)):  # Máximo 60 dias para não sobrecarregar
+                    dia_atual = data_inicio.date() + timedelta(days=i)
+                    
+                    if dia_atual > data_fim.date():
+                        break
+                    
                     inicio_dia = datetime.combine(dia_atual, datetime.min.time())
                     fim_dia = inicio_dia + timedelta(days=1)
                     
@@ -1247,97 +1269,80 @@ def painel_coordenacao():
                     
                     heatmap_mes.append({
                         'dia_mes': int(dia_atual.day),
-                        'dia_semana': int(dia_atual.weekday()),  # 0=Segunda, 6=Domingo
+                        'dia_semana': int(dia_atual.weekday()),
                         'volume': int(atendimentos_dia),
-                        'eh_hoje': dia_atual == hoje
+                        'eh_hoje': dia_atual == datetime.now().date()
                     })
+            else:
+                # Heatmap dos últimos 30 dias (padrão)
+                hoje_date = datetime.now().date()
+                
+                for i in range(30):
+                    dia_atual = hoje_date - timedelta(days=29-i)
                     
-                    app.logger.debug(f"Dia {dia_atual}: {atendimentos_dia} atendimentos")
+                    inicio_dia = datetime.combine(dia_atual, datetime.min.time())
+                    fim_dia = inicio_dia + timedelta(days=1)
                     
-                except Exception as e:
-                    app.logger.warning(f"Erro no dia {dia_atual}: {e}")
-                    # Dia com dados vazios
+                    atendimentos_dia = Atendimento.query.filter(
+                        Atendimento.data_hora >= inicio_dia,
+                        Atendimento.data_hora < fim_dia
+                    ).count()
+                    
                     heatmap_mes.append({
                         'dia_mes': int(dia_atual.day),
                         'dia_semana': int(dia_atual.weekday()),
-                        'volume': 0,
-                        'eh_hoje': dia_atual == hoje
+                        'volume': int(atendimentos_dia),
+                        'eh_hoje': dia_atual == hoje_date
                     })
-                
-                dia_atual += timedelta(days=1)
+            
+            total_heatmap = sum(dia['volume'] for dia in heatmap_mes)
+            app.logger.info(f"Heatmap: {len(heatmap_mes)} dias, {total_heatmap} atendimentos")
                     
         except Exception as e:
             app.logger.error(f"Erro no heatmap: {e}")
             heatmap_mes = []
         
-        # === 4. VOLUME COMPARATIVO SEMANAL (CORRIGIDO) ===
+        # === 4. COMPARATIVO DOS ÚLTIMOS 7 DIAS ===
         volume_comparativo = []
         try:
-            app.logger.info("Gerando volume comparativo - CORRIGIDO")
             dias_semana = ['Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb', 'Dom']
-            hoje = datetime.now().date()
+            hoje_date = datetime.now().date()
             
-            # CORREÇÃO: Só incluir dias que já passaram esta semana
             for i in range(7):
-                try:
-                    # Calcula que dia da semana é (0=Segunda)
-                    dias_desde_segunda = hoje.weekday()  # 0=Segunda, 6=Domingo
-                    
-                    # Data do dia i desta semana
-                    dia_esta_semana = hoje - timedelta(days=dias_desde_segunda - i)
-                    
-                    # Data do mesmo dia da semana passada
-                    dia_semana_passada = dia_esta_semana - timedelta(days=7)
-                    
-                    # CORREÇÃO: Só contar se o dia já passou
-                    if dia_esta_semana <= hoje:
-                        # Conta atendimentos do dia desta semana
-                        inicio_dia_atual = datetime.combine(dia_esta_semana, datetime.min.time())
-                        fim_dia_atual = inicio_dia_atual + timedelta(days=1)
-                        
-                        volume_atual = Atendimento.query.filter(
-                            Atendimento.data_hora >= inicio_dia_atual,
-                            Atendimento.data_hora < fim_dia_atual
-                        ).count()
-                        
-                        # Conta atendimentos do mesmo dia semana passada
-                        inicio_dia_anterior = datetime.combine(dia_semana_passada, datetime.min.time())
-                        fim_dia_anterior = inicio_dia_anterior + timedelta(days=1)
-                        
-                        volume_anterior = Atendimento.query.filter(
-                            Atendimento.data_hora >= inicio_dia_anterior,
-                            Atendimento.data_hora < fim_dia_anterior
-                        ).count()
-                        
-                        app.logger.debug(f"{dias_semana[i]} ({dia_esta_semana}): atual={volume_atual}, anterior={volume_anterior}")
-                    else:
-                        # Dia ainda não aconteceu
-                        volume_atual = 0
-                        volume_anterior = 0
-                        app.logger.debug(f"{dias_semana[i]}: dia futuro, zerando")
-                    
-                    volume_comparativo.append({
-                        'dia': str(dias_semana[i]),
-                        'volume_atual': int(volume_atual),
-                        'volume_anterior': int(volume_anterior)
-                    })
-                    
-                except Exception as e:
-                    app.logger.warning(f"Erro no dia {i} ({dias_semana[i]}): {e}")
-                    volume_comparativo.append({
-                        'dia': str(dias_semana[i]),
-                        'volume_atual': 0,
-                        'volume_anterior': 0
-                    })
+                dia_atual = hoje_date - timedelta(days=6-i)
+                dia_anterior = dia_atual - timedelta(days=7)
+                
+                # Atual
+                inicio_atual = datetime.combine(dia_atual, datetime.min.time())
+                fim_atual = inicio_atual + timedelta(days=1)
+                volume_atual = Atendimento.query.filter(
+                    Atendimento.data_hora >= inicio_atual,
+                    Atendimento.data_hora < fim_atual
+                ).count()
+                
+                # Anterior
+                inicio_anterior = datetime.combine(dia_anterior, datetime.min.time())
+                fim_anterior = inicio_anterior + timedelta(days=1)
+                volume_anterior = Atendimento.query.filter(
+                    Atendimento.data_hora >= inicio_anterior,
+                    Atendimento.data_hora < fim_anterior
+                ).count()
+                
+                volume_comparativo.append({
+                    'dia': str(dias_semana[i]),
+                    'volume_atual': int(volume_atual),
+                    'volume_anterior': int(volume_anterior)
+                })
                     
         except Exception as e:
-            app.logger.error(f"Erro no volume comparativo: {e}")
+            app.logger.error(f"Erro no comparativo: {e}")
             volume_comparativo = []
         
         # === 5. RESUMO EXECUTIVO ===
         try:
-            # Compara com período anterior para tendência
-            data_inicio_anterior = data_inicio - timedelta(days=periodo)
+            # Calcula variação com período anterior do mesmo tamanho
+            dias_periodo = (data_fim - data_inicio).days
+            data_inicio_anterior = data_inicio - timedelta(days=dias_periodo)
             data_fim_anterior = data_inicio
             
             atendimentos_anterior = Atendimento.query.filter(
@@ -1362,14 +1367,17 @@ def painel_coordenacao():
                 'mudanca_tipo': mudanca_tipo
             }
         except Exception as e:
-            app.logger.error(f"Erro no resumo: {e}")
             resumo_dados = {
                 'mudanca_percentual': 0.0,
                 'mudanca_tipo': 'estavel'
             }
         
-        # === 6. DADOS FINAIS PARA O TEMPLATE ===
-        periodo_label = "Hoje" if periodo == 1 else "Semana" if periodo == 7 else f"Últimos {periodo} dias"
+        # === 6. DADOS PARA O TEMPLATE ===
+        if periodo_usado == 'personalizado':
+            periodo_label = f"{data_inicio.strftime('%d/%m')} a {data_fim.strftime('%d/%m/%Y')}"
+        else:
+            periodo_label = "Hoje" if periodo == 1 else "Semana" if periodo == 7 else f"Últimos {periodo} dias"
+        
         mes_atual = datetime.now().strftime('%B %Y')
         timestamp_atualizacao = datetime.now().strftime('%d/%m/%Y às %H:%M')
         tem_dados_reais = total_supervisores > 0 and total_agentes > 0
@@ -1390,17 +1398,22 @@ def painel_coordenacao():
             'mes_atual': str(mes_atual),
             'timestamp_atualizacao': str(timestamp_atualizacao),
             'tem_dados_reais': bool(tem_dados_reais),
-            'resumo_dados': resumo_dados
+            'resumo_dados': resumo_dados,
+            # NOVOS: Dados para o filtro
+            'data_inicio_filtro': data_inicio.strftime('%Y-%m-%d'),
+            'data_fim_filtro': data_fim.strftime('%Y-%m-%d'),
+            'periodo_usado': periodo_usado,
+            'filtro_ativo': periodo_usado == 'personalizado'
         }
         
-        app.logger.info("=== PAINEL COORDENAÇÃO CONCLUÍDO COM DADOS REAIS ===")
-        app.logger.info(f"Heatmap: {len(heatmap_mes)} dias")
-        app.logger.info(f"Comparativo: {len(volume_comparativo)} dias da semana")
+        app.logger.info("=== PAINEL COM FILTRO CONCLUÍDO ===")
+        app.logger.info(f"Período: {periodo_label}")
+        app.logger.info(f"Atendimentos: {atendimentos_periodo}")
         
         return render_template('painel_coordenacao.html', **context)
         
     except Exception as e:
-        app.logger.error(f"ERRO CRÍTICO NO PAINEL: {e}")
+        app.logger.error(f"ERRO NO PAINEL: {e}")
         import traceback
         app.logger.error(f"Traceback: {traceback.format_exc()}")
         

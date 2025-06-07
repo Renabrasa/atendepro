@@ -1678,213 +1678,297 @@ document.addEventListener('DOMContentLoaded', function () {
         volumeComparativo = generateWeeklyDataCorrect();
     }
 
-    // === FUNÇÃO CORRIGIDA PARA GERAR DADOS SEMANAIS ===
     function generateWeeklyDataCorrect() {
-        console.log('🔧 Gerando dados semanais CORRIGIDOS...');
-        
-        // Hoje
-        const hoje = new Date();
-        console.log(`📅 Hoje é: ${hoje.toLocaleDateString('pt-BR', { weekday: 'long' })}`);
-        
-        // Calcula o início da semana (segunda-feira)
-        const diaSemana = hoje.getDay(); // 0=Dom, 1=Seg, ..., 6=Sab
-        let diasAtrasSegunda;
-        
-        if (diaSemana === 0) {
-            // Domingo: volta 6 dias para chegar na segunda
-            diasAtrasSegunda = 6;
-        } else {
-            // Outros dias: volta (diaSemana - 1) dias
-            diasAtrasSegunda = diaSemana - 1;
-        }
-        
-        const segundaFeira = new Date(hoje);
-        segundaFeira.setDate(hoje.getDate() - diasAtrasSegunda);
-        
-        console.log(`📅 Segunda-feira desta semana: ${segundaFeira.toLocaleDateString('pt-BR')}`);
-        
-        // Array dos dias da semana EM ORDEM
-        const diasSemana = [
-            { nome: 'Seg', index: 0, base: 45, baseAnt: 38 },
-            { nome: 'Ter', index: 1, base: 52, baseAnt: 43 },
-            { nome: 'Qua', index: 2, base: 61, baseAnt: 55 },
-            { nome: 'Qui', index: 3, base: 48, baseAnt: 52 },
-            { nome: 'Sex', index: 4, base: 71, baseAnt: 69 },
-            { nome: 'Sab', index: 5, base: 23, baseAnt: 28 },
-            { nome: 'Dom', index: 6, base: 18, baseAnt: 21 }
-        ];
-        
-        const dadosGerados = [];
-        
-        diasSemana.forEach((diaInfo) => {
-            // Calcula a data real deste dia
-            const dataReal = new Date(segundaFeira);
-            dataReal.setDate(segundaFeira.getDate() + diaInfo.index);
-            
-            // Variação aleatória pequena
-            const variacao = Math.floor(Math.random() * 8) - 4; // -4 a +4
-            const variacaoAnt = Math.floor(Math.random() * 8) - 4;
-            
-            const dadoDia = {
-                dia: diaInfo.nome,
-                volume_atual: Math.max(1, diaInfo.base + variacao),
-                volume_anterior: Math.max(1, diaInfo.baseAnt + variacaoAnt),
-                data_real: dataReal.toLocaleDateString('pt-BR'),
-                eh_hoje: dataReal.toDateString() === hoje.toDateString()
-            };
-            
-            dadosGerados.push(dadoDia);
-            
-            console.log(`📊 ${diaInfo.nome} (${dadoDia.data_real}): Atual=${dadoDia.volume_atual}, Anterior=${dadoDia.volume_anterior} ${dadoDia.eh_hoje ? '← HOJE' : ''}`);
-        });
-        
-        return dadosGerados;
+    console.log('🔧 Gerando dados semanais CORRIGIDOS...');
+    
+    // Hoje
+    const hoje = new Date();
+    console.log(`📅 Hoje é: ${hoje.toLocaleDateString('pt-BR', { weekday: 'long' })}`);
+    
+    // CORREÇÃO: Calcula o início da semana considerando Segunda=0, Terça=1... Domingo=6
+    const diaSemanaJS = hoje.getDay(); // JavaScript: 0=Dom, 1=Seg, 2=Ter, 3=Qua, 4=Qui, 5=Sex, 6=Sab
+    let diasAtrasSegunda;
+    
+    if (diaSemanaJS === 0) {
+        // Domingo: volta 6 dias para chegar na segunda
+        diasAtrasSegunda = 6;
+    } else {
+        // Outros dias: volta (diaSemanaJS - 1) dias
+        diasAtrasSegunda = diaSemanaJS - 1;
     }
+    
+    const segundaFeira = new Date(hoje);
+    segundaFeira.setDate(hoje.getDate() - diasAtrasSegunda);
+    
+    console.log(`📅 Segunda-feira desta semana: ${segundaFeira.toLocaleDateString('pt-BR')}`);
+    
+    // Array dos dias da semana EM ORDEM CORRETA
+    const diasSemana = [
+        { nome: 'Seg', index: 0, jsDay: 1, base: 45, baseAnt: 38 },
+        { nome: 'Ter', index: 1, jsDay: 2, base: 52, baseAnt: 43 },
+        { nome: 'Qua', index: 2, jsDay: 3, base: 61, baseAnt: 55 },
+        { nome: 'Qui', index: 3, jsDay: 4, base: 48, baseAnt: 52 },
+        { nome: 'Sex', index: 4, jsDay: 5, base: 71, baseAnt: 69 }, // ← SEXTA COM 71!
+        { nome: 'Sab', index: 5, jsDay: 6, base: 23, baseAnt: 28 },
+        { nome: 'Dom', index: 6, jsDay: 0, base: 18, baseAnt: 21 }
+    ];
+    
+    const dadosGerados = [];
+    
+    diasSemana.forEach((diaInfo) => {
+        // Calcula a data real deste dia
+        const dataReal = new Date(segundaFeira);
+        dataReal.setDate(segundaFeira.getDate() + diaInfo.index);
+        
+        // VERIFICAÇÃO: A data real deve bater com o dia da semana esperado
+        const diaDaSemanaReal = dataReal.getDay();
+        console.log(`🔍 ${diaInfo.nome}: esperado JS day ${diaInfo.jsDay}, real JS day ${diaDaSemanaReal}`);
+        
+        // Variação aleatória pequena
+        const variacao = Math.floor(Math.random() * 8) - 4; // -4 a +4
+        const variacaoAnt = Math.floor(Math.random() * 8) - 4;
+        
+        const dadoDia = {
+            dia: diaInfo.nome,
+            volume_atual: Math.max(1, diaInfo.base + variacao),
+            volume_anterior: Math.max(1, diaInfo.baseAnt + variacaoAnt),
+            data_real: dataReal.toLocaleDateString('pt-BR'),
+            eh_hoje: dataReal.toDateString() === hoje.toDateString(),
+            js_day: diaDaSemanaReal // Para debug
+        };
+        
+        dadosGerados.push(dadoDia);
+        
+        console.log(`📊 ${diaInfo.nome} (${dadoDia.data_real}): Atual=${dadoDia.volume_atual}, Anterior=${dadoDia.volume_anterior} ${dadoDia.eh_hoje ? '← HOJE' : ''}`);
+    });
+    
+    return dadosGerados;
+}
+
 
     // === COMPARATIVO SEMANAL CORRIGIDO ===
     function createWeeklyComparison() {
-        console.log('📊 Criando comparativo semanal...');
-        
-        const comparisonChart = document.getElementById('comparisonChart');
-        if (!comparisonChart) {
-            console.warn('⚠️ Container não encontrado');
-            return;
-        }
-        
-        comparisonChart.innerHTML = '';
+    console.log('📊 Criando comparativo semanal CORRIGIDO...');
+    
+    const comparisonChart = document.getElementById('comparisonChart');
+    if (!comparisonChart) {
+        console.warn('⚠️ Container não encontrado');
+        return;
+    }
+    
+    comparisonChart.innerHTML = '';
 
-        // Usa dados corretos
-        let dadosParaUsar = volumeComparativo;
-        
-        // Se não tem dados do backend, gera dados corretos
-        if (!dadosParaUsar || dadosParaUsar.length === 0) {
-            console.log('📝 Gerando dados locais corretos');
-            dadosParaUsar = generateWeeklyDataCorrect();
-        }
+    // Usa dados corretos
+    let dadosParaUsar = volumeComparativo;
+    
+    // Se não tem dados do backend, gera dados corretos
+    if (!dadosParaUsar || dadosParaUsar.length === 0) {
+        console.log('📝 Gerando dados locais corretos');
+        dadosParaUsar = generateWeeklyDataCorrect();
+    }
 
-        if (dadosParaUsar && dadosParaUsar.length > 0) {
-            console.log(`📈 Processando ${dadosParaUsar.length} dias`);
+    if (dadosParaUsar && dadosParaUsar.length > 0) {
+        console.log(`📈 Processando ${dadosParaUsar.length} dias`);
+        
+        // Escala baseada no maior valor
+        const todosValores = [];
+        dadosParaUsar.forEach(d => {
+            todosValores.push(d.volume_atual || 0);
+            todosValores.push(d.volume_anterior || 0);
+        });
+        const maxVolume = Math.max(...todosValores);
+        const escalaBase = Math.max(maxVolume, 10);
+        
+        console.log(`📏 Valor máximo: ${maxVolume}, Escala: ${escalaBase}`);
+
+        // CRÍTICO: Processa na ordem EXATA do array (Seg, Ter, Qua, Qui, Sex, Sab, Dom)
+        dadosParaUsar.forEach(function (dadosDia, index) {
+            const volumeAtual = dadosDia.volume_atual || 0;
+            const volumeAnterior = dadosDia.volume_anterior || 0;
+            const nomeDia = dadosDia.dia;
+
+            // Altura das barras
+            const alturaAtual = Math.max((volumeAtual / escalaBase) * 220, 8);
+            const alturaAnterior = Math.max((volumeAnterior / escalaBase) * 220, 8);
+
+            console.log(`📊 ${nomeDia}: Atual=${volumeAtual}(${Math.round(alturaAtual)}px), Anterior=${volumeAnterior}(${Math.round(alturaAnterior)}px)`);
+
+            const dayElement = document.createElement('div');
+            dayElement.className = 'comparison-day';
             
-            // Escala baseada no maior valor
-            const todosValores = [];
-            dadosParaUsar.forEach(d => {
-                todosValores.push(d.volume_atual || 0);
-                todosValores.push(d.volume_anterior || 0);
-            });
-            const maxVolume = Math.max(...todosValores);
-            const escalaBase = Math.max(maxVolume, 10);
+            // Destacar o dia atual
+            const isToday = dadosDia.eh_hoje || false;
+            const todayClass = isToday ? ' style="background: rgba(33, 150, 243, 0.1); border-radius: 4px; padding: 2px;"' : '';
             
-            console.log(`📏 Valor máximo: ${maxVolume}, Escala: ${escalaBase}`);
-
-            // CRÍTICO: Processa na ordem EXATA do array
-            dadosParaUsar.forEach(function (dadosDia, index) {
-                const volumeAtual = dadosDia.volume_atual || 0;
-                const volumeAnterior = dadosDia.volume_anterior || 0;
-                const nomeDia = dadosDia.dia;
-
-                // Altura das barras (máximo 90px para layout compacto)
-                const alturaAtual = Math.max((volumeAtual / escalaBase) * 90, 4);
-                const alturaAnterior = Math.max((volumeAnterior / escalaBase) * 90, 4);
-
-                console.log(`📊 Posição ${index}: ${nomeDia} = Atual:${volumeAtual}(${Math.round(alturaAtual)}px), Anterior:${volumeAnterior}(${Math.round(alturaAnterior)}px)`);
-
-                const dayElement = document.createElement('div');
-                dayElement.className = 'comparison-day';
-                
-                // Destacar o dia atual
-                const isToday = dadosDia.eh_hoje || false;
-                const todayClass = isToday ? ' style="background: rgba(33, 150, 243, 0.1); border-radius: 4px; padding: 2px;"' : '';
-                
-                dayElement.innerHTML = `
-                    <div class="comparison-bars"${todayClass}>
-                        <div class="comparison-bar previous" 
-                             style="height: ${alturaAnterior}px;" 
-                             data-day="${nomeDia}"
-                             data-value="${volumeAnterior}">
-                            <div class="tooltip">Anterior: ${volumeAnterior}</div>
-                        </div>
-                        <div class="comparison-bar current" 
-                             style="height: ${alturaAtual}px;"
-                             data-day="${nomeDia}"
-                             data-value="${volumeAtual}">
-                            <div class="tooltip">Atual: ${volumeAtual}</div>
-                        </div>
+            dayElement.innerHTML = `
+                <div class="comparison-bars"${todayClass}>
+                    <div class="comparison-bar previous" 
+                         style="height: ${alturaAnterior}px;" 
+                         data-day="${nomeDia}"
+                         data-value="${volumeAnterior}">
+                        <div class="tooltip">Anterior: ${volumeAnterior}</div>
                     </div>
-                    <div class="comparison-day-label" style="${isToday ? 'color: #2196F3; font-weight: 700;' : ''}">${nomeDia}</div>
-                `;
+                    <div class="comparison-bar current" 
+                         style="height: ${alturaAtual}px;"
+                         data-day="${nomeDia}"
+                         data-value="${volumeAtual}">
+                        <div class="tooltip">Atual: ${volumeAtual}</div>
+                    </div>
+                </div>
+                <div class="comparison-day-label" style="${isToday ? 'color: #2196F3; font-weight: 700;' : ''}">${nomeDia}</div>
+            `;
 
-                comparisonChart.appendChild(dayElement);
-            });
-            
-            console.log('✅ Comparativo criado - dias alinhados corretamente!');
-            
+            comparisonChart.appendChild(dayElement);
+        });
+        
+        console.log('✅ Comparativo criado - SEXTA-FEIRA deve mostrar 71!');
+        
+    } else {
+        console.warn('⚠️ Nenhum dado disponível');
+        comparisonChart.innerHTML = '<div style="display: flex; align-items: center; justify-content: center; height: 90px; color: #999; font-style: italic;">Dados não disponíveis</div>';
+    }
+}
+
+// === FUNÇÃO DE TESTE MELHORADA ===
+window.testComparativo = function() {
+    console.log('🧪 === TESTE DO COMPARATIVO CORRIGIDO ===');
+    console.log('📅 Hoje:', new Date().toLocaleDateString('pt-BR', { weekday: 'long' }));
+    
+    const dadosTeste = generateWeeklyDataCorrect();
+    console.log('🔍 Dados gerados:');
+    dadosTeste.forEach((d, i) => {
+        console.log(`  ${i}: ${d.dia} (${d.data_real}) - Atual: ${d.volume_atual}, Anterior: ${d.volume_anterior} [JS day: ${d.js_day}]`);
+    });
+    
+    // Procura especificamente pela sexta-feira
+    const sexta = dadosTeste.find(d => d.dia === 'Sex');
+    if (sexta) {
+        console.log(`🎯 SEXTA-FEIRA encontrada: ${sexta.volume_atual} atendimentos`);
+    }
+    
+    volumeComparativo = dadosTeste;
+    createWeeklyComparison();
+    console.log('✅ Teste concluído - Sexta deve mostrar ~71!');
+};
+
+// === TESTE ESPECÍFICO PARA HEATMAP ===
+window.testHeatmap = function() {
+    console.log('🧪 === TESTE DO HEATMAP ===');
+    
+    // Gerar dados de teste com sexta-feira destacada
+    const hoje = new Date();
+    const ultimoDia = new Date(hoje.getFullYear(), hoje.getMonth() + 1, 0);
+    
+    heatmapMes = [];
+    
+    for (let dia = 1; dia <= ultimoDia.getDate(); dia++) {
+        const data = new Date(hoje.getFullYear(), hoje.getMonth(), dia);
+        const diaDaSemana = data.getDay(); // 0=Dom, 1=Seg, 2=Ter, 3=Qua, 4=Qui, 5=Sex, 6=Sab
+        
+        let volume;
+        if (diaDaSemana === 5) { // Sexta-feira
+            volume = 45; // Volume alto para sexta
+        } else if (diaDaSemana === 4) { // Quinta-feira  
+            volume = 21; // Volume médio para quinta
         } else {
-            console.warn('⚠️ Nenhum dado disponível');
-            comparisonChart.innerHTML = '<div style="display: flex; align-items: center; justify-content: center; height: 90px; color: #999; font-style: italic;">Dados não disponíveis</div>';
+            volume = Math.floor(Math.random() * 10) + 2;
+        }
+        
+        heatmapMes.push({
+            dia_mes: dia,
+            volume: volume,
+            dia_semana: diaDaSemana,
+            eh_hoje: dia === hoje.getDate()
+        });
+        
+        // Log das sextas e quintas para verificação
+        if (diaDaSemana === 5 || diaDaSemana === 4) {
+            const nomeDia = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sab'][diaDaSemana];
+            console.log(`📅 Dia ${dia}: ${nomeDia}, volume: ${volume}, JS day: ${diaDaSemana}`);
         }
     }
+    
+    createMonthHeatmap();
+    console.log('✅ Heatmap atualizado - Sextas devem mostrar 45!');
+};
 
     // === HEATMAP COMPACTO ===
     function createMonthHeatmap() {
-        console.log('🔥 Criando heatmap compacto...');
+    console.log('🔥 Criando heatmap CORRIGIDO...');
+    
+    const container = document.getElementById('heatmapCalendar');
+    if (!container) return;
+    
+    container.innerHTML = '';
+
+    // MAPEAMENTO CORRETO: JavaScript day -> Position no grid
+    const diasSemana = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sab'];
+    const calendar = document.createElement('div');
+    calendar.className = 'heatmap-calendar';
+
+    // Cabeçalhos
+    diasSemana.forEach(dia => {
+        const header = document.createElement('div');
+        header.className = 'heatmap-day-header';
+        header.textContent = dia;
+        calendar.appendChild(header);
+    });
+
+    if (heatmapMes && heatmapMes.length > 0) {
+        // CORREÇÃO: Primeiro dia do mês
+        const primeiroDia = heatmapMes[0];
+        const primeiroDiaSemanaJS = primeiroDia.dia_semana; // JavaScript: 0=Dom, 1=Seg, etc.
         
-        const container = document.getElementById('heatmapCalendar');
-        if (!container) return;
+        console.log(`🗓️ Primeiro dia do mês: dia ${primeiroDia.dia_mes}, JS day: ${primeiroDiaSemanaJS}`);
         
-        container.innerHTML = '';
+        // O offset é exatamente o valor do JavaScript getDay()
+        const offset = primeiroDiaSemanaJS; // Domingo=0, Segunda=1, etc.
 
-        const diasSemana = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sab'];
-        const calendar = document.createElement('div');
-        calendar.className = 'heatmap-calendar';
-
-        // Cabeçalhos
-        diasSemana.forEach(dia => {
-            const header = document.createElement('div');
-            header.className = 'heatmap-day-header';
-            header.textContent = dia;
-            calendar.appendChild(header);
-        });
-
-        if (heatmapMes && heatmapMes.length > 0) {
-            // Primeiro dia do mês
-            const primeiroDia = heatmapMes[0];
-            const primeiroDiaSemana = primeiroDia.dia_semana;
-            const offset = primeiroDiaSemana; // Domingo=0, Segunda=1, etc.
-
-            // Células vazias no início
-            for (let i = 0; i < offset; i++) {
-                const emptyCell = document.createElement('div');
-                emptyCell.className = 'heatmap-day heat-0';
-                calendar.appendChild(emptyCell);
-            }
-
-            // Dias do mês
-            heatmapMes.forEach(function (dia) {
-                const volume = dia.volume || 0;
-                
-                let intensity = 0;
-                if (volume > 0) {
-                    if (volume <= 8) intensity = 1;
-                    else if (volume <= 16) intensity = 2;
-                    else if (volume <= 25) intensity = 3;
-                    else intensity = 4;
-                }
-
-                const dayElement = document.createElement('div');
-                dayElement.className = `heatmap-day heat-${intensity} ${dia.eh_hoje ? 'today' : ''}`;
-
-                dayElement.innerHTML = `
-                    <div class="heatmap-day-number">${dia.dia_mes}</div>
-                    <div class="heatmap-day-count" style="opacity: ${volume > 0 ? '1' : '0.3'}">${volume}</div>
-                `;
-
-                dayElement.title = `${dia.dia_mes}: ${volume} atendimentos`;
-                calendar.appendChild(dayElement);
-            });
+        // Células vazias no início
+        for (let i = 0; i < offset; i++) {
+            const emptyCell = document.createElement('div');
+            emptyCell.className = 'heatmap-day heat-0';
+            calendar.appendChild(emptyCell);
         }
 
-        container.appendChild(calendar);
+        // Dias do mês
+        heatmapMes.forEach(function (dia) {
+            const volume = dia.volume || 0;
+            
+            let intensity = 0;
+            if (volume > 0) {
+                if (volume <= 8) intensity = 1;
+                else if (volume <= 16) intensity = 2;
+                else if (volume <= 25) intensity = 3;
+                else intensity = 4;
+            }
+
+            const dayElement = document.createElement('div');
+            dayElement.className = `heatmap-day heat-${intensity} ${dia.eh_hoje ? 'today' : ''}`;
+
+            dayElement.innerHTML = `
+                <div class="heatmap-day-number">${dia.dia_mes}</div>
+                <div class="heatmap-day-count" style="opacity: ${volume > 0 ? '1' : '0.3'}">${volume}</div>
+            `;
+
+            // Debug info
+            const dataReal = new Date(2025, 5, dia.dia_mes); // Junho 2025
+            const diaDaSemanaReal = dataReal.getDay();
+            const nomeDiaReal = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sab'][diaDaSemanaReal];
+            
+            dayElement.title = `${dia.dia_mes}: ${volume} atendimentos (${nomeDiaReal})`;
+            
+            // Log dos dias especiais para verificação
+            if (volume >= 20) {
+                console.log(`📅 Dia ${dia.dia_mes}: ${volume} atendimentos, JS day: ${dia.dia_semana}, nome: ${nomeDiaReal}`);
+            }
+            
+            calendar.appendChild(dayElement);
+        });
     }
+
+    container.appendChild(calendar);
+}
 
     // === ANIMAÇÃO DOS KPIs ===
     function animateKPIs() {

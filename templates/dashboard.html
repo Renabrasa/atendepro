@@ -476,7 +476,7 @@
     padding: 0;
     flex: 1;
     overflow-y: auto;
-    background: var(--white); /* FORÇA FUNDO BRANCO */
+    background: var(--white);
   }
 
   /* Agents Grid */
@@ -484,13 +484,11 @@
     display: grid;
     grid-template-columns: 1fr;
     gap: 0;
-    background: var(--white); /* FORÇA FUNDO BRANCO */
   }
 
   .agent-card {
     border-bottom: 1px solid var(--border);
     transition: background 0.2s;
-    background: var(--white); /* FORÇA FUNDO BRANCO */
   }
 
   .agent-card:last-child {
@@ -503,12 +501,12 @@
     justify-content: space-between;
     align-items: center;
     cursor: pointer;
-    background: var(--white); /* FORÇA FUNDO BRANCO */
+    background: var(--white);
     transition: background 0.2s;
   }
 
   .agent-header:hover {
-    background: #f8fafc !important;
+    background: #fafbfc;
   }
 
   .agent-info {
@@ -544,18 +542,17 @@
   .agent-details {
     display: none;
     padding: 16px 24px;
-    background: var(--white) !important; /* FORÇA FUNDO BRANCO COM !IMPORTANT */
+    background: #f8fafc;
     border-top: 1px solid var(--border);
   }
 
   .atendimentos-list {
     display: grid;
     gap: 12px;
-    background: var(--white); /* FORÇA FUNDO BRANCO */
   }
 
   .atendimento-card {
-    background: var(--white) !important; /* FORÇA FUNDO BRANCO */
+    background: var(--white);
     border: 1px solid var(--border);
     border-radius: 6px;
     padding: 12px;
@@ -584,7 +581,6 @@
     color: var(--text);
     line-height: 1.4;
     margin-bottom: 8px;
-    background: var(--white); /* FORÇA FUNDO BRANCO */
   }
 
   .atendimento-footer {
@@ -630,7 +626,7 @@
     text-align: center;
     padding: 20px;
     color: var(--muted);
-    background: var(--white) !important; /* FORÇA FUNDO BRANCO */
+    font-style: italic;
   }
 
   .show-more {
@@ -642,11 +638,10 @@
     border-top: 1px solid var(--border);
     margin-top: 8px;
     transition: background 0.2s;
-    background: var(--white) !important; /* FORÇA FUNDO BRANCO */
   }
 
   .show-more:hover {
-    background: #f0f9ff !important;
+    background: #f0f9ff;
   }
 
   /* Empty State */

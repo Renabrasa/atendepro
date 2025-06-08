@@ -417,7 +417,7 @@
   }
 
   /* Modal */
-  .dashboard-page .modal {
+  .modal {
     display: none;
     position: fixed;
     top: 0;
@@ -428,7 +428,7 @@
     z-index: 1000;
   }
 
-  .dashboard-page .modal-content {
+  .modal-content {
     background: var(--white);
     margin: 2% auto;
     width: 90%;
@@ -438,9 +438,10 @@
     max-height: 90vh;
     display: flex;
     flex-direction: column;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
   }
 
-  .dashboard-page .modal-header {
+  .modal-header {
     padding: 20px 24px;
     background: var(--primary);
     color: var(--white);
@@ -450,13 +451,13 @@
     flex-shrink: 0;
   }
 
-  .dashboard-page .modal-title {
+  .modal-title {
     font-size: 18px;
     font-weight: 600;
     margin: 0;
   }
 
-  .dashboard-page .modal-close {
+  .modal-close {
     background: none;
     border: none;
     color: var(--white);
@@ -467,14 +468,177 @@
     transition: background 0.2s;
   }
 
-  .dashboard-page .modal-close:hover {
+  .modal-close:hover {
     background: rgba(255, 255, 255, 0.1);
   }
 
-  .dashboard-page .modal-body {
-    padding: 20px;
+  .modal-body {
+    padding: 0;
     flex: 1;
     overflow-y: auto;
+  }
+
+  /* Agents Grid */
+  .agents-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 0;
+  }
+
+  .agent-card {
+    border-bottom: 1px solid var(--border);
+    transition: background 0.2s;
+  }
+
+  .agent-card:last-child {
+    border-bottom: none;
+  }
+
+  .agent-header {
+    padding: 16px 24px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    cursor: pointer;
+    background: var(--white);
+    transition: background 0.2s;
+  }
+
+  .agent-header:hover {
+    background: #fafbfc;
+  }
+
+  .agent-info {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .agent-name {
+    font-weight: 600;
+    color: var(--primary);
+    font-size: 15px;
+  }
+
+  .agent-count {
+    background: var(--accent);
+    color: var(--white);
+    padding: 4px 12px;
+    border-radius: 12px;
+    font-size: 12px;
+    font-weight: 600;
+  }
+
+  .expand-icon {
+    color: var(--muted);
+    transition: transform 0.2s;
+  }
+
+  .expand-icon.expanded {
+    transform: rotate(180deg);
+  }
+
+  .agent-details {
+    display: none;
+    padding: 0 24px 16px 24px;
+    background: #fafbfc;
+  }
+
+  .atendimentos-list {
+    display: grid;
+    gap: 8px;
+  }
+
+  .atendimento-card {
+    background: var(--white);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 12px;
+    font-size: 13px;
+  }
+
+  .atendimento-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+  }
+
+  .atendimento-id {
+    font-weight: 600;
+    color: var(--accent);
+  }
+
+  .atendimento-date {
+    color: var(--muted);
+    font-size: 11px;
+  }
+
+  .atendimento-content {
+    color: var(--text);
+    line-height: 1.4;
+    margin-bottom: 8px;
+  }
+
+  .atendimento-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 11px;
+  }
+
+  .classificacao-badge {
+    padding: 2px 8px;
+    border-radius: 10px;
+    font-weight: 500;
+    text-transform: uppercase;
+  }
+
+  .classificacao-basico {
+    background: #dcfce7;
+    color: #166534;
+  }
+
+  .classificacao-medio {
+    background: #fef3c7;
+    color: #92400e;
+  }
+
+  .classificacao-complexo {
+    background: #fecaca;
+    color: #991b1b;
+  }
+
+  .classificacao-sem {
+    background: #f1f5f9;
+    color: var(--muted);
+  }
+
+  .status-badge {
+    color: var(--muted);
+    font-weight: 500;
+  }
+
+  .no-atendimentos {
+    text-align: center;
+    padding: 20px;
+    color: var(--muted);
+    font-style: italic;
+  }
+
+  .show-more {
+    text-align: center;
+    padding: 8px;
+    color: var(--accent);
+    font-size: 12px;
+    cursor: pointer;
+    border-top: 1px solid var(--border);
+    margin-top: 8px;
+    transition: background 0.2s;
+  }
+
+  .show-more:hover {
+    background: #f0f9ff;
   }
 
   /* Empty State */
@@ -772,12 +936,13 @@
       .then(response => response.json())
       .then(data => {
         if (data.success) {
-          modalBody.innerHTML = '<div style="padding: 20px;">Dados carregados com sucesso!</div>';
+          renderAgentsDetails(data.agentes, data.total_atendimentos);
         } else {
           modalBody.innerHTML = `
-            <div style="text-align: center; padding: 40px;">
-              <h4>Erro ao carregar dados</h4>
+            <div style="text-align: center; padding: 40px; color: var(--muted);">
+              <h4 style="color: var(--text); margin-bottom: 16px;">Erro ao carregar dados</h4>
               <p>${data.error || 'Erro desconhecido'}</p>
+              <button onclick="closeModal()" class="btn" style="margin-top: 20px;">Fechar</button>
             </div>
           `;
         }
@@ -785,12 +950,119 @@
       .catch(error => {
         console.error('Erro:', error);
         modalBody.innerHTML = `
-          <div style="text-align: center; padding: 40px;">
-            <h4>Erro de Conexão</h4>
+          <div style="text-align: center; padding: 40px; color: var(--muted);">
+            <h4 style="color: var(--text); margin-bottom: 16px;">Erro de Conexão</h4>
             <p>Não foi possível carregar os dados do supervisor.</p>
+            <button onclick="closeModal()" class="btn" style="margin-top: 20px;">Fechar</button>
           </div>
         `;
       });
+  }
+
+  function renderAgentsDetails(agentes, totalAtendimentos) {
+    const modalBody = document.getElementById('modalBody');
+    
+    if (!agentes || agentes.length === 0) {
+      modalBody.innerHTML = `
+        <div class="no-atendimentos">
+          <h4 style="color: var(--text); margin-bottom: 16px;">Nenhum agente encontrado</h4>
+          <p>Este supervisor não possui agentes com atendimentos no período selecionado.</p>
+        </div>
+      `;
+      return;
+    }
+
+    let html = '<div class="agents-grid">';
+    
+    agentes.forEach((agente, index) => {
+      html += `
+        <div class="agent-card">
+          <div class="agent-header" onclick="toggleAgentDetails(${index})">
+            <div class="agent-info">
+              <span class="agent-name">${agente.nome}</span>
+              <span class="agent-count">${agente.qtd_chamados}</span>
+            </div>
+            <span class="expand-icon" id="icon-${index}">▼</span>
+          </div>
+          <div class="agent-details" id="details-${index}">
+      `;
+      
+      if (agente.atendimentos && agente.atendimentos.length > 0) {
+        html += '<div class="atendimentos-list">';
+        
+        // Mostrar os primeiros 3 atendimentos
+        const atendimentosToShow = agente.atendimentos.slice(0, 3);
+        
+        atendimentosToShow.forEach(atendimento => {
+          const classificacao = atendimento.classificacao || 'sem';
+          const dataFormatada = new Date(atendimento.data_hora).toLocaleDateString('pt-BR', {
+            day: '2-digit',
+            month: '2-digit',
+            year: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit'
+          });
+          
+          html += `
+            <div class="atendimento-card">
+              <div class="atendimento-header">
+                <span class="atendimento-id">#${atendimento.id}</span>
+                <span class="atendimento-date">${dataFormatada}</span>
+              </div>
+              <div class="atendimento-content">
+                ${atendimento.conteudo.length > 150 ? 
+                  atendimento.conteudo.substring(0, 150) + '...' : 
+                  atendimento.conteudo}
+              </div>
+              <div class="atendimento-footer">
+                <span class="classificacao-badge classificacao-${classificacao}">
+                  ${classificacao === 'sem' ? 'Sem classificação' : classificacao}
+                </span>
+                <span class="status-badge">${atendimento.status || 'pendente'}</span>
+              </div>
+            </div>
+          `;
+        });
+        
+        html += '</div>';
+        
+        // Se há mais atendimentos, mostrar link para ver todos
+        if (agente.atendimentos.length > 3) {
+          html += `
+            <div class="show-more" onclick="showAllAtendimentos(${index})">
+              Ver todos os ${agente.atendimentos.length} atendimentos ▼
+            </div>
+          `;
+        }
+      } else {
+        html += '<div class="no-atendimentos">Nenhum atendimento no período</div>';
+      }
+      
+      html += '</div></div>';
+    });
+    
+    html += '</div>';
+    modalBody.innerHTML = html;
+  }
+
+  function toggleAgentDetails(index) {
+    const details = document.getElementById(`details-${index}`);
+    const icon = document.getElementById(`icon-${index}`);
+    
+    if (details.style.display === 'none' || details.style.display === '') {
+      details.style.display = 'block';
+      icon.textContent = '▲';
+      icon.classList.add('expanded');
+    } else {
+      details.style.display = 'none';
+      icon.textContent = '▼';
+      icon.classList.remove('expanded');
+    }
+  }
+
+  function showAllAtendimentos(index) {
+    // Aqui poderia implementar uma expansão completa ou redirect
+    alert('Funcionalidade para mostrar todos os atendimentos pode ser implementada aqui.');
   }
 
   function closeModal() {

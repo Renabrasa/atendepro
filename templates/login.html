@@ -1,30 +1,100 @@
 {% extends 'base.html' %}
-{% block title %}Login - Sistema de Atendimentos{% endblock %}
+{% block title %}Login - AtendePro{% endblock %}
+
+{% block head %}
+<style>
+  /* Override do layout base para login */
+  body {
+    background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%) !important;
+  }
+  
+  .container {
+    display: block !important;
+  }
+  
+  nav.sidebar {
+    display: none !important;
+  }
+  
+  main.content {
+    margin-left: 0 !important;
+    background: transparent !important;
+    box-shadow: none !important;
+  }
+  
+  .content-wrapper {
+    padding: 0 !important;
+  }
+  
+  .footer {
+    display: none !important;
+  }
+</style>
+{% endblock %}
+
 {% block content %}
 <style>
+  /* Variáveis do sistema */
+  :root {
+    --primary: #003366;
+    --primary-light: #004080;
+    --secondary: #475569;
+    --accent: #3b82f6;
+    --background: #f5f7fa;
+    --white: #ffffff;
+    --border: #e2e8f0;
+    --text: #334155;
+    --muted: #64748b;
+    --success: #059669;
+    --warning: #d97706;
+    --danger: #dc2626;
+    --gradient-start: #003366;
+    --gradient-end: #004080;
+  }
+
+  /* Container principal do login */
   .login-container {
     min-height: 100vh;
     display: flex;
     align-items: center;
     justify-content: center;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: linear-gradient(135deg, var(--background) 0%, #c3cfe2 100%);
     padding: 20px;
-    margin: -20px -20px 0 -20px; /* Remove margens do container pai */
+    position: relative;
+    overflow: hidden;
   }
 
+  /* Elementos decorativos de fundo */
+  .login-container::before {
+    content: '';
+    position: absolute;
+    top: -50%;
+    left: -50%;
+    width: 200%;
+    height: 200%;
+    background: radial-gradient(circle, rgba(0, 51, 102, 0.05) 1px, transparent 1px);
+    background-size: 30px 30px;
+    animation: float 20s infinite linear;
+  }
+
+  /* Card principal */
   .login-card {
-    background: white;
-    border-radius: 20px;
-    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2);
+    background: var(--white);
+    border-radius: 12px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1), 0 20px 60px rgba(0, 51, 102, 0.15);
     overflow: hidden;
     max-width: 400px;
     width: 100%;
     animation: slideUp 0.8s ease-out;
+    position: relative;
+    z-index: 10;
+    border: 1px solid var(--border);
   }
 
+  /* Header com gradiente do sistema */
   .login-header {
-    background: linear-gradient(135deg, #003366, #0056b3);
-    color: white;
+    background: linear-gradient(180deg, var(--gradient-start) 0%, var(--gradient-end) 100%);
+    color: var(--white);
     padding: 40px 30px;
     text-align: center;
     position: relative;
@@ -34,130 +104,155 @@
   .login-header::before {
     content: '';
     position: absolute;
-    top: -50%;
-    left: -50%;
-    width: 200%;
-    height: 200%;
-    background: radial-gradient(circle, rgba(255,255,255,0.1) 1px, transparent 1px);
-    background-size: 20px 20px;
-    animation: float 20s infinite linear;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(45deg, transparent 30%, rgba(255,255,255,0.1) 50%, transparent 70%);
+    animation: shimmer 3s infinite;
   }
 
-  .login-header h1 {
-    font-size: 2.2em;
-    font-weight: 700;
-    margin: 0 0 10px 0;
+  /* Logo e título */
+  .login-logo {
+    margin-bottom: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
     position: relative;
     z-index: 2;
   }
 
-  .login-subtitle {
-    font-size: 1em;
-    opacity: 0.9;
-    margin: 0;
-    position: relative;
-    z-index: 2;
-  }
-
-  .login-icon {
-    margin-bottom: 15px;
-    display: block;
-    position: relative;
-    z-index: 2;
-    transition: transform 0.3s ease;
-  }
-
-  .login-icon:hover {
-    transform: scale(1.1);
-  }
-
-  .login-icon svg {
-    filter: drop-shadow(0 4px 8px rgba(0,0,0,0.3));
+  .logo-icon {
+    width: 50px;
+    height: 50px;
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 24px;
+    border: 2px solid rgba(255, 255, 255, 0.3);
     animation: pulse 2s infinite ease-in-out;
   }
 
-  @keyframes pulse {
-    0%, 100% {
-      transform: scale(1);
-    }
-    50% {
-      transform: scale(1.05);
-    }
+  .login-header h1 {
+    font-size: 2em;
+    font-weight: 700;
+    margin: 0;
+    position: relative;
+    z-index: 2;
+    letter-spacing: 1.2px;
   }
 
+  .login-subtitle {
+    font-size: 0.95em;
+    opacity: 0.9;
+    margin: 10px 0 0 0;
+    position: relative;
+    z-index: 2;
+    font-weight: 500;
+  }
+
+  /* Formulário */
   .login-form {
     padding: 40px 30px;
+    background: var(--white);
   }
 
   .form-group {
-    margin-bottom: 25px;
+    margin-bottom: 24px;
     position: relative;
   }
 
   .form-label {
     display: block;
     font-weight: 600;
-    color: #2d3748;
+    color: var(--text);
     margin-bottom: 8px;
-    font-size: 0.95em;
+    font-size: 14px;
     transition: color 0.3s ease;
+  }
+
+  .form-input-wrapper {
+    position: relative;
   }
 
   .form-control {
     width: 100%;
-    padding: 15px 20px;
-    border: 2px solid #e2e8f0;
-    border-radius: 12px;
-    font-size: 1em;
+    padding: 14px 16px 14px 45px;
+    border: 2px solid var(--border);
+    border-radius: 8px;
+    font-size: 14px;
     transition: all 0.3s ease;
     box-sizing: border-box;
     background: #f8fafc;
+    color: var(--text);
   }
 
   .form-control:focus {
-    border-color: #003366;
+    border-color: var(--primary);
     outline: none;
     box-shadow: 0 0 0 3px rgba(0, 51, 102, 0.1);
-    background: white;
-    transform: translateY(-2px);
+    background: var(--white);
+    transform: translateY(-1px);
   }
 
-  .form-control:focus + .form-label {
-    color: #003366;
+  .form-control:focus ~ .form-label {
+    color: var(--primary);
   }
 
   .form-icon {
     position: absolute;
-    right: 15px;
+    left: 16px;
     top: 50%;
     transform: translateY(-50%);
-    color: #a0aec0;
-    font-size: 1.1em;
+    color: var(--muted);
+    font-size: 16px;
     transition: color 0.3s ease;
+    z-index: 2;
   }
 
   .form-control:focus ~ .form-icon {
-    color: #003366;
+    color: var(--primary);
   }
 
+  /* Botão de login */
   .btn-login {
     width: 100%;
-    background: linear-gradient(135deg, #003366, #0056b3);
-    color: white;
+    background: linear-gradient(135deg, var(--gradient-start), var(--gradient-end));
+    color: var(--white);
     border: none;
-    padding: 15px 20px;
-    border-radius: 12px;
-    font-size: 1.1em;
+    padding: 16px 20px;
+    border-radius: 8px;
+    font-size: 16px;
     font-weight: 600;
     cursor: pointer;
     transition: all 0.3s ease;
-    text-transform: uppercase;
+    text-transform: none;
     letter-spacing: 0.5px;
     margin-top: 10px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .btn-login::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+    transition: left 0.5s;
+  }
+
+  .btn-login:hover::before {
+    left: 100%;
   }
 
   .btn-login:hover {
-    background: linear-gradient(135deg, #002244, #004499);
+    background: linear-gradient(135deg, #002244, #003d7a);
     transform: translateY(-2px);
     box-shadow: 0 8px 25px rgba(0, 51, 102, 0.3);
   }
@@ -166,70 +261,65 @@
     transform: translateY(0);
   }
 
+  /* Footer */
   .login-footer {
     text-align: center;
     padding: 20px 30px;
-    background: #f8fafc;
-    border-top: 1px solid #e2e8f0;
+    background: #fafbfc;
+    border-top: 1px solid var(--border);
   }
 
   .login-footer p {
     margin: 0;
-    color: #718096;
-    font-size: 0.9em;
+    color: var(--muted);
+    font-size: 13px;
+    line-height: 1.5;
   }
 
   .login-footer strong {
-    color: #003366;
+    color: var(--primary);
+    font-weight: 600;
   }
 
-  .floating-shapes {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    overflow: hidden;
-    pointer-events: none;
+  .system-info {
+    margin-top: 8px;
+    font-size: 12px;
+    opacity: 0.8;
   }
 
-  .shape {
+  /* Estados de erro */
+  .form-control.error {
+    border-color: var(--danger);
+    background: #fed7d7;
+  }
+
+  .error-message {
+    color: var(--danger);
+    font-size: 12px;
+    margin-top: 6px;
+    display: none;
+    font-weight: 500;
+  }
+
+  /* Loading state */
+  .btn-login.loading {
+    background: var(--muted);
+    cursor: not-allowed;
+    position: relative;
+  }
+
+  .btn-login.loading::after {
+    content: '';
     position: absolute;
-    background: rgba(255, 255, 255, 0.1);
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 20px;
+    height: 20px;
+    border: 2px solid transparent;
+    border-top: 2px solid white;
     border-radius: 50%;
-    animation: floatAround 15s infinite ease-in-out;
-  }
-
-  .shape:nth-child(1) {
-    width: 80px;
-    height: 80px;
-    top: 20%;
-    left: 10%;
-    animation-delay: 0s;
-  }
-
-  .shape:nth-child(2) {
-    width: 60px;
-    height: 60px;
-    top: 60%;
-    right: 15%;
-    animation-delay: 5s;
-  }
-
-  .shape:nth-child(3) {
-    width: 40px;
-    height: 40px;
-    bottom: 25%;
-    left: 20%;
-    animation-delay: 10s;
-  }
-
-  .shape:nth-child(4) {
-    width: 100px;
-    height: 100px;
-    top: 10%;
-    right: 10%;
-    animation-delay: 7s;
+    animation: spin 1s linear infinite;
   }
 
   /* Animações */
@@ -253,53 +343,22 @@
     }
   }
 
-  @keyframes floatAround {
+  @keyframes pulse {
     0%, 100% {
-      transform: translateY(0) rotate(0deg);
-    }
-    25% {
-      transform: translateY(-20px) rotate(90deg);
+      transform: scale(1);
     }
     50% {
-      transform: translateY(-10px) rotate(180deg);
-    }
-    75% {
-      transform: translateY(-30px) rotate(270deg);
+      transform: scale(1.05);
     }
   }
 
-  /* Estados de erro */
-  .form-control.error {
-    border-color: #e53e3e;
-    background: #fed7d7;
-  }
-
-  .error-message {
-    color: #e53e3e;
-    font-size: 0.85em;
-    margin-top: 5px;
-    display: none;
-  }
-
-  /* Loading state */
-  .btn-login.loading {
-    background: #a0aec0;
-    cursor: not-allowed;
-    position: relative;
-  }
-
-  .btn-login.loading::after {
-    content: '';
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    width: 20px;
-    height: 20px;
-    border: 2px solid transparent;
-    border-top: 2px solid white;
-    border-radius: 50%;
-    animation: spin 1s linear infinite;
+  @keyframes shimmer {
+    0% {
+      transform: translateX(-100%);
+    }
+    100% {
+      transform: translateX(100%);
+    }
   }
 
   @keyframes spin {
@@ -315,7 +374,7 @@
 
     .login-card {
       margin: 0;
-      border-radius: 15px;
+      border-radius: 10px;
     }
 
     .login-header {
@@ -323,7 +382,7 @@
     }
 
     .login-header h1 {
-      font-size: 1.8em;
+      font-size: 1.7em;
     }
 
     .login-form {
@@ -335,110 +394,141 @@
     }
   }
 
-  /* Acessibilidade */
-  .form-control:focus {
-    outline: 3px solid rgba(0, 51, 102, 0.2);
-    outline-offset: 2px;
+  /* Efeitos visuais */
+  .login-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15), 0 25px 70px rgba(0, 51, 102, 0.2);
   }
 
-  /* Efeitos visuais extras */
-  .login-card:hover {
-    transform: translateY(-5px);
-    box-shadow: 0 25px 70px rgba(0, 0, 0, 0.25);
+  /* Indicadores visuais de acesso */
+  .access-indicator {
+    display: inline-block;
+    padding: 4px 8px;
+    border-radius: 12px;
+    font-size: 11px;
+    font-weight: 600;
+    margin-top: 8px;
+    background: rgba(255, 255, 255, 0.2);
+    color: var(--white);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  /* Elementos decorativos flutuantes */
+  .floating-elements {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    overflow: hidden;
+  }
+
+  .floating-element {
+    position: absolute;
+    background: rgba(0, 51, 102, 0.1);
+    border-radius: 50%;
+    animation: floatAround 15s infinite ease-in-out;
+  }
+
+  .floating-element:nth-child(1) {
+    width: 60px;
+    height: 60px;
+    top: 20%;
+    left: 10%;
+    animation-delay: 0s;
+  }
+
+  .floating-element:nth-child(2) {
+    width: 40px;
+    height: 40px;
+    top: 60%;
+    right: 15%;
+    animation-delay: 5s;
+  }
+
+  .floating-element:nth-child(3) {
+    width: 80px;
+    height: 80px;
+    bottom: 25%;
+    left: 15%;
+    animation-delay: 10s;
+  }
+
+  @keyframes floatAround {
+    0%, 100% {
+      transform: translateY(0) rotate(0deg);
+      opacity: 0.3;
+    }
+    25% {
+      transform: translateY(-20px) rotate(90deg);
+      opacity: 0.6;
+    }
+    50% {
+      transform: translateY(-10px) rotate(180deg);
+      opacity: 0.4;
+    }
+    75% {
+      transform: translateY(-30px) rotate(270deg);
+      opacity: 0.7;
+    }
   }
 </style>
 
 <div class="login-container">
-  <!-- Formas flutuantes decorativas -->
-  <div class="floating-shapes">
-    <div class="shape"></div>
-    <div class="shape"></div>
-    <div class="shape"></div>
-    <div class="shape"></div>
+  <!-- Elementos decorativos -->
+  <div class="floating-elements">
+    <div class="floating-element"></div>
+    <div class="floating-element"></div>
+    <div class="floating-element"></div>
   </div>
 
   <div class="login-card">
-    <!-- Header do Login -->
+    <!-- Header -->
     <div class="login-header">
-      <div class="login-icon">
-        <svg width="80" height="80" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <!-- Círculo principal -->
-          <circle cx="50" cy="50" r="45" fill="rgba(255,255,255,0.1)" stroke="rgba(255,255,255,0.3)" stroke-width="2"/>
-          
-          <!-- Balão de conversa principal -->
-          <path d="M25 25C25 20 29 16 34 16H66C71 16 75 20 75 25V45C75 50 71 54 66 54H45L35 64V54H34C29 54 25 50 25 45V25Z" fill="white"/>
-          
-          <!-- Linhas de texto no balão -->
-          <rect x="32" y="26" width="20" height="3" rx="1.5" fill="#003366"/>
-          <rect x="32" y="33" width="28" height="3" rx="1.5" fill="#003366"/>
-          <rect x="32" y="40" width="24" height="3" rx="1.5" fill="#003366"/>
-          
-          <!-- Balão de resposta menor -->
-          <path d="M50 65C50 62 52 60 55 60H75C78 60 80 62 80 65V75C80 78 78 80 75 80H65L58 85V80H55C52 80 50 78 50 75V65Z" fill="rgba(255,255,255,0.8)"/>
-          
-          <!-- Linhas de texto no balão menor -->
-          <rect x="55" y="67" width="12" height="2" rx="1" fill="#003366"/>
-          <rect x="55" y="72" width="16" height="2" rx="1" fill="#003366"/>
-          
-          <!-- Ícone de usuário/agente -->
-          <circle cx="20" cy="75" r="8" fill="rgba(255,255,255,0.9)"/>
-          <circle cx="20" cy="72" r="3" fill="#003366"/>
-          <path d="M14 80C14 77 16 75 20 75C24 75 26 77 26 80" fill="#003366"/>
-          
-          <!-- Pontos de digitação (typing indicator) -->
-          <circle cx="40" cy="72" r="1.5" fill="rgba(255,255,255,0.6)">
-            <animate attributeName="opacity" values="0.3;1;0.3" dur="1.5s" repeatCount="indefinite"/>
-          </circle>
-          <circle cx="45" cy="72" r="1.5" fill="rgba(255,255,255,0.6)">
-            <animate attributeName="opacity" values="0.3;1;0.3" dur="1.5s" begin="0.3s" repeatCount="indefinite"/>
-          </circle>
-          <circle cx="50" cy="72" r="1.5" fill="rgba(255,255,255,0.6)">
-            <animate attributeName="opacity" values="0.3;1;0.3" dur="1.5s" begin="0.6s" repeatCount="indefinite"/>
-          </circle>
-          
-          <!-- Detalhes decorativos - simbolizando conectividade -->
-          <circle cx="85" cy="25" r="2" fill="rgba(255,255,255,0.5)">
-            <animate attributeName="r" values="2;3;2" dur="2s" repeatCount="indefinite"/>
-          </circle>
-          <circle cx="15" cy="35" r="1.5" fill="rgba(255,255,255,0.4)">
-            <animate attributeName="r" values="1.5;2.5;1.5" dur="3s" repeatCount="indefinite"/>
-          </circle>
-        </svg>
+      <div class="login-logo">
+        <div class="logo-icon">📊</div>
       </div>
       <h1>AtendePro</h1>
-      <p class="login-subtitle">Faça login para continuar</p>
+      <p class="login-subtitle">Sistema de Gestão de Atendimentos</p>
+      <div class="access-indicator">Login Seguro</div>
     </div>
 
     <!-- Formulário -->
     <div class="login-form">
       <form method="post" id="loginForm">
         <div class="form-group">
-          <label for="email" class="form-label">📧 Email</label>
-          <input 
-            type="email" 
-            name="email" 
-            id="email" 
-            required 
-            class="form-control" 
-            placeholder="Digite seu email"
-            autocomplete="email"
-          />
-          <span class="form-icon">@</span>
+          <label for="email" class="form-label">Email</label>
+          <div class="form-input-wrapper">
+            <input 
+              type="email" 
+              name="email" 
+              id="email" 
+              required 
+              class="form-control" 
+              placeholder="Digite seu email"
+              autocomplete="email"
+            />
+            <span class="form-icon">📧</span>
+          </div>
           <div class="error-message" id="email-error">Email é obrigatório</div>
         </div>
 
         <div class="form-group">
-          <label for="senha" class="form-label">🔒 Senha</label>
-          <input 
-            type="password" 
-            name="senha" 
-            id="senha" 
-            required 
-            class="form-control" 
-            placeholder="Digite sua senha"
-            autocomplete="current-password"
-          />
-          <span class="form-icon">🔑</span>
+          <label for="senha" class="form-label">Senha</label>
+          <div class="form-input-wrapper">
+            <input 
+              type="password" 
+              name="senha" 
+              id="senha" 
+              required 
+              class="form-control" 
+              placeholder="Digite sua senha"
+              autocomplete="current-password"
+            />
+            <span class="form-icon">🔒</span>
+          </div>
           <div class="error-message" id="senha-error">Senha é obrigatória</div>
         </div>
 
@@ -451,8 +541,8 @@
     <!-- Footer -->
     <div class="login-footer">
       <p>
-        <strong>AtendePro</strong><br>
-        Plataforma de Gestão de Atendimentos
+        <strong>AtendePro</strong> v1.0<br>
+        <span class="system-info">Plataforma de Gestão de Atendimentos</span>
       </p>
     </div>
   </div>
@@ -548,36 +638,45 @@
     btnLogin.classList.add('loading');
     btnLogin.textContent = '';
     
-    // Simula delay de loading (opcional)
-    // setTimeout(() => {
-    //   form.submit();
-    // }, 500);
+    // Permitir submissão normal do form
   });
 
-  // Efeito de foco suave
+  // Efeitos visuais
   const inputs = document.querySelectorAll('.form-control');
   inputs.forEach(input => {
     input.addEventListener('focus', function() {
-      this.parentElement.style.transform = 'scale(1.02)';
+      this.parentElement.parentElement.style.transform = 'scale(1.01)';
     });
     
     input.addEventListener('blur', function() {
-      this.parentElement.style.transform = 'scale(1)';
+      this.parentElement.parentElement.style.transform = 'scale(1)';
     });
   });
 
-  // Easter egg: duplo clique no ícone
-  document.querySelector('.login-icon').addEventListener('dblclick', function() {
-    const svg = this.querySelector('svg');
-    svg.style.animation = 'spin 1s ease-in-out, pulse 2s infinite ease-in-out';
+  // Easter egg: duplo clique no logo
+  document.querySelector('.logo-icon').addEventListener('dblclick', function() {
+    this.style.animation = 'spin 1s ease-in-out, pulse 2s infinite ease-in-out';
     setTimeout(() => {
-      svg.style.animation = 'pulse 2s infinite ease-in-out';
+      this.style.animation = 'pulse 2s infinite ease-in-out';
     }, 1000);
   });
 
   // Foco automático no email ao carregar
   window.addEventListener('load', function() {
-    emailInput.focus();
+    setTimeout(() => {
+      emailInput.focus();
+    }, 500);
+  });
+
+  // Parallax suave nos elementos flutuantes
+  document.addEventListener('mousemove', function(e) {
+    const elements = document.querySelectorAll('.floating-element');
+    elements.forEach((element, index) => {
+      const speed = (index + 1) * 0.02;
+      const x = (e.clientX * speed);
+      const y = (e.clientY * speed);
+      element.style.transform += ` translate(${x}px, ${y}px)`;
+    });
   });
 </script>
 

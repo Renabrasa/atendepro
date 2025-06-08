@@ -99,6 +99,7 @@
             text-transform: uppercase;
             border: 2px solid rgba(255, 255, 255, 0.3);
             flex-shrink: 0;
+            position: relative;
         }
         
         .user-details {
@@ -223,10 +224,6 @@
             background: #28a745;
             border-radius: 50%;
             border: 2px solid white;
-        }
-
-        .avatar-circle {
-            position: relative;
         }
 
         /* Scrollbar customizada para sidebar */
@@ -466,8 +463,6 @@
     {% block scripts %}{% endblock %}
 </body>
 
-
-
 <script>
     // Sistema de notificações em tempo real
     class NotificationSystem {
@@ -607,6 +602,5 @@
         new NotificationSystem();
     }
 </script>
-
 
 </html>

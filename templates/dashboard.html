@@ -1,9 +1,54 @@
 {% extends 'base.html' %}
 {% block title %}Dashboard Executivo{% endblock %}
+
+{% block head %}
+<style>
+  /* FORÇA CORREÇÃO TOTAL DO MAIN CONTENT */
+  main.content {
+    background: #f8fafc !important;
+    background-image: none !important;
+  }
+  
+  /* FORÇA CORREÇÃO DO CONTENT WRAPPER */
+  .content-wrapper {
+    padding: 0 !important;
+    background: #f8fafc !important;
+    background-image: none !important;
+  }
+
+  /* SOBRESCREVE QUALQUER GRADIENTE DO BASE.HTML */
+  .content {
+    background: #f8fafc !important;
+    background-image: none !important;
+  }
+
+  /* FORÇA A ÁREA PRINCIPAL A TER O FUNDO CORRETO */
+  body .container main.content {
+    background: #f8fafc !important;
+    background-image: none !important;
+  }
+
+  body .container main.content .content-wrapper {
+    background: #f8fafc !important;
+    background-image: none !important;
+  }
+</style>
+{% endblock %}
+
 {% block content %}
 <style>
-  /* Reset e Variáveis */
-  :root {
+  /* CSS ISOLADO PARA O DASHBOARD */
+  .dashboard-page {
+    background: #f8fafc;
+    min-height: 100vh;
+    width: 100%;
+    margin: 0;
+    padding: 24px;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    line-height: 1.5;
+    color: #334155;
+    
+    /* Variáveis CSS */
     --primary: #1e293b;
     --secondary: #475569;
     --accent: #3b82f6;
@@ -17,27 +62,8 @@
     --danger: #dc2626;
   }
 
-  * {
-    margin: 0;
-    padding: 0;
-    box-sizing: border-box;
-  }
-
-  body {
-    background: var(--background);
-    color: var(--text);
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-    line-height: 1.5;
-  }
-
-  .dashboard {
-    max-width: 1400px;
-    margin: 0 auto;
-    padding: 24px;
-  }
-
-  /* Header Profissional */
-  .header {
+  /* Header do Dashboard */
+  .dashboard-page .header {
     background: var(--white);
     border: 1px solid var(--border);
     border-radius: 8px;
@@ -46,26 +72,28 @@
     display: flex;
     justify-content: space-between;
     align-items: center;
+    box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
   }
 
-  .header-content h1 {
+  .dashboard-page .header-content h1 {
     font-size: 24px;
     font-weight: 600;
     color: var(--primary);
     margin-bottom: 4px;
   }
 
-  .header-content p {
+  .dashboard-page .header-content p {
     color: var(--muted);
     font-size: 14px;
   }
 
-  .header-actions {
+  .dashboard-page .header-actions {
     display: flex;
     gap: 12px;
   }
 
-  .btn {
+  /* Botões */
+  .dashboard-page .btn {
     padding: 8px 16px;
     border-radius: 6px;
     border: 1px solid var(--border);
@@ -80,86 +108,91 @@
     gap: 8px;
   }
 
-  .btn:hover {
+  .dashboard-page .btn:hover {
     background: var(--background);
     border-color: var(--accent);
+    text-decoration: none;
   }
 
-  .btn-primary {
+  .dashboard-page .btn-primary {
     background: var(--accent);
     color: var(--white);
     border-color: var(--accent);
   }
 
-  .btn-primary:hover {
+  .dashboard-page .btn-primary:hover {
     background: #2563eb;
+    text-decoration: none;
   }
 
-  /* Filtros Compactos */
-  .filters {
+  /* Filtros */
+  .dashboard-page .filters {
     background: var(--white);
     border: 1px solid var(--border);
     border-radius: 8px;
     padding: 20px 24px;
     margin-bottom: 24px;
+    box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
   }
 
-  .filters-title {
+  .dashboard-page .filters-title {
     font-size: 16px;
     font-weight: 600;
     color: var(--primary);
     margin-bottom: 16px;
   }
 
-  .filters-row {
+  .dashboard-page .filters-row {
     display: grid;
     grid-template-columns: 200px 200px 1fr auto;
     gap: 16px;
     align-items: end;
   }
 
-  .form-group {
+  .dashboard-page .form-group {
     display: flex;
     flex-direction: column;
     gap: 6px;
   }
 
-  .form-label {
+  .dashboard-page .form-label {
     font-size: 13px;
     font-weight: 500;
     color: var(--text);
   }
 
-  .form-input {
+  .dashboard-page .form-input {
     padding: 8px 12px;
     border: 1px solid var(--border);
     border-radius: 6px;
     font-size: 14px;
     transition: border-color 0.2s;
+    background: var(--white);
   }
 
-  .form-input:focus {
+  .dashboard-page .form-input:focus {
     outline: none;
     border-color: var(--accent);
   }
 
-  /* KPIs Horizontais */
-  .kpis {
+  /* KPIs */
+  .dashboard-page .kpis {
     display: grid;
     grid-template-columns: repeat(4, 1fr);
     gap: 16px;
     margin-bottom: 24px;
   }
 
-  .kpi {
+  .dashboard-page .kpi {
     background: var(--white);
     border: 1px solid var(--border);
     border-radius: 8px;
     padding: 20px;
     text-align: center;
+    box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
   }
 
-  .kpi-value {
+  .dashboard-page .kpi-value {
     font-size: 32px;
     font-weight: 700;
     color: var(--primary);
@@ -167,7 +200,7 @@
     margin-bottom: 8px;
   }
 
-  .kpi-label {
+  .dashboard-page .kpi-label {
     font-size: 13px;
     color: var(--muted);
     font-weight: 500;
@@ -175,43 +208,47 @@
     letter-spacing: 0.5px;
   }
 
-  /* Tabela Principal */
-  .main-content {
+  /* Main Content */
+  .dashboard-page .main-content {
     display: grid;
     grid-template-columns: 1fr 300px;
     gap: 24px;
   }
 
-  .data-table {
+  /* Data Table */
+  .dashboard-page .data-table {
     background: var(--white);
     border: 1px solid var(--border);
     border-radius: 8px;
     overflow: hidden;
+    box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
   }
 
-  .table-header {
+  .dashboard-page .table-header {
     padding: 20px 24px;
     border-bottom: 1px solid var(--border);
     background: #fafbfc;
   }
 
-  .table-header h3 {
+  .dashboard-page .table-header h3 {
     font-size: 16px;
     font-weight: 600;
     color: var(--primary);
+    margin: 0;
   }
 
-  .table-container {
+  .dashboard-page .table-container {
     height: 500px;
     overflow-y: auto;
   }
 
-  .table {
+  .dashboard-page .table {
     width: 100%;
     border-collapse: collapse;
+    background: var(--white);
   }
 
-  .table th {
+  .dashboard-page .table th {
     background: #fafbfc;
     padding: 12px 16px;
     text-align: left;
@@ -226,23 +263,24 @@
     z-index: 10;
   }
 
-  .table td {
+  .dashboard-page .table td {
     padding: 16px;
     border-bottom: 1px solid #f1f5f9;
     font-size: 14px;
     vertical-align: middle;
+    background: var(--white);
   }
 
-  .table tr:hover {
+  .dashboard-page .table tr:hover {
     background: #fafbfc;
   }
 
-  .supervisor-name {
+  .dashboard-page .supervisor-name {
     font-weight: 600;
     color: var(--primary);
   }
 
-  .supervisor-type {
+  .dashboard-page .supervisor-type {
     display: inline-block;
     padding: 2px 8px;
     border-radius: 12px;
@@ -252,27 +290,27 @@
     margin-left: 8px;
   }
 
-  .type-admin {
+  .dashboard-page .type-admin {
     background: #fef3c7;
     color: #92400e;
   }
 
-  .type-coordenadora {
+  .dashboard-page .type-coordenadora {
     background: #fce7f3;
     color: #be185d;
   }
 
-  .type-supervisor {
+  .dashboard-page .type-supervisor {
     background: #dbeafe;
     color: #1d4ed8;
   }
 
-  .metric {
+  .dashboard-page .metric {
     font-weight: 600;
     color: var(--accent);
   }
 
-  .agent-list {
+  .dashboard-page .agent-list {
     font-size: 13px;
     color: var(--muted);
     max-width: 200px;
@@ -281,7 +319,7 @@
     white-space: nowrap;
   }
 
-  .expand-btn {
+  .dashboard-page .expand-btn {
     background: none;
     border: none;
     color: var(--accent);
@@ -292,25 +330,26 @@
     transition: background 0.2s;
   }
 
-  .expand-btn:hover {
+  .dashboard-page .expand-btn:hover {
     background: #f0f9ff;
   }
 
-  /* Sidebar com Resumos */
-  .sidebar {
+  /* Right Sidebar */
+  .dashboard-page .right-sidebar {
     display: flex;
     flex-direction: column;
     gap: 16px;
   }
 
-  .sidebar-card {
+  .dashboard-page .sidebar-card {
     background: var(--white);
     border: 1px solid var(--border);
     border-radius: 8px;
     overflow: hidden;
+    box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
   }
 
-  .sidebar-header {
+  .dashboard-page .sidebar-header {
     padding: 16px 20px;
     background: #fafbfc;
     border-bottom: 1px solid var(--border);
@@ -319,30 +358,30 @@
     color: var(--primary);
   }
 
-  .sidebar-content {
+  .dashboard-page .sidebar-content {
     padding: 16px 20px;
   }
 
-  .top-performers {
+  .dashboard-page .top-performers {
     display: flex;
     flex-direction: column;
     gap: 12px;
   }
 
-  .performer-item {
+  .dashboard-page .performer-item {
     display: flex;
     justify-content: space-between;
     align-items: center;
     padding: 8px 0;
   }
 
-  .performer-name {
+  .dashboard-page .performer-name {
     font-size: 13px;
     font-weight: 500;
     color: var(--text);
   }
 
-  .performer-count {
+  .dashboard-page .performer-count {
     font-size: 12px;
     font-weight: 600;
     color: var(--accent);
@@ -351,33 +390,34 @@
     border-radius: 10px;
   }
 
-  .quick-stats {
+  .dashboard-page .quick-stats {
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: 12px;
   }
 
-  .quick-stat {
+  .dashboard-page .quick-stat {
     text-align: center;
     padding: 12px;
     background: #fafbfc;
     border-radius: 6px;
   }
 
-  .quick-stat-value {
+  .dashboard-page .quick-stat-value {
     font-size: 18px;
     font-weight: 700;
     color: var(--primary);
     margin-bottom: 4px;
   }
 
-  .quick-stat-label {
+  .dashboard-page .quick-stat-label {
     font-size: 11px;
     color: var(--muted);
     text-transform: uppercase;
   }
 
-  .modal {
+  /* Modal */
+  .dashboard-page .modal {
     display: none;
     position: fixed;
     top: 0;
@@ -388,7 +428,7 @@
     z-index: 1000;
   }
 
-  .modal-content {
+  .dashboard-page .modal-content {
     background: var(--white);
     margin: 2% auto;
     width: 90%;
@@ -400,7 +440,7 @@
     flex-direction: column;
   }
 
-  .modal-header {
+  .dashboard-page .modal-header {
     padding: 20px 24px;
     background: var(--primary);
     color: var(--white);
@@ -410,13 +450,13 @@
     flex-shrink: 0;
   }
 
-  .modal-title {
+  .dashboard-page .modal-title {
     font-size: 18px;
     font-weight: 600;
     margin: 0;
   }
 
-  .modal-close {
+  .dashboard-page .modal-close {
     background: none;
     border: none;
     color: var(--white);
@@ -427,226 +467,65 @@
     transition: background 0.2s;
   }
 
-  .modal-close:hover {
+  .dashboard-page .modal-close:hover {
     background: rgba(255, 255, 255, 0.1);
   }
 
-  .modal-body {
-    padding: 0;
+  .dashboard-page .modal-body {
+    padding: 20px;
     flex: 1;
     overflow-y: auto;
   }
 
-  .agents-grid {
-    display: grid;
-    grid-template-columns: 1fr;
-    gap: 0;
-  }
-
-  .agent-card {
-    border-bottom: 1px solid var(--border);
-    transition: background 0.2s;
-  }
-
-  .agent-card:last-child {
-    border-bottom: none;
-  }
-
-  .agent-header {
-    padding: 16px 24px;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    cursor: pointer;
-    background: var(--white);
-    transition: background 0.2s;
-  }
-
-  .agent-header:hover {
-    background: #fafbfc;
-  }
-
-  .agent-info {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-  }
-
-  .agent-name {
-    font-weight: 600;
-    color: var(--primary);
-    font-size: 15px;
-  }
-
-  .agent-count {
-    background: var(--accent);
-    color: var(--white);
-    padding: 4px 12px;
-    border-radius: 12px;
-    font-size: 12px;
-    font-weight: 600;
-  }
-
-  .expand-icon {
-    color: var(--muted);
-    transition: transform 0.2s;
-  }
-
-  .expand-icon.expanded {
-    transform: rotate(180deg);
-  }
-
-  .agent-details {
-    display: none;
-    padding: 0 24px 16px 24px;
-    background: #fafbfc;
-  }
-
-  .atendimentos-list {
-    display: grid;
-    gap: 8px;
-  }
-
-  .atendimento-card {
-    background: var(--white);
-    border: 1px solid var(--border);
-    border-radius: 6px;
-    padding: 12px;
-    font-size: 13px;
-  }
-
-  .atendimento-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 8px;
-  }
-
-  .atendimento-id {
-    font-weight: 600;
-    color: var(--accent);
-  }
-
-  .atendimento-date {
-    color: var(--muted);
-    font-size: 11px;
-  }
-
-  .atendimento-content {
-    color: var(--text);
-    line-height: 1.4;
-    margin-bottom: 8px;
-  }
-
-  .atendimento-footer {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    font-size: 11px;
-  }
-
-  .classificacao-badge {
-    padding: 2px 8px;
-    border-radius: 10px;
-    font-weight: 500;
-    text-transform: uppercase;
-  }
-
-  .classificacao-basico {
-    background: #dcfce7;
-    color: #166534;
-  }
-
-  .classificacao-medio {
-    background: #fef3c7;
-    color: #92400e;
-  }
-
-  .classificacao-complexo {
-    background: #fecaca;
-    color: #991b1b;
-  }
-
-  .classificacao-sem {
-    background: #f1f5f9;
-    color: var(--muted);
-  }
-
-  .status-badge {
-    color: var(--muted);
-    font-weight: 500;
-  }
-
-  .no-atendimentos {
-    text-align: center;
-    padding: 20px;
-    color: var(--muted);
-    font-style: italic;
-  }
-
-  .show-more {
-    text-align: center;
-    padding: 8px;
-    color: var(--accent);
-    font-size: 12px;
-    cursor: pointer;
-    border-top: 1px solid var(--border);
-    margin-top: 8px;
-    transition: background 0.2s;
-  }
-
-  .show-more:hover {
-    background: #f0f9ff;
-  }
-
-  /* Responsivo */
-  @media (max-width: 1024px) {
-    .main-content {
-      grid-template-columns: 1fr;
-    }
-    
-    .sidebar {
-      grid-row: 1;
-    }
-  }
-
-  @media (max-width: 768px) {
-    .dashboard {
-      padding: 16px;
-    }
-
-    .header {
-      flex-direction: column;
-      gap: 16px;
-      text-align: center;
-    }
-
-    .filters-row {
-      grid-template-columns: 1fr;
-      gap: 12px;
-    }
-
-    .kpis {
-      grid-template-columns: repeat(2, 1fr);
-    }
-  }
-
-  /* Estados Vazios */
-  .empty-state {
+  /* Empty State */
+  .dashboard-page .empty-state {
     text-align: center;
     padding: 60px 20px;
     color: var(--muted);
   }
 
-  .empty-state h3 {
+  .dashboard-page .empty-state h3 {
     color: var(--text);
     margin-bottom: 8px;
     font-weight: 500;
   }
+
+  /* Responsivo */
+  @media (max-width: 1024px) {
+    .dashboard-page .main-content {
+      grid-template-columns: 1fr;
+    }
+    
+    .dashboard-page .right-sidebar {
+      grid-row: 1;
+    }
+  }
+
+  @media (max-width: 768px) {
+    .dashboard-page {
+      padding: 16px;
+    }
+
+    .dashboard-page .header {
+      flex-direction: column;
+      gap: 16px;
+      text-align: center;
+    }
+
+    .dashboard-page .filters-row {
+      grid-template-columns: 1fr;
+      gap: 12px;
+    }
+
+    .dashboard-page .kpis {
+      grid-template-columns: repeat(2, 1fr);
+    }
+  }
 </style>
 
-<div class="dashboard">
-  <!-- Header Profissional -->
+<!-- Dashboard com classe específica para isolamento -->
+<div class="dashboard-page">
+  <!-- Header -->
   <header class="header">
     <div class="header-content">
       <h1>Dashboard Executivo</h1>
@@ -669,7 +548,7 @@
     </div>
   </header>
 
-  <!-- Filtros Compactos -->
+  <!-- Filtros -->
   <section class="filters">
     <h3 class="filters-title">Filtros Personalizados</h3>
     <form method="GET" class="filters-row">
@@ -688,7 +567,7 @@
     </form>
   </section>
 
-  <!-- KPIs Horizontais -->
+  <!-- KPIs -->
   <section class="kpis">
     <div class="kpi">
       <div class="kpi-value">{{ total_supervisores }}</div>
@@ -710,9 +589,9 @@
     </div>
   </section>
 
-  <!-- Conteúdo Principal -->
+  <!-- Main Content -->
   <div class="main-content">
-    <!-- Tabela de Supervisores -->
+    <!-- Data Table -->
     <section class="data-table">
       <div class="table-header">
         <h3>Supervisores e Equipes</h3>
@@ -789,10 +668,9 @@
       </div>
     </section>
 
-    <!-- Sidebar com Resumos -->
-    <aside class="sidebar">
+    <!-- Right Sidebar -->
+    <aside class="right-sidebar">
       {% if top_5_agentes %}
-      <!-- Top Performers -->
       <div class="sidebar-card">
         <div class="sidebar-header">Top 5 Agentes</div>
         <div class="sidebar-content">
@@ -808,7 +686,6 @@
       </div>
       {% endif %}
 
-      <!-- Estatísticas Rápidas -->
       <div class="sidebar-card">
         <div class="sidebar-header">Resumo do Período</div>
         <div class="sidebar-content">
@@ -828,7 +705,6 @@
         </div>
       </div>
 
-      <!-- Informações Adicionais -->
       <div class="sidebar-card">
         <div class="sidebar-header">Informações do Período</div>
         <div class="sidebar-content">
@@ -857,7 +733,7 @@
   </div>
 </div>
 
-<!-- Modal Detalhado -->
+<!-- Modal -->
 <div id="detailsModal" class="modal">
   <div class="modal-content">
     <div class="modal-header">
@@ -882,7 +758,6 @@
     }
   });
 
-  // Modal funcional com dados reais
   function showDetails(supervisorName, supervisorId) {
     const modal = document.getElementById('detailsModal');
     const modalTitle = document.getElementById('modalTitle');
@@ -893,18 +768,16 @@
     
     modal.style.display = 'block';
     
-    // Buscar dados do supervisor via fetch
     fetch(`/api/supervisor-details/${supervisorId}${window.location.search}`)
       .then(response => response.json())
       .then(data => {
         if (data.success) {
-          renderAgentsDetails(data.agentes, data.total_atendimentos);
+          modalBody.innerHTML = '<div style="padding: 20px;">Dados carregados com sucesso!</div>';
         } else {
           modalBody.innerHTML = `
-            <div style="text-align: center; padding: 40px; color: var(--muted);">
-              <h4 style="color: var(--text); margin-bottom: 16px;">Erro ao carregar dados</h4>
+            <div style="text-align: center; padding: 40px;">
+              <h4>Erro ao carregar dados</h4>
               <p>${data.error || 'Erro desconhecido'}</p>
-              <button onclick="closeModal()" class="btn" style="margin-top: 20px;">Fechar</button>
             </div>
           `;
         }
@@ -912,126 +785,18 @@
       .catch(error => {
         console.error('Erro:', error);
         modalBody.innerHTML = `
-          <div style="text-align: center; padding: 40px; color: var(--muted);">
-            <h4 style="color: var(--text); margin-bottom: 16px;">Erro de Conexão</h4>
+          <div style="text-align: center; padding: 40px;">
+            <h4>Erro de Conexão</h4>
             <p>Não foi possível carregar os dados do supervisor.</p>
-            <button onclick="closeModal()" class="btn" style="margin-top: 20px;">Fechar</button>
           </div>
         `;
       });
-  }
-
-  function renderAgentsDetails(agentes, totalAtendimentos) {
-    const modalBody = document.getElementById('modalBody');
-    
-    if (!agentes || agentes.length === 0) {
-      modalBody.innerHTML = `
-        <div class="no-atendimentos">
-          <h4 style="color: var(--text); margin-bottom: 16px;">Nenhum agente encontrado</h4>
-          <p>Este supervisor não possui agentes com atendimentos no período selecionado.</p>
-        </div>
-      `;
-      return;
-    }
-
-    let html = '<div class="agents-grid">';
-    
-    agentes.forEach((agente, index) => {
-      html += `
-        <div class="agent-card">
-          <div class="agent-header" onclick="toggleAgentDetails(${index})">
-            <div class="agent-info">
-              <span class="agent-name">${agente.nome}</span>
-              <span class="agent-count">${agente.qtd_chamados}</span>
-            </div>
-            <span class="expand-icon" id="icon-${index}">▼</span>
-          </div>
-          <div class="agent-details" id="details-${index}">
-      `;
-      
-      if (agente.atendimentos && agente.atendimentos.length > 0) {
-        html += '<div class="atendimentos-list">';
-        
-        // Mostrar os primeiros 3 atendimentos
-        const atendimentosToShow = agente.atendimentos.slice(0, 3);
-        
-        atendimentosToShow.forEach(atendimento => {
-          const classificacao = atendimento.classificacao || 'sem';
-          const dataFormatada = new Date(atendimento.data_hora).toLocaleDateString('pt-BR', {
-            day: '2-digit',
-            month: '2-digit',
-            year: 'numeric',
-            hour: '2-digit',
-            minute: '2-digit'
-          });
-          
-          html += `
-            <div class="atendimento-card">
-              <div class="atendimento-header">
-                <span class="atendimento-id">#${atendimento.id}</span>
-                <span class="atendimento-date">${dataFormatada}</span>
-              </div>
-              <div class="atendimento-content">
-                ${atendimento.conteudo.length > 150 ? 
-                  atendimento.conteudo.substring(0, 150) + '...' : 
-                  atendimento.conteudo}
-              </div>
-              <div class="atendimento-footer">
-                <span class="classificacao-badge classificacao-${classificacao}">
-                  ${classificacao === 'sem' ? 'Sem classificação' : classificacao}
-                </span>
-                <span class="status-badge">${atendimento.status || 'pendente'}</span>
-              </div>
-            </div>
-          `;
-        });
-        
-        html += '</div>';
-        
-        // Se há mais atendimentos, mostrar link para ver todos
-        if (agente.atendimentos.length > 3) {
-          html += `
-            <div class="show-more" onclick="showAllAtendimentos(${index})">
-              Ver todos os ${agente.atendimentos.length} atendimentos ▼
-            </div>
-          `;
-        }
-      } else {
-        html += '<div class="no-atendimentos">Nenhum atendimento no período</div>';
-      }
-      
-      html += '</div></div>';
-    });
-    
-    html += '</div>';
-    modalBody.innerHTML = html;
-  }
-
-  function toggleAgentDetails(index) {
-    const details = document.getElementById(`details-${index}`);
-    const icon = document.getElementById(`icon-${index}`);
-    
-    if (details.style.display === 'none' || details.style.display === '') {
-      details.style.display = 'block';
-      icon.textContent = '▲';
-      icon.classList.add('expanded');
-    } else {
-      details.style.display = 'none';
-      icon.textContent = '▼';
-      icon.classList.remove('expanded');
-    }
-  }
-
-  function showAllAtendimentos(index) {
-    // Aqui poderia implementar uma expansão completa ou redirect
-    alert('Funcionalidade para mostrar todos os atendimentos pode ser implementada aqui.');
   }
 
   function closeModal() {
     document.getElementById('detailsModal').style.display = 'none';
   }
 
-  // Fechar modal clicando fora
   window.onclick = function(event) {
     const modal = document.getElementById('detailsModal');
     if (event.target === modal) {

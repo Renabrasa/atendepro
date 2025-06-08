@@ -1642,203 +1642,33 @@
 
 
 <script>
-// === JAVASCRIPT FINAL CORRIGIDO - HEATMAP HISTÓRICO + COMPARATIVO REALISTA ===
+// === JAVASCRIPT APENAS DADOS REAIS - SEM MOCK ===
 document.addEventListener('DOMContentLoaded', function () {
-    console.log('🚀 Painel FINAL CORRIGIDO - Heatmap histórico + Comparativo realista');
+    console.log('🚀 Painel APENAS DADOS REAIS - Sem dados mockados');
 
-    // === DADOS DO BACKEND COM FALLBACK ===
+    // === DADOS DO BACKEND ===
     let volumeComparativo, heatmapMes, temDadosReais;
     
     try {
         volumeComparativo = {{ volume_comparativo | tojson | safe }};
         heatmapMes = {{ heatmap_mes | tojson | safe }};
         temDadosReais = {{ tem_dados_reais | tojson }};
+        
+        console.log('📊 Dados recebidos do backend:');
+        console.log('   Heatmap:', heatmapMes?.length || 0, 'dias');
+        console.log('   Comparativo:', volumeComparativo?.length || 0, 'dias');
+        console.log('   Tem dados reais:', temDadosReais);
+        
     } catch (error) {
-        console.warn('⚠️ Usando dados de demonstração');
+        console.error('❌ Erro ao carregar dados do backend:', error);
+        volumeComparativo = [];
+        heatmapMes = [];
         temDadosReais = false;
-        
-        // Gerar heatmap histórico (30+ dias)
-        heatmapMes = gerarHeatmapHistorico();
-        
-        // Gerar comparativo realista
-        volumeComparativo = gerarComparativoRealista();
     }
 
-    // === FUNÇÃO PARA GERAR HEATMAP HISTÓRICO (30+ DIAS) ===
-    function gerarHeatmapHistorico() {
-        console.log('📅 Gerando heatmap HISTÓRICO - 30+ dias para trás...');
-        
-        // Data atual: 08/06/2025 (domingo)
-        const hoje = new Date(2025, 5, 8);
-        console.log(`📅 Hoje: ${hoje.toLocaleDateString('pt-BR')} (${['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'][hoje.getDay()]})`);
-        
-        const dados = [];
-        
-        // Gera dados para os últimos 45 dias (incluindo hoje)
-        // Isso garante que temos dados históricos suficientes
-        for (let diasAtras = 44; diasAtras >= 0; diasAtras--) {
-            const data = new Date(hoje);
-            data.setDate(hoje.getDate() - diasAtras);
-            
-            const diaSemana = data.getDay(); // 0=Dom, 1=Seg, ..., 6=Sáb
-            const diaDoMes = data.getDate();
-            const mes = data.getMonth() + 1; // +1 porque getMonth() retorna 0-11
-            
-            let volume = 0;
-            
-            // APENAS gera dados para DIAS PASSADOS (não futuros)
-            if (data <= hoje) {
-                // Volume baseado no padrão realista
-                if (diaSemana === 5) { // Sexta-feira
-                    volume = Math.floor(Math.random() * 25) + 30; // 30-54
-                } else if (diaSemana === 4) { // Quinta-feira
-                    volume = Math.floor(Math.random() * 20) + 20; // 20-39
-                } else if (diaSemana === 0 || diaSemana === 6) { // Fins de semana
-                    volume = Math.floor(Math.random() * 8) + 2; // 2-9
-                } else { // Segunda, terça, quarta
-                    volume = Math.floor(Math.random() * 15) + 10; // 10-24
-                }
-                
-                // Dados específicos para dias conhecidos recentes
-                if (data.getFullYear() === 2025 && data.getMonth() === 5) { // Junho 2025
-                    if (diaDoMes === 6) { // 06/06/2025 = sexta-feira
-                        volume = 45;
-                        console.log(`🎯 06/06/2025 (sexta): ${volume} atendimentos`);
-                    } else if (diaDoMes === 7) { // 07/06/2025 = sábado
-                        volume = 8;
-                        console.log(`📅 07/06/2025 (sábado): ${volume} atendimentos`);
-                    } else if (diaDoMes === 5) { // 05/06/2025 = quinta
-                        volume = 28;
-                    } else if (diaDoMes === 4) { // 04/06/2025 = quarta
-                        volume = 22;
-                    } else if (diaDoMes === 3) { // 03/06/2025 = terça
-                        volume = 18;
-                    } else if (diaDoMes === 2) { // 02/06/2025 = segunda
-                        volume = 15;
-                    } else if (diaDoMes === 1) { // 01/06/2025 = domingo
-                        volume = 4;
-                    }
-                }
-                
-                // Para hoje (08/06), coloca volume baixo pois é domingo e ainda está acontecendo
-                if (data.getTime() === hoje.getTime()) {
-                    volume = 3; // Domingo, poucas atividades
-                    console.log(`📅 Hoje (08/06/2025): ${volume} atendimentos`);
-                }
-            }
-            
-            dados.push({
-                dia_mes: diaDoMes,
-                volume: volume,
-                dia_semana: diaSemana,
-                eh_hoje: data.getTime() === hoje.getTime(),
-                data_completa: data.toISOString().split('T')[0],
-                mes: mes,
-                eh_passado: data < hoje,
-                eh_futuro: data > hoje
-            });
-        }
-        
-        console.log(`✅ Heatmap histórico gerado: ${dados.length} dias`);
-        
-        // Mostra estatísticas
-        const diasComDados = dados.filter(d => d.volume > 0).length;
-        const totalVolume = dados.reduce((sum, d) => sum + d.volume, 0);
-        console.log(`📊 ${diasComDados} dias com dados, ${totalVolume} atendimentos totais`);
-        
-        return dados;
-    }
-
-    // === FUNÇÃO PARA GERAR COMPARATIVO SEMANAL REALISTA ===
-    function gerarComparativoRealista() {
-        console.log('📊 Gerando comparativo semanal REALISTA...');
-        
-        // Data atual: 08/06/2025 (domingo)
-        const hoje = new Date(2025, 5, 8);
-        console.log(`📅 Hoje: ${hoje.toLocaleDateString('pt-BR')} = Domingo`);
-        
-        // Para comparativo semanal, vamos comparar:
-        // - Semana atual: 02/06 (seg) a 08/06 (dom)
-        // - Semana anterior: 26/05 (seg) a 01/06 (dom)
-        
-        // Encontra a segunda-feira da semana atual
-        const diaAtualSemana = hoje.getDay(); // 0 = domingo
-        const diasParaSegunda = diaAtualSemana === 0 ? 6 : diaAtualSemana - 1;
-        
-        const segundaAtual = new Date(hoje);
-        segundaAtual.setDate(hoje.getDate() - diasParaSegunda);
-        
-        const segundaAnterior = new Date(segundaAtual);
-        segundaAnterior.setDate(segundaAtual.getDate() - 7);
-        
-        console.log(`📅 Segunda da semana atual: ${segundaAtual.toLocaleDateString('pt-BR')}`);
-        console.log(`📅 Segunda da semana anterior: ${segundaAnterior.toLocaleDateString('pt-BR')}`);
-        
-        const diasSemana = ['Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb', 'Dom'];
-        const dados = [];
-        
-        diasSemana.forEach((nomeDia, index) => {
-            // Data da semana atual (que pode incluir hoje)
-            const dataAtual = new Date(segundaAtual);
-            dataAtual.setDate(segundaAtual.getDate() + index);
-            
-            // Data da semana anterior (sempre no passado)
-            const dataAnterior = new Date(segundaAnterior);
-            dataAnterior.setDate(segundaAnterior.getDate() + index);
-            
-            // IMPORTANTE: Só coloca dados para dias que JÁ ACONTECERAM
-            let volumeAtual = 0;
-            let volumeAnterior = 0;
-            
-            // Semana anterior (sempre no passado) - dados reais
-            if (nomeDia === 'Seg') volumeAnterior = 32;       // 26/05
-            else if (nomeDia === 'Ter') volumeAnterior = 38;  // 27/05
-            else if (nomeDia === 'Qua') volumeAnterior = 29;  // 28/05
-            else if (nomeDia === 'Qui') volumeAnterior = 35;  // 29/05
-            else if (nomeDia === 'Sex') volumeAnterior = 48;  // 30/05
-            else if (nomeDia === 'Sáb') volumeAnterior = 12;  // 31/05
-            else if (nomeDia === 'Dom') volumeAnterior = 6;   // 01/06
-            
-            // Semana atual - SÓ para dias que já aconteceram
-            if (dataAtual <= hoje) {
-                if (nomeDia === 'Seg') volumeAtual = 15;      // 02/06 (segunda)
-                else if (nomeDia === 'Ter') volumeAtual = 18; // 03/06 (terça)
-                else if (nomeDia === 'Qua') volumeAtual = 22; // 04/06 (quarta)
-                else if (nomeDia === 'Qui') volumeAtual = 28; // 05/06 (quinta)
-                else if (nomeDia === 'Sex') volumeAtual = 45; // 06/06 (sexta) - PICO
-                else if (nomeDia === 'Sáb') volumeAtual = 8;  // 07/06 (sábado)
-                else if (nomeDia === 'Dom') volumeAtual = 3;  // 08/06 (domingo - hoje)
-            } else {
-                // Dias futuros = 0 (não aconteceram ainda)
-                volumeAtual = 0;
-            }
-            
-            const ehHoje = dataAtual.toDateString() === hoje.toDateString();
-            const ehOntem = dataAtual.toDateString() === new Date(hoje.getTime() - 24*60*60*1000).toDateString();
-            const ehFuturo = dataAtual > hoje;
-            
-            dados.push({
-                dia: nomeDia,
-                volume_atual: volumeAtual,
-                volume_anterior: volumeAnterior,
-                data_atual: dataAtual.toLocaleDateString('pt-BR'),
-                data_anterior: dataAnterior.toLocaleDateString('pt-BR'),
-                eh_hoje: ehHoje,
-                eh_ontem: ehOntem,
-                eh_futuro: ehFuturo
-            });
-            
-            // Log detalhado
-            const status = ehHoje ? ' ← HOJE' : (ehOntem ? ' ← ONTEM' : (ehFuturo ? ' ← FUTURO' : ''));
-            console.log(`📊 ${nomeDia}: Atual=${volumeAtual} (${dataAtual.toLocaleDateString('pt-BR')}), Anterior=${volumeAnterior}${status}`);
-        });
-        
-        return dados;
-    }
-
-    // === CRIAR HEATMAP DO MÊS ===
+    // === CRIAR HEATMAP APENAS COM DADOS REAIS ===
     function createMonthHeatmap() {
-        console.log('🔥 Criando heatmap HISTÓRICO...');
+        console.log('🔥 Criando heatmap APENAS com dados reais...');
         
         const container = document.getElementById('heatmapCalendar');
         if (!container) {
@@ -1861,80 +1691,86 @@ document.addEventListener('DOMContentLoaded', function () {
         });
 
         if (heatmapMes && heatmapMes.length > 0) {
-            console.log(`📊 Renderizando ${heatmapMes.length} dias no heatmap`);
+            console.log(`📊 Renderizando ${heatmapMes.length} dias REAIS no heatmap`);
             
             // Ordena os dados por data
             const dadosOrdenados = heatmapMes.sort((a, b) => {
-                const dataA = new Date(a.data_completa || `2025-06-${String(a.dia_mes).padStart(2, '0')}`);
-                const dataB = new Date(b.data_completa || `2025-06-${String(b.dia_mes).padStart(2, '0')}`);
+                const dataA = new Date(a.data_completa);
+                const dataB = new Date(b.data_completa);
                 return dataA - dataB;
             });
             
-            console.log(`📅 Primeiro dia: ${dadosOrdenados[0].data_completa}, último: ${dadosOrdenados[dadosOrdenados.length - 1].data_completa}`);
+            console.log(`📅 Primeiro dia REAL: ${dadosOrdenados[0]?.data_completa}`);
+            console.log(`📅 Último dia REAL: ${dadosOrdenados[dadosOrdenados.length - 1]?.data_completa}`);
             
-            // Encontra o primeiro domingo para começar o calendário
-            let primeiraData = new Date(dadosOrdenados[0].data_completa);
-            while (primeiraData.getDay() !== 0) { // 0 = domingo
-                primeiraData.setDate(primeiraData.getDate() - 1);
+            // Verifica se precisa de células vazias no início
+            const primeiroItem = dadosOrdenados[0];
+            if (primeiroItem) {
+                const primeiraData = new Date(primeiroItem.data_completa);
+                const primeiroDiaSemana = primeiraData.getDay(); // 0=Dom, 1=Seg, etc.
+                
+                console.log(`📅 Primeiro dia (${primeiroItem.dia_mes}): ${diasSemana[primeiroDiaSemana]} (getDay: ${primeiroDiaSemana}, backend: ${primeiroItem.dia_semana})`);
+                
+                // Adiciona células vazias no início para alinhar com o dia da semana correto
+                for (let i = 0; i < primeiroDiaSemana; i++) {
+                    const emptyCell = document.createElement('div');
+                    emptyCell.className = 'heatmap-day heat-0';
+                    emptyCell.innerHTML = `<div class="heatmap-day-number"></div><div class="heatmap-day-count"></div>`;
+                    calendar.appendChild(emptyCell);
+                }
             }
             
-            // Renderiza dia por dia em formato de calendário
-            let dataAtual = new Date(primeiraData);
-            const ultimaData = new Date(dadosOrdenados[dadosOrdenados.length - 1].data_completa);
-            
-            // Adiciona células até completar o calendário
-            while (dataAtual <= ultimaData || dataAtual.getDay() !== 0) {
-                // Procura dados para este dia
-                const dadoDia = dadosOrdenados.find(d => d.data_completa === dataAtual.toISOString().split('T')[0]);
+            // Renderiza todos os dias com dados reais
+            dadosOrdenados.forEach(function (dia, index) {
+                const volume = dia.volume || 0;
                 
-                const volume = dadoDia ? dadoDia.volume : 0;
-                const ehHoje = dadoDia ? dadoDia.eh_hoje : false;
-                const diaDoMes = dataAtual.getDate();
-                
-                // Classificação de intensidade
+                // Classificação de intensidade baseada em dados reais
                 let intensity = 0;
                 if (volume > 0) {
-                    if (volume <= 10) intensity = 1;
-                    else if (volume <= 20) intensity = 2;
-                    else if (volume <= 35) intensity = 3;
-                    else intensity = 4;
+                    if (volume <= 5) intensity = 1;      // 1-5 atendimentos
+                    else if (volume <= 15) intensity = 2; // 6-15 atendimentos  
+                    else if (volume <= 30) intensity = 3; // 16-30 atendimentos
+                    else intensity = 4;                   // 31+ atendimentos
                 }
 
                 const dayElement = document.createElement('div');
-                dayElement.className = `heatmap-day heat-${intensity} ${ehHoje ? 'today' : ''}`;
+                dayElement.className = `heatmap-day heat-${intensity} ${dia.eh_hoje ? 'today' : ''}`;
 
                 dayElement.innerHTML = `
-                    <div class="heatmap-day-number">${diaDoMes}</div>
+                    <div class="heatmap-day-number">${dia.dia_mes}</div>
                     <div class="heatmap-day-count">${volume}</div>
                 `;
 
                 // Tooltip detalhado
-                const nomeDia = diasSemana[dataAtual.getDay()];
-                const dataFormatada = dataAtual.toLocaleDateString('pt-BR');
-                dayElement.title = `${dataFormatada}: ${nomeDia} - ${volume} atendimentos`;
+                const dataObj = new Date(dia.data_completa);
+                const nomeDia = diasSemana[dataObj.getDay()];
+                const dataFormatada = dataObj.toLocaleDateString('pt-BR');
+                dayElement.title = `${dataFormatada}: ${nomeDia} - ${volume} atendimentos${volume === 0 ? ' (sem expediente ou sem dados)' : ''}`;
                 
                 calendar.appendChild(dayElement);
                 
-                // Log para dias importantes
-                if (volume > 0 || ehHoje) {
-                    console.log(`📅 ${dataFormatada} (${nomeDia}): ${volume} atendimentos${ehHoje ? ' ← HOJE' : ''}`);
+                // Log para verificação
+                if (dia.eh_hoje || volume > 0) {
+                    console.log(`📅 ${dataFormatada} (${nomeDia}): ${volume} atendimentos${dia.eh_hoje ? ' ← HOJE' : ''}`);
                 }
-                
-                // Próximo dia
-                dataAtual.setDate(dataAtual.getDate() + 1);
-            }
+            });
             
         } else {
-            console.warn('⚠️ Nenhum dado de heatmap disponível');
+            console.warn('⚠️ Nenhum dado REAL de heatmap disponível');
+            // Mostra mensagem de que não há dados
+            const noDataMsg = document.createElement('div');
+            noDataMsg.style.cssText = 'grid-column: 1 / -1; text-align: center; padding: 20px; color: #999; font-style: italic;';
+            noDataMsg.textContent = 'Nenhum dado disponível ainda';
+            calendar.appendChild(noDataMsg);
         }
 
         container.appendChild(calendar);
-        console.log('✅ Heatmap histórico criado!');
+        console.log('✅ Heatmap com dados reais criado!');
     }
 
-    // === CRIAR COMPARATIVO SEMANAL ===
+    // === CRIAR COMPARATIVO SEMANAL APENAS COM DADOS REAIS ===
     function createWeeklyComparison() {
-        console.log('📊 Criando comparativo semanal REALISTA...');
+        console.log('📊 Criando comparativo semanal APENAS com dados reais...');
         
         const comparisonChart = document.getElementById('comparisonChart');
         if (!comparisonChart) {
@@ -1944,33 +1780,25 @@ document.addEventListener('DOMContentLoaded', function () {
         
         comparisonChart.innerHTML = '';
 
-        // Usa dados corretos
-        let dadosParaUsar = volumeComparativo;
-        
-        // Se não tem dados, gera localmente
-        if (!dadosParaUsar || dadosParaUsar.length === 0) {
-            console.log('📝 Gerando dados locais para comparativo...');
-            dadosParaUsar = gerarComparativoRealista();
-        }
-
-        if (dadosParaUsar && dadosParaUsar.length > 0) {
-            console.log(`📈 Renderizando ${dadosParaUsar.length} dias no comparativo`);
+        if (volumeComparativo && volumeComparativo.length > 0) {
+            console.log(`📈 Renderizando ${volumeComparativo.length} dias REAIS no comparativo`);
             
-            // Escala baseada no maior valor
+            // Escala baseada no maior valor REAL
             const todosValores = [];
-            dadosParaUsar.forEach(d => {
+            volumeComparativo.forEach(d => {
                 todosValores.push(d.volume_atual || 0);
                 todosValores.push(d.volume_anterior || 0);
             });
-            const maxVolume = Math.max(...todosValores, 10); // Mínimo 10 para escala
+            const maxVolume = Math.max(...todosValores, 1); // Mínimo 1 para evitar divisão por 0
             
-            console.log(`📏 Escala do comparativo: 0 a ${maxVolume}`);
+            console.log(`📏 Escala baseada em dados reais: 0 a ${maxVolume}`);
 
             // Renderiza cada dia da semana
-            dadosParaUsar.forEach(function (dadosDia, index) {
+            volumeComparativo.forEach(function (dadosDia, index) {
                 const volumeAtual = dadosDia.volume_atual || 0;
                 const volumeAnterior = dadosDia.volume_anterior || 0;
                 const nomeDia = dadosDia.dia;
+                const ehDiaUtil = dadosDia.eh_dia_util;
 
                 // Altura das barras (max 220px)
                 const alturaAtual = volumeAtual > 0 ? Math.max((volumeAtual / maxVolume) * 220, 8) : 0;
@@ -1992,21 +1820,27 @@ document.addEventListener('DOMContentLoaded', function () {
                 } else if (dadosDia.eh_futuro) {
                     destaque = ' style="background: rgba(158, 158, 158, 0.1); border-radius: 6px; padding: 4px;"';
                     labelStyle = 'color: #9e9e9e; font-style: italic;';
+                } else if (!ehDiaUtil) {
+                    // Fins de semana com estilo diferenciado
+                    labelStyle = 'color: #ff9800; font-weight: 500;';
                 }
+                
+                // Opacidade para fins de semana sem expediente
+                const opacidadeFimSemana = !ehDiaUtil ? 'opacity: 0.5;' : '';
                 
                 dayElement.innerHTML = `
                     <div class="comparison-bars"${destaque}>
                         <div class="comparison-bar previous" 
-                             style="height: ${alturaAnterior}px;" 
+                             style="height: ${alturaAnterior}px; ${opacidadeFimSemana}" 
                              data-day="${nomeDia}"
                              data-value="${volumeAnterior}">
-                            <div class="tooltip">Anterior: ${volumeAnterior}</div>
+                            <div class="tooltip">Anterior: ${volumeAnterior}${!ehDiaUtil ? ' (fim de semana)' : ''}</div>
                         </div>
                         <div class="comparison-bar current" 
-                             style="height: ${alturaAtual}px; ${dadosDia.eh_futuro ? 'opacity: 0.3;' : ''}"
+                             style="height: ${alturaAtual}px; ${opacidadeFimSemana} ${dadosDia.eh_futuro ? 'opacity: 0.3;' : ''}"
                              data-day="${nomeDia}"
                              data-value="${volumeAtual}">
-                            <div class="tooltip">${dadosDia.eh_futuro ? 'Futuro' : 'Atual'}: ${volumeAtual}</div>
+                            <div class="tooltip">${dadosDia.eh_futuro ? 'Futuro' : 'Atual'}: ${volumeAtual}${!ehDiaUtil ? ' (fim de semana)' : ''}</div>
                         </div>
                     </div>
                     <div class="comparison-day-label" style="${labelStyle}">${nomeDia}</div>
@@ -2014,18 +1848,17 @@ document.addEventListener('DOMContentLoaded', function () {
 
                 comparisonChart.appendChild(dayElement);
                 
-                // Log dos dias importantes
-                if (dadosDia.eh_hoje || dadosDia.eh_ontem || nomeDia === 'Sex') {
-                    const status = dadosDia.eh_hoje ? ' ← HOJE' : (dadosDia.eh_ontem ? ' ← ONTEM' : '');
-                    console.log(`📊 ${nomeDia}: ${volumeAtual} atendimentos${status}`);
-                }
+                // Log dos dados reais
+                const status = dadosDia.eh_hoje ? ' ← HOJE' : (dadosDia.eh_ontem ? ' ← ONTEM' : (dadosDia.eh_futuro ? ' ← FUTURO' : ''));
+                const expediente = ehDiaUtil ? ' (ÚTIL)' : ' (FIM DE SEMANA)';
+                console.log(`📊 ${nomeDia}: Atual=${volumeAtual}, Anterior=${volumeAnterior}${status}${expediente}`);
             });
             
-            console.log('✅ Comparativo realista criado!');
+            console.log('✅ Comparativo com dados reais criado!');
             
         } else {
-            console.warn('⚠️ Nenhum dado disponível para comparativo');
-            comparisonChart.innerHTML = '<div style="display: flex; align-items: center; justify-content: center; height: 90px; color: #999; font-style: italic;">Dados não disponíveis</div>';
+            console.warn('⚠️ Nenhum dado REAL disponível para comparativo');
+            comparisonChart.innerHTML = '<div style="display: flex; align-items: center; justify-content: center; height: 90px; color: #999; font-style: italic;">Aguardando dados reais de atendimentos</div>';
         }
     }
 
@@ -2111,67 +1944,96 @@ document.addEventListener('DOMContentLoaded', function () {
         if (inputFim) inputFim.value = ultimoDiaAnterior.toISOString().split('T')[0];
     };
 
-    // === FUNÇÕES DE TESTE ===
-    window.testHeatmapHistorico = function() {
-        console.log('🧪 === TESTE HEATMAP HISTÓRICO ===');
+    // === FUNÇÕES DE DEBUG PARA DADOS REAIS ===
+    window.verificarDadosReais = function() {
+        console.log('🔍 === VERIFICAÇÃO DE DADOS REAIS ===');
         
-        heatmapMes = gerarHeatmapHistorico();
-        createMonthHeatmap();
-        
-        const diasComDados = heatmapMes.filter(d => d.volume > 0).length;
-        console.log(`📊 ${diasComDados} dias com dados históricos`);
-        
-        const hoje = heatmapMes.find(d => d.eh_hoje);
-        if (hoje) {
-            console.log(`📅 Hoje: ${hoje.volume} atendimentos`);
+        console.log('📊 Heatmap dados:', heatmapMes?.length || 0);
+        if (heatmapMes && heatmapMes.length > 0) {
+            const diasComDados = heatmapMes.filter(d => d.volume > 0);
+            console.log(`   ${diasComDados.length} dias com atendimentos reais`);
+            
+            diasComDados.forEach(dia => {
+                const data = new Date(dia.data_completa);
+                const nomeDia = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'][data.getDay()];
+                console.log(`   ${dia.data_completa} (${nomeDia}): ${dia.volume} atendimentos`);
+            });
+            
+            const hoje = heatmapMes.find(d => d.eh_hoje);
+            if (hoje) {
+                console.log(`📅 Hoje no heatmap: ${hoje.volume} atendimentos`);
+            }
         }
         
-        console.log('✅ Teste do heatmap concluído!');
+        console.log('📊 Comparativo dados:', volumeComparativo?.length || 0);
+        if (volumeComparativo && volumeComparativo.length > 0) {
+            console.log('   Dados por dia da semana:');
+            volumeComparativo.forEach(d => {
+                const status = d.eh_hoje ? ' (HOJE)' : (d.eh_ontem ? ' (ONTEM)' : (d.eh_futuro ? ' (FUTURO)' : ''));
+                const expediente = d.eh_dia_util ? ' ÚTIL' : ' FDS';
+                console.log(`     ${d.dia}: Atual=${d.volume_atual}, Anterior=${d.volume_anterior}${status}${expediente}`);
+            });
+        }
+        
+        console.log('🏢 Tem dados reais:', temDadosReais);
     };
 
-    window.testComparativoRealista = function() {
-        console.log('🧪 === TESTE COMPARATIVO REALISTA ===');
-        
-        volumeComparativo = gerarComparativoRealista();
-        createWeeklyComparison();
-        
-        const hoje = volumeComparativo.find(d => d.eh_hoje);
-        const sexta = volumeComparativo.find(d => d.dia === 'Sex');
-        
-        if (hoje) {
-            console.log(`📅 Hoje (${hoje.dia}): ${hoje.volume_atual} atendimentos`);
-        }
-        if (sexta) {
-            console.log(`🎯 Sexta: ${sexta.volume_atual} atendimentos`);
-        }
-        
-        console.log('✅ Teste do comparativo concluído!');
-    };
-
-    window.verificarDados = function() {
-        console.log('🔍 === VERIFICAÇÃO GERAL ===');
-        console.log('Heatmap dados:', heatmapMes?.length || 0);
-        console.log('Comparativo dados:', volumeComparativo?.length || 0);
-        console.log('Tem dados reais:', temDadosReais);
+    window.testarAlinhamentoDias = function() {
+        console.log('🧪 === TESTE DE ALINHAMENTO DOS DIAS ===');
         
         if (heatmapMes && heatmapMes.length > 0) {
-            const hoje = heatmapMes.find(d => d.eh_hoje);
-            const sexta = heatmapMes.find(d => d.dia_mes === 6);
-            console.log('Hoje no heatmap:', hoje);
-            console.log('Sexta (6) no heatmap:', sexta);
+            console.log('📅 Verificando alinhamento do heatmap:');
+            
+            // Verifica alguns dias específicos
+            const diasTeste = heatmapMes.filter(d => [6, 7, 8].includes(d.dia_mes));
+            diasTeste.forEach(dia => {
+                const data = new Date(dia.data_completa);
+                const nomeDiaReal = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'][data.getDay()];
+                const nomeDiaBackend = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'][dia.dia_semana];
+                
+                const alinhado = data.getDay() === dia.dia_semana ? '✅' : '❌';
+                console.log(`   Dia ${dia.dia_mes}: Real=${nomeDiaReal}, Backend=${nomeDiaBackend} ${alinhado}`);
+            });
+        }
+        
+        console.log('📅 Data atual do sistema:');
+        const agora = new Date();
+        const nomeHoje = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'][agora.getDay()];
+        console.log(`   ${agora.toLocaleDateString('pt-BR')} = ${nomeHoje} (getDay: ${agora.getDay()})`);
+    };
+
+    window.mostrarEstatisticas = function() {
+        console.log('📈 === ESTATÍSTICAS DOS DADOS REAIS ===');
+        
+        if (heatmapMes && heatmapMes.length > 0) {
+            const totalAtendimentos = heatmapMes.reduce((sum, d) => sum + d.volume, 0);
+            const diasComDados = heatmapMes.filter(d => d.volume > 0).length;
+            const maiorVolume = Math.max(...heatmapMes.map(d => d.volume));
+            const mediaAtendimentos = totalAtendimentos / diasComDados || 0;
+            
+            console.log(`📊 Heatmap:`);
+            console.log(`   Total de dias: ${heatmapMes.length}`);
+            console.log(`   Dias com dados: ${diasComDados}`);
+            console.log(`   Total atendimentos: ${totalAtendimentos}`);
+            console.log(`   Maior volume: ${maiorVolume}`);
+            console.log(`   Média por dia: ${mediaAtendimentos.toFixed(1)}`);
         }
         
         if (volumeComparativo && volumeComparativo.length > 0) {
-            console.log('Comparativo por dia:');
-            volumeComparativo.forEach(d => {
-                console.log(`  ${d.dia}: ${d.volume_atual} (${d.eh_hoje ? 'HOJE' : d.eh_ontem ? 'ONTEM' : d.eh_futuro ? 'FUTURO' : 'PASSADO'})`);
-            });
+            const totalAtual = volumeComparativo.reduce((sum, d) => sum + d.volume_atual, 0);
+            const totalAnterior = volumeComparativo.reduce((sum, d) => sum + d.volume_anterior, 0);
+            const variacao = totalAnterior > 0 ? ((totalAtual - totalAnterior) / totalAnterior * 100).toFixed(1) : 0;
+            
+            console.log(`📊 Comparativo:`);
+            console.log(`   Semana atual: ${totalAtual} atendimentos`);
+            console.log(`   Semana anterior: ${totalAnterior} atendimentos`);
+            console.log(`   Variação: ${variacao}%`);
         }
     };
 
     // === INICIALIZAÇÃO ===
     setTimeout(() => {
-        console.log('🚀 Inicializando painel FINAL corrigido...');
+        console.log('🚀 Inicializando painel APENAS com dados reais...');
         
         animateKPIs();
         createMonthHeatmap();
@@ -2198,11 +2060,17 @@ document.addEventListener('DOMContentLoaded', function () {
             });
         }
         
-        console.log('✅ Painel inicializado com TODAS as correções!');
-        console.log('🧪 Comandos disponíveis:');
-        console.log('   - testHeatmapHistorico() - Testa heatmap com dados históricos');
-        console.log('   - testComparativoRealista() - Testa comparativo sem dados futuros');
-        console.log('   - verificarDados() - Mostra informações dos dados carregados');
+        console.log('✅ Painel REAL inicializado!');
+        console.log('🧪 Comandos de debug:');
+        console.log('   - verificarDadosReais() - Mostra todos os dados reais');
+        console.log('   - testarAlinhamentoDias() - Testa alinhamento dos dias da semana');
+        console.log('   - mostrarEstatisticas() - Mostra estatísticas dos dados');
+        
+        // Executa verificação automática
+        if (heatmapMes?.length > 0 || volumeComparativo?.length > 0) {
+            console.log('🔍 Executando verificação automática...');
+            verificarDadosReais();
+        }
         
     }, 100);
 });

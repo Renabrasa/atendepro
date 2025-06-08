@@ -1100,7 +1100,7 @@ def admin_panel():
 @app.route('/painel_coordenacao')
 @login_required  
 def painel_coordenacao():
-    """Painel da Coordenação - VERSÃO FINAL CORRIGIDA"""
+    """Painel da Coordenação - APENAS DADOS REAIS DO BANCO"""
     if current_user.tipo not in ['admin', 'coordenadora']:
         flash('Acesso negado.', 'danger')
         return redirect(url_for('dashboard'))
@@ -1116,20 +1116,17 @@ def painel_coordenacao():
         
         # LÓGICA DE PRIORIDADE: Filtro personalizado > Período predefinido
         if data_inicio_str and data_fim_str:
-            # Usuário escolheu datas específicas
             try:
                 data_inicio = datetime.strptime(data_inicio_str, '%Y-%m-%d')
                 data_fim = datetime.strptime(data_fim_str + ' 23:59:59', '%Y-%m-%d %H:%M:%S')
                 periodo_usado = 'personalizado'
                 app.logger.info(f"Filtro personalizado: {data_inicio_str} até {data_fim_str}")
             except ValueError:
-                # Data inválida, volta para período padrão
                 data_fim = hoje
                 data_inicio = data_fim - timedelta(days=7)
                 periodo_usado = 'periodo'
                 app.logger.warning("Datas inválidas, usando período padrão de 7 dias")
         else:
-            # Usuário escolheu período predefinido
             if periodo not in [1, 7, 30, 90]:
                 periodo = 7
             
@@ -1247,96 +1244,74 @@ def painel_coordenacao():
         except Exception as e:
             app.logger.error(f"Erro geral nos supervisores: {e}")
         
-        # === 3. HEATMAP HISTÓRICO (30+ DIAS) ===
+        # === 3. HEATMAP APENAS COM DADOS REAIS ===
         heatmap_mes = []
         try:
-            # Data atual do sistema (hoje é 08/06/2025 - domingo)
             hoje_heatmap = datetime.now().date()
-            app.logger.info(f"Data atual do sistema: {hoje_heatmap}")
+            app.logger.info(f"Gerando heatmap APENAS com dados reais - Data atual: {hoje_heatmap}")
             
-            # Gera dados para os últimos 45 dias (incluindo hoje)
-            for dias_atras in range(44, -1, -1):  # 44 dias atrás até hoje
-                dia_atual = hoje_heatmap - timedelta(days=dias_atras)
-                
+            # Busca a data do primeiro atendimento no sistema
+            primeiro_atendimento = Atendimento.query.order_by(Atendimento.data_hora.asc()).first()
+            
+            if primeiro_atendimento:
+                data_inicio_sistema = primeiro_atendimento.data_hora.date()
+                app.logger.info(f"Primeiro atendimento do sistema: {data_inicio_sistema}")
+            else:
+                # Se não há atendimentos, usa uma data recente
+                data_inicio_sistema = hoje_heatmap - timedelta(days=30)
+                app.logger.info(f"Nenhum atendimento encontrado, usando data base: {data_inicio_sistema}")
+            
+            # Gera dados do primeiro atendimento até hoje
+            data_atual = data_inicio_sistema
+            while data_atual <= hoje_heatmap:
                 # Conversão correta Python -> JavaScript
-                python_weekday = dia_atual.weekday()  # 0=Segunda, 6=Domingo
+                python_weekday = data_atual.weekday()  # 0=Segunda, 6=Domingo
                 js_day = (python_weekday + 1) % 7     # 0=Domingo, 6=Sábado
                 
-                # IMPORTANTE: Só gera dados para dias PASSADOS (não futuros)
-                volume = 0
-                if dia_atual <= hoje_heatmap:
-                    # Volume baseado no dia da semana (padrão realista)
-                    if js_day == 5:  # Sexta-feira (JS day 5)
-                        volume = 30 + (dia_atual.day % 25)  # 30-54
-                    elif js_day == 4:  # Quinta-feira (JS day 4)
-                        volume = 20 + (dia_atual.day % 20)  # 20-39
-                    elif js_day in [0, 6]:  # Fins de semana (JS day 0=Dom, 6=Sáb)
-                        volume = 2 + (dia_atual.day % 8)    # 2-9
-                    else:  # Segunda, terça, quarta (JS day 1,2,3)
-                        volume = 10 + (dia_atual.day % 15)  # 10-24
-                    
-                    # Dados específicos para junho 2025 (dias conhecidos)
-                    if dia_atual.year == 2025 and dia_atual.month == 6:
-                        if dia_atual.day == 6:  # 06/06/2025 = sexta-feira
-                            volume = 45
-                        elif dia_atual.day == 7:  # 07/06/2025 = sábado
-                            volume = 8
-                        elif dia_atual.day == 8:  # 08/06/2025 = domingo (hoje)
-                            volume = 3
-                        elif dia_atual.day == 5:  # 05/06/2025 = quinta
-                            volume = 28
-                        elif dia_atual.day == 4:  # 04/06/2025 = quarta
-                            volume = 22
-                        elif dia_atual.day == 3:  # 03/06/2025 = terça
-                            volume = 18
-                        elif dia_atual.day == 2:  # 02/06/2025 = segunda
-                            volume = 15
-                        elif dia_atual.day == 1:  # 01/06/2025 = domingo
-                            volume = 4
-                    
-                    # Busca dados reais do banco se existirem
-                    inicio_dia = datetime.combine(dia_atual, datetime.min.time())
-                    fim_dia = inicio_dia + timedelta(days=1)
-                    
-                    atendimentos_reais = Atendimento.query.filter(
-                        Atendimento.data_hora >= inicio_dia,
-                        Atendimento.data_hora < fim_dia
-                    ).count()
-                    
-                    # Se há dados reais, usa eles; senão usa simulados
-                    if atendimentos_reais > 0:
-                        volume = atendimentos_reais
+                # Busca dados REAIS do banco
+                inicio_dia = datetime.combine(data_atual, datetime.min.time())
+                fim_dia = inicio_dia + timedelta(days=1)
                 
+                volume_real = Atendimento.query.filter(
+                    Atendimento.data_hora >= inicio_dia,
+                    Atendimento.data_hora < fim_dia
+                ).count()
+                
+                # APENAS adiciona se há dados reais OU se é para mostrar dias com 0
                 heatmap_mes.append({
-                    'dia_mes': int(dia_atual.day),
-                    'dia_semana': int(js_day),  # CORRIGIDO: formato JavaScript
-                    'volume': int(volume),
-                    'eh_hoje': dia_atual == hoje_heatmap,
-                    'data_completa': dia_atual.strftime('%Y-%m-%d'),
-                    'mes': int(dia_atual.month),
-                    'eh_passado': dia_atual < hoje_heatmap,
-                    'eh_futuro': dia_atual > hoje_heatmap
+                    'dia_mes': int(data_atual.day),
+                    'dia_semana': int(js_day),
+                    'volume': int(volume_real),  # APENAS dados reais, 0 se não houver
+                    'eh_hoje': data_atual == hoje_heatmap,
+                    'data_completa': data_atual.strftime('%Y-%m-%d'),
+                    'mes': int(data_atual.month),
+                    'eh_passado': data_atual < hoje_heatmap,
+                    'eh_futuro': data_atual > hoje_heatmap
                 })
+                
+                if volume_real > 0:
+                    app.logger.info(f"Dados reais {data_atual}: {volume_real} atendimentos (JS day: {js_day})")
+                
+                data_atual += timedelta(days=1)
             
             total_heatmap = sum(dia['volume'] for dia in heatmap_mes)
             dias_com_dados = len([d for d in heatmap_mes if d['volume'] > 0])
-            app.logger.info(f"Heatmap histórico: {len(heatmap_mes)} dias, {dias_com_dados} com dados, {total_heatmap} atendimentos totais")
+            app.logger.info(f"Heatmap REAL: {len(heatmap_mes)} dias, {dias_com_dados} com dados, {total_heatmap} atendimentos totais")
                     
         except Exception as e:
-            app.logger.error(f"Erro no heatmap histórico: {e}")
+            app.logger.error(f"Erro no heatmap real: {e}")
             heatmap_mes = []
         
-        # === 4. COMPARATIVO SEMANAL REALISTA ===
+        # === 4. COMPARATIVO SEMANAL APENAS DADOS REAIS ===
         volume_comparativo = []
         try:
-            # Data atual: 08/06/2025 (domingo)
             hoje_comp = datetime.now().date()
-            app.logger.info(f"Comparativo para: {hoje_comp}")
+            app.logger.info(f"Comparativo REAL para: {hoje_comp}")
             
             # Encontra as segundas-feiras das semanas
-            dias_para_segunda = (hoje_comp.weekday() + 1) % 7
-            if dias_para_segunda == 0:
-                dias_para_segunda = 7
+            dias_para_segunda = hoje_comp.weekday()  # 0=segunda, 6=domingo
+            if dias_para_segunda == 6:  # Se é domingo
+                dias_para_segunda = 6  # Segunda foi há 6 dias
             
             segunda_atual = hoje_comp - timedelta(days=dias_para_segunda)
             segunda_anterior = segunda_atual - timedelta(days=7)
@@ -1351,41 +1326,28 @@ def painel_coordenacao():
                 data_atual = segunda_atual + timedelta(days=i)
                 data_anterior = segunda_anterior + timedelta(days=i)
                 
-                # IMPORTANTE: Só coloca dados para dias que JÁ ACONTECERAM
-                volume_atual = 0
-                volume_anterior = 0
+                # Busca dados REAIS para ambas as semanas
                 
-                # Semana anterior (sempre no passado) - dados simulados realistas
-                volumes_anterior = {
-                    'Seg': 32, 'Ter': 38, 'Qua': 29, 'Qui': 35, 
-                    'Sex': 48, 'Sáb': 12, 'Dom': 6
-                }
-                volume_anterior = volumes_anterior.get(nome_dia, 0)
+                # Semana anterior
+                inicio_anterior = datetime.combine(data_anterior, datetime.min.time())
+                fim_anterior = inicio_anterior + timedelta(days=1)
+                volume_anterior = Atendimento.query.filter(
+                    Atendimento.data_hora >= inicio_anterior,
+                    Atendimento.data_hora < fim_anterior
+                ).count()
                 
                 # Semana atual - SÓ para dias que já aconteceram
+                volume_atual = 0
                 if data_atual <= hoje_comp:
-                    # Busca dados reais primeiro
-                    inicio_dia = datetime.combine(data_atual, datetime.min.time())
-                    fim_dia = inicio_dia + timedelta(days=1)
-                    
-                    volume_real = Atendimento.query.filter(
-                        Atendimento.data_hora >= inicio_dia,
-                        Atendimento.data_hora < fim_dia
+                    inicio_atual = datetime.combine(data_atual, datetime.min.time())
+                    fim_atual = inicio_atual + timedelta(days=1)
+                    volume_atual = Atendimento.query.filter(
+                        Atendimento.data_hora >= inicio_atual,
+                        Atendimento.data_hora < fim_atual
                     ).count()
-                    
-                    if volume_real > 0:
-                        volume_atual = volume_real
-                    else:
-                        # Dados simulados para semana atual
-                        volumes_atual = {
-                            'Seg': 15, 'Ter': 18, 'Qua': 22, 'Qui': 28,
-                            'Sex': 45, 'Sáb': 8, 'Dom': 3
-                        }
-                        volume_atual = volumes_atual.get(nome_dia, 0)
-                else:
-                    # Dias futuros = 0
-                    volume_atual = 0
                 
+                # Verifica se há expediente (segunda a sexta)
+                eh_dia_util = i < 5  # 0-4 = segunda a sexta
                 eh_hoje = data_atual == hoje_comp
                 eh_ontem = data_atual == (hoje_comp - timedelta(days=1))
                 eh_futuro = data_atual > hoje_comp
@@ -1398,16 +1360,21 @@ def painel_coordenacao():
                     'data_anterior': data_anterior.strftime('%d/%m/%Y'),
                     'eh_hoje': bool(eh_hoje),
                     'eh_ontem': bool(eh_ontem),
-                    'eh_futuro': bool(eh_futuro)
+                    'eh_futuro': bool(eh_futuro),
+                    'eh_dia_util': bool(eh_dia_util)
                 })
+                
+                # Log detalhado
+                status = ' ← HOJE' if eh_hoje else (' ← ONTEM' if eh_ontem else (' ← FUTURO' if eh_futuro else ''))
+                expediente = ' (DIA ÚTIL)' if eh_dia_util else ' (FIM DE SEMANA)'
+                app.logger.info(f"Comparativo {nome_dia}: Atual={volume_atual}, Anterior={volume_anterior}{status}{expediente}")
                     
         except Exception as e:
-            app.logger.error(f"Erro no comparativo realista: {e}")
+            app.logger.error(f"Erro no comparativo real: {e}")
             volume_comparativo = []
         
         # === 5. RESUMO EXECUTIVO ===
         try:
-            # Calcula variação com período anterior do mesmo tamanho
             dias_periodo = (data_fim - data_inicio).days
             data_inicio_anterior = data_inicio - timedelta(days=dias_periodo)
             data_fim_anterior = data_inicio
@@ -1445,7 +1412,7 @@ def painel_coordenacao():
         else:
             periodo_label = "Hoje" if periodo == 1 else "Semana" if periodo == 7 else f"Últimos {periodo} dias"
         
-        mes_atual = "Junho 2025"
+        mes_atual = datetime.now().strftime('%B %Y')
         timestamp_atualizacao = datetime.now().strftime('%d/%m/%Y às %H:%M')
         tem_dados_reais = total_supervisores > 0 and total_agentes > 0
         
@@ -1472,11 +1439,11 @@ def painel_coordenacao():
             'filtro_ativo': periodo_usado == 'personalizado'
         }
         
-        app.logger.info("=== PAINEL COORDENAÇÃO FINAL CORRIGIDO ===")
+        app.logger.info("=== PAINEL COORDENAÇÃO - APENAS DADOS REAIS ===")
         app.logger.info(f"Período: {periodo_label}")
-        app.logger.info(f"Atendimentos: {atendimentos_periodo}")
-        app.logger.info(f"Heatmap dias: {len(heatmap_mes)}")
-        app.logger.info(f"Comparativo dias: {len(volume_comparativo)}")
+        app.logger.info(f"Atendimentos REAIS: {atendimentos_periodo}")
+        app.logger.info(f"Heatmap dias REAIS: {len(heatmap_mes)}")
+        app.logger.info(f"Comparativo dias REAIS: {len(volume_comparativo)}")
         
         return render_template('painel_coordenacao.html', **context)
         

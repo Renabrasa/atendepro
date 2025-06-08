@@ -932,9 +932,17 @@
     
     modal.style.display = 'block';
     
+    // Usar a URL correta conforme seu app.py
     fetch(`/api/supervisor-details/${supervisorId}${window.location.search}`)
-      .then(response => response.json())
+      .then(response => {
+        if (!response.ok) {
+          throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+        return response.json();
+      })
       .then(data => {
+        console.log('Dados recebidos:', data); // Debug
+        
         if (data.success) {
           renderAgentsDetails(data.agentes, data.total_atendimentos);
         } else {
@@ -942,18 +950,19 @@
             <div style="text-align: center; padding: 40px; color: var(--muted);">
               <h4 style="color: var(--text); margin-bottom: 16px;">Erro ao carregar dados</h4>
               <p>${data.error || 'Erro desconhecido'}</p>
-              <button onclick="closeModal()" class="btn" style="margin-top: 20px;">Fechar</button>
+              <button onclick="closeModal()" style="margin-top: 20px; padding: 8px 16px; background: var(--accent); color: white; border: none; border-radius: 4px; cursor: pointer;">Fechar</button>
             </div>
           `;
         }
       })
       .catch(error => {
-        console.error('Erro:', error);
+        console.error('Erro na requisição:', error);
         modalBody.innerHTML = `
           <div style="text-align: center; padding: 40px; color: var(--muted);">
             <h4 style="color: var(--text); margin-bottom: 16px;">Erro de Conexão</h4>
             <p>Não foi possível carregar os dados do supervisor.</p>
-            <button onclick="closeModal()" class="btn" style="margin-top: 20px;">Fechar</button>
+            <p style="font-size: 12px; color: var(--muted); margin-top: 10px;">Erro: ${error.message}</p>
+            <button onclick="closeModal()" style="margin-top: 20px; padding: 8px 16px; background: var(--accent); color: white; border: none; border-radius: 4px; cursor: pointer;">Fechar</button>
           </div>
         `;
       });

@@ -416,7 +416,7 @@
     text-transform: uppercase;
   }
 
-  /* Modal */
+  /* Modal - CORRIGIDO PARA REMOVER TRANSPARÊNCIA */
   .modal {
     display: none;
     position: fixed;
@@ -424,12 +424,12 @@
     left: 0;
     width: 100%;
     height: 100%;
-    background: rgba(0, 0, 0, 0.432);
+    background: rgba(0, 0, 0, 0.5);
     z-index: 1000;
   }
 
   .modal-content {
-    background: rgba(255, 255, 255, 0.432);
+    background: var(--white); /* CORRIGIDO: Removida transparência */
     margin: 2% auto;
     width: 90%;
     max-width: 800px;
@@ -438,7 +438,7 @@
     max-height: 90vh;
     display: flex;
     flex-direction: column;
-    box-shadow: 0 10px 30px rgba(255, 255, 255, 0.637);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2); /* CORRIGIDO: Sombra menos transparente */
   }
 
   .modal-header {
@@ -476,7 +476,7 @@
     padding: 0;
     flex: 1;
     overflow-y: auto;
-    background: var(--white);
+    background: var(--white); /* CORRIGIDO: Fundo sólido branco */
   }
 
   /* Agents Grid */

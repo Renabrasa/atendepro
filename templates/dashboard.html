@@ -476,6 +476,7 @@
     padding: 0;
     flex: 1;
     overflow-y: auto;
+    background: var(--white); /* FORÇA FUNDO BRANCO */
   }
 
   /* Agents Grid */
@@ -483,11 +484,13 @@
     display: grid;
     grid-template-columns: 1fr;
     gap: 0;
+    background: var(--white); /* FORÇA FUNDO BRANCO */
   }
 
   .agent-card {
     border-bottom: 1px solid var(--border);
     transition: background 0.2s;
+    background: var(--white); /* FORÇA FUNDO BRANCO */
   }
 
   .agent-card:last-child {
@@ -500,12 +503,12 @@
     justify-content: space-between;
     align-items: center;
     cursor: pointer;
-    background: var(--white);
+    background: var(--white); /* FORÇA FUNDO BRANCO */
     transition: background 0.2s;
   }
 
   .agent-header:hover {
-    background: #fafbfc;
+    background: #f8fafc !important;
   }
 
   .agent-info {
@@ -540,21 +543,24 @@
 
   .agent-details {
     display: none;
-    padding: 0 24px 16px 24px;
-    background: #fafbfc;
+    padding: 16px 24px;
+    background: var(--white) !important; /* FORÇA FUNDO BRANCO COM !IMPORTANT */
+    border-top: 1px solid var(--border);
   }
 
   .atendimentos-list {
     display: grid;
-    gap: 8px;
+    gap: 12px;
+    background: var(--white); /* FORÇA FUNDO BRANCO */
   }
 
   .atendimento-card {
-    background: var(--white);
+    background: var(--white) !important; /* FORÇA FUNDO BRANCO */
     border: 1px solid var(--border);
     border-radius: 6px;
     padding: 12px;
     font-size: 13px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
   }
 
   .atendimento-header {
@@ -578,6 +584,7 @@
     color: var(--text);
     line-height: 1.4;
     margin-bottom: 8px;
+    background: var(--white); /* FORÇA FUNDO BRANCO */
   }
 
   .atendimento-footer {
@@ -623,7 +630,7 @@
     text-align: center;
     padding: 20px;
     color: var(--muted);
-    font-style: italic;
+    background: var(--white) !important; /* FORÇA FUNDO BRANCO */
   }
 
   .show-more {
@@ -635,10 +642,11 @@
     border-top: 1px solid var(--border);
     margin-top: 8px;
     transition: background 0.2s;
+    background: var(--white) !important; /* FORÇA FUNDO BRANCO */
   }
 
   .show-more:hover {
-    background: #f0f9ff;
+    background: #f0f9ff !important;
   }
 
   /* Empty State */

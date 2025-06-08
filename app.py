@@ -629,7 +629,7 @@ def api_supervisor_details(supervisor_id):
                 app.logger.warning(f"Acesso negado para usuário {current_user.id}")
                 return jsonify({'success': False, 'error': 'Acesso negado'}), 403
         
-        # Buscar o supervisor - CORREÇÃO: usar filter ao invés de get_or_404
+        # Buscar o supervisor
         supervisor = User.query.filter_by(id=supervisor_id).first()
         if not supervisor:
             app.logger.error(f"Supervisor com ID {supervisor_id} não encontrado")
@@ -637,38 +637,51 @@ def api_supervisor_details(supervisor_id):
         
         app.logger.info(f"Supervisor encontrado: {supervisor.nome} ({supervisor.tipo})")
         
-        # Pegar filtros da URL (mesmos do dashboard)
+        # Pegar filtros da URL
         data_inicio_str = request.args.get('data_inicio', '')
         data_fim_str = request.args.get('data_fim', '')
         
-        app.logger.info(f"Filtros recebidos - inicio: '{data_inicio_str}', fim: '{data_fim_str}'")
-        
         # Aplicar mesma lógica de data do dashboard
         if not data_inicio_str and not data_fim_str:
-            # Dados de hoje
             hoje = date.today()
             data_inicio = datetime.combine(hoje, datetime.min.time())
             data_fim = datetime.combine(hoje, datetime.max.time())
-            app.logger.info(f"Usando dados de hoje: {hoje}")
         else:
-            # Dados do período especificado
             data_inicio = None
             data_fim = None
             
             try:
                 if data_inicio_str:
                     data_inicio = datetime.strptime(data_inicio_str, '%Y-%m-%d')
-                    app.logger.info(f"Data início parseada: {data_inicio}")
                 if data_fim_str:
                     data_fim = datetime.strptime(data_fim_str, '%Y-%m-%d')
                     data_fim = datetime.combine(data_fim.date(), datetime.max.time())
-                    app.logger.info(f"Data fim parseada: {data_fim}")
             except ValueError as e:
                 app.logger.error(f"Erro ao parsear datas: {e}")
                 return jsonify({'success': False, 'error': f'Formato de data inválido: {str(e)}'}), 400
         
-        # Query de atendimentos do supervisor
-        query = Atendimento.query.filter_by(supervisor_id=supervisor_id)
+        # CORREÇÃO CRÍTICA: Buscar agentes que pertencem a este supervisor
+        # Não filtrar por supervisor_id do atendimento, mas pelos agentes do supervisor
+        agentes_do_supervisor = Agente.query.filter_by(supervisor_id=supervisor_id).all()
+        
+        if not agentes_do_supervisor:
+            app.logger.info(f"Supervisor {supervisor.nome} não possui agentes")
+            return jsonify({
+                'success': True,
+                'supervisor': {
+                    'nome': str(supervisor.nome),
+                    'id': int(supervisor.id),
+                    'tipo': str(supervisor.tipo)
+                },
+                'agentes': [],
+                'total_atendimentos': 0
+            })
+        
+        agentes_ids = [agente.id for agente in agentes_do_supervisor]
+        app.logger.info(f"Agentes do supervisor {supervisor.nome}: {[a.nome for a in agentes_do_supervisor]}")
+        
+        # NOVA QUERY: Buscar atendimentos pelos agentes do supervisor
+        query = Atendimento.query.filter(Atendimento.agente_id.in_(agentes_ids))
         
         if data_inicio:
             query = query.filter(Atendimento.data_hora >= data_inicio)
@@ -676,14 +689,13 @@ def api_supervisor_details(supervisor_id):
             query = query.filter(Atendimento.data_hora <= data_fim)
         
         atendimentos = query.order_by(Atendimento.data_hora.desc()).all()
-        app.logger.info(f"Encontrados {len(atendimentos)} atendimentos para o supervisor")
+        app.logger.info(f"Encontrados {len(atendimentos)} atendimentos dos agentes do supervisor")
         
-        # Agrupar por agente - CORREÇÃO: tratamento mais robusto
+        # Agrupar por agente
         contador_agentes = defaultdict(list)
         
         for atendimento in atendimentos:
             try:
-                # CORREÇÃO: Verificar se o relacionamento agente_rel existe
                 if not hasattr(atendimento, 'agente_rel') or not atendimento.agente_rel:
                     app.logger.warning(f"Atendimento {atendimento.id} sem agente válido")
                     continue
@@ -693,7 +705,12 @@ def api_supervisor_details(supervisor_id):
                     app.logger.warning(f"Agente do atendimento {atendimento.id} sem nome")
                     continue
                 
-                # Ajustar timezone de forma mais segura
+                # Verificar se o agente realmente pertence ao supervisor
+                if atendimento.agente_rel.supervisor_id != supervisor_id:
+                    app.logger.warning(f"Agente {agente_nome} não pertence ao supervisor {supervisor.nome}")
+                    continue
+                
+                # Ajustar timezone
                 data_atendimento = atendimento.data_hora
                 if data_atendimento:
                     if data_atendimento.tzinfo is None:
@@ -710,7 +727,7 @@ def api_supervisor_details(supervisor_id):
                 app.logger.error(f"Erro ao processar atendimento {atendimento.id}: {e}")
                 continue
         
-        app.logger.info(f"Agentes processados: {len(contador_agentes)}")
+        app.logger.info(f"Agentes com atendimentos: {list(contador_agentes.keys())}")
         
         # Preparar dados dos agentes para JSON
         agentes_data = []
@@ -718,17 +735,26 @@ def api_supervisor_details(supervisor_id):
         
         for agente_nome, lista_atendimentos in contador_agentes.items():
             try:
-                # Serializar atendimentos para JSON
                 atendimentos_json = []
                 
                 for atendimento in lista_atendimentos:
                     try:
+                        # Log para debug: verificar quem prestou o atendimento
+                        prestador = "Não identificado"
+                        if atendimento.supervisor_id:
+                            prestador_obj = User.query.get(atendimento.supervisor_id)
+                            if prestador_obj:
+                                prestador = prestador_obj.nome
+                        
+                        app.logger.info(f"Atendimento {atendimento.id}: Agente={agente_nome}, Prestado por={prestador}")
+                        
                         atendimento_data = {
                             'id': atendimento.id,
                             'conteudo': str(atendimento.conteudo or ''),
                             'classificacao': str(atendimento.classificacao or 'sem'),
                             'status': str(atendimento.status or 'pendente'),
-                            'data_hora': atendimento.data_hora.isoformat() if atendimento.data_hora else ''
+                            'data_hora': atendimento.data_hora.isoformat() if atendimento.data_hora else '',
+                            'prestado_por': prestador  # Adicionar para debug
                         }
                         atendimentos_json.append(atendimento_data)
                     except Exception as e:
@@ -749,7 +775,7 @@ def api_supervisor_details(supervisor_id):
         # Ordenar por quantidade de atendimentos
         agentes_data.sort(key=lambda x: x['qtd_chamados'], reverse=True)
         
-        app.logger.info(f"Resposta preparada: {len(agentes_data)} agentes, {total_atendimentos} atendimentos totais")
+        app.logger.info(f"Resposta final: {len(agentes_data)} agentes, {total_atendimentos} atendimentos totais")
         
         response_data = {
             'success': True,
@@ -769,7 +795,6 @@ def api_supervisor_details(supervisor_id):
         import traceback
         app.logger.error(f'Traceback completo: {traceback.format_exc()}')
         
-        # Retorna erro mais específico em desenvolvimento
         return jsonify({
             'success': False, 
             'error': f'Erro interno do servidor: {str(e)}'

@@ -616,42 +616,56 @@ def editar_supervisor(supervisor_id):
     return render_template('supervisor_edit.html', supervisor=supervisor)
 
 
-# ADICIONE esta nova rota no app.py (após as outras rotas)
-
 @app.route('/api/supervisor-details/<int:supervisor_id>')
 @login_required
 def api_supervisor_details(supervisor_id):
     """API para buscar detalhes de um supervisor e seus agentes"""
     try:
+        app.logger.info(f"API supervisor-details chamada para ID: {supervisor_id}")
+        
         # Verificar permissões
         if current_user.tipo not in ['admin', 'coordenadora']:
             if current_user.id != supervisor_id:
+                app.logger.warning(f"Acesso negado para usuário {current_user.id}")
                 return jsonify({'success': False, 'error': 'Acesso negado'}), 403
         
-        # Buscar o supervisor
-        supervisor = User.query.get_or_404(supervisor_id)
+        # Buscar o supervisor - CORREÇÃO: usar filter ao invés de get_or_404
+        supervisor = User.query.filter_by(id=supervisor_id).first()
+        if not supervisor:
+            app.logger.error(f"Supervisor com ID {supervisor_id} não encontrado")
+            return jsonify({'success': False, 'error': 'Supervisor não encontrado'}), 404
+        
+        app.logger.info(f"Supervisor encontrado: {supervisor.nome} ({supervisor.tipo})")
         
         # Pegar filtros da URL (mesmos do dashboard)
         data_inicio_str = request.args.get('data_inicio', '')
         data_fim_str = request.args.get('data_fim', '')
         
+        app.logger.info(f"Filtros recebidos - inicio: '{data_inicio_str}', fim: '{data_fim_str}'")
+        
         # Aplicar mesma lógica de data do dashboard
         if not data_inicio_str and not data_fim_str:
             # Dados de hoje
-            from datetime import datetime, date
             hoje = date.today()
             data_inicio = datetime.combine(hoje, datetime.min.time())
             data_fim = datetime.combine(hoje, datetime.max.time())
+            app.logger.info(f"Usando dados de hoje: {hoje}")
         else:
             # Dados do período especificado
             data_inicio = None
             data_fim = None
             
-            if data_inicio_str:
-                data_inicio = datetime.strptime(data_inicio_str, '%Y-%m-%d')
-            if data_fim_str:
-                data_fim = datetime.strptime(data_fim_str, '%Y-%m-%d')
-                data_fim = datetime.combine(data_fim.date(), datetime.max.time())
+            try:
+                if data_inicio_str:
+                    data_inicio = datetime.strptime(data_inicio_str, '%Y-%m-%d')
+                    app.logger.info(f"Data início parseada: {data_inicio}")
+                if data_fim_str:
+                    data_fim = datetime.strptime(data_fim_str, '%Y-%m-%d')
+                    data_fim = datetime.combine(data_fim.date(), datetime.max.time())
+                    app.logger.info(f"Data fim parseada: {data_fim}")
+            except ValueError as e:
+                app.logger.error(f"Erro ao parsear datas: {e}")
+                return jsonify({'success': False, 'error': f'Formato de data inválido: {str(e)}'}), 400
         
         # Query de atendimentos do supervisor
         query = Atendimento.query.filter_by(supervisor_id=supervisor_id)
@@ -662,60 +676,103 @@ def api_supervisor_details(supervisor_id):
             query = query.filter(Atendimento.data_hora <= data_fim)
         
         atendimentos = query.order_by(Atendimento.data_hora.desc()).all()
+        app.logger.info(f"Encontrados {len(atendimentos)} atendimentos para o supervisor")
         
-        # Agrupar por agente
-        from collections import defaultdict
+        # Agrupar por agente - CORREÇÃO: tratamento mais robusto
         contador_agentes = defaultdict(list)
         
         for atendimento in atendimentos:
-            # Ajustar timezone
-            if atendimento.data_hora.tzinfo is None:
-                atendimento.data_hora = atendimento.data_hora.replace(tzinfo=pytz.utc)
-            atendimento.data_hora = atendimento.data_hora.astimezone(br_tz)
-            
-            contador_agentes[atendimento.agente_rel.nome].append(atendimento)
+            try:
+                # CORREÇÃO: Verificar se o relacionamento agente_rel existe
+                if not hasattr(atendimento, 'agente_rel') or not atendimento.agente_rel:
+                    app.logger.warning(f"Atendimento {atendimento.id} sem agente válido")
+                    continue
+                
+                agente_nome = atendimento.agente_rel.nome
+                if not agente_nome:
+                    app.logger.warning(f"Agente do atendimento {atendimento.id} sem nome")
+                    continue
+                
+                # Ajustar timezone de forma mais segura
+                data_atendimento = atendimento.data_hora
+                if data_atendimento:
+                    if data_atendimento.tzinfo is None:
+                        data_atendimento = data_atendimento.replace(tzinfo=pytz.utc)
+                    try:
+                        data_atendimento = data_atendimento.astimezone(br_tz)
+                        atendimento.data_hora = data_atendimento
+                    except Exception as e:
+                        app.logger.warning(f"Erro ao converter timezone do atendimento {atendimento.id}: {e}")
+                
+                contador_agentes[agente_nome].append(atendimento)
+                
+            except Exception as e:
+                app.logger.error(f"Erro ao processar atendimento {atendimento.id}: {e}")
+                continue
+        
+        app.logger.info(f"Agentes processados: {len(contador_agentes)}")
         
         # Preparar dados dos agentes para JSON
         agentes_data = []
         total_atendimentos = len(atendimentos)
         
         for agente_nome, lista_atendimentos in contador_agentes.items():
-            # Serializar atendimentos para JSON
-            atendimentos_json = []
-            for atendimento in lista_atendimentos:
-                atendimentos_json.append({
-                    'id': atendimento.id,
-                    'conteudo': atendimento.conteudo,
-                    'classificacao': atendimento.classificacao,
-                    'status': atendimento.status,
-                    'data_hora': atendimento.data_hora.isoformat()
-                })
-            
-            agentes_data.append({
-                'nome': agente_nome,
-                'qtd_chamados': len(lista_atendimentos),
-                'atendimentos': atendimentos_json
-            })
+            try:
+                # Serializar atendimentos para JSON
+                atendimentos_json = []
+                
+                for atendimento in lista_atendimentos:
+                    try:
+                        atendimento_data = {
+                            'id': atendimento.id,
+                            'conteudo': str(atendimento.conteudo or ''),
+                            'classificacao': str(atendimento.classificacao or 'sem'),
+                            'status': str(atendimento.status or 'pendente'),
+                            'data_hora': atendimento.data_hora.isoformat() if atendimento.data_hora else ''
+                        }
+                        atendimentos_json.append(atendimento_data)
+                    except Exception as e:
+                        app.logger.error(f"Erro ao serializar atendimento {atendimento.id}: {e}")
+                        continue
+                
+                agente_data = {
+                    'nome': str(agente_nome),
+                    'qtd_chamados': len(lista_atendimentos),
+                    'atendimentos': atendimentos_json
+                }
+                agentes_data.append(agente_data)
+                
+            except Exception as e:
+                app.logger.error(f"Erro ao processar dados do agente {agente_nome}: {e}")
+                continue
         
         # Ordenar por quantidade de atendimentos
         agentes_data.sort(key=lambda x: x['qtd_chamados'], reverse=True)
         
-        return jsonify({
+        app.logger.info(f"Resposta preparada: {len(agentes_data)} agentes, {total_atendimentos} atendimentos totais")
+        
+        response_data = {
             'success': True,
             'supervisor': {
-                'nome': supervisor.nome,
-                'id': supervisor.id,
-                'tipo': supervisor.tipo
+                'nome': str(supervisor.nome),
+                'id': int(supervisor.id),
+                'tipo': str(supervisor.tipo)
             },
             'agentes': agentes_data,
             'total_atendimentos': total_atendimentos
-        })
+        }
+        
+        return jsonify(response_data)
         
     except Exception as e:
-        app.logger.error(f'Erro na API supervisor-details: {e}')
+        app.logger.error(f'ERRO CRÍTICO na API supervisor-details: {e}')
+        import traceback
+        app.logger.error(f'Traceback completo: {traceback.format_exc()}')
+        
+        # Retorna erro mais específico em desenvolvimento
         return jsonify({
             'success': False, 
-            'error': 'Erro interno do servidor'
+            'error': f'Erro interno do servidor: {str(e)}'
         }), 500
 
 

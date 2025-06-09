@@ -1125,7 +1125,10 @@
 </div>
 
 <script>
-  // Validação de filtros
+  // DEBUG: Log para verificar se script carregou
+  console.log('🚀 Script do dashboard carregado!');
+
+  // Validação de filtros (mantém como está)
   document.querySelector('form').addEventListener('submit', function(e) {
     const inicio = document.querySelector('[name="data_inicio"]').value;
     const fim = document.querySelector('[name="data_fim"]').value;
@@ -1136,98 +1139,128 @@
     }
   });
 
+  // FUNÇÃO PRINCIPAL - CORRIGIDA COM DEBUG
   function showDetails(supervisorName, supervisorId) {
+    console.log('🧪 showDetails chamada:', supervisorName, supervisorId);
+    
+    // Verificar se elementos existem
     const modal = document.getElementById('detailsModal');
     const modalTitle = document.getElementById('modalTitle');
     const modalBody = document.getElementById('modalBody');
     
+    if (!modal) {
+      console.error('❌ Modal não encontrado!');
+      alert('Erro: Modal não encontrado! ID: detailsModal');
+      return;
+    }
+    
+    if (!modalTitle) {
+      console.error('❌ Modal title não encontrado!');
+      alert('Erro: modalTitle não encontrado!');
+      return;
+    }
+    
+    if (!modalBody) {
+      console.error('❌ Modal body não encontrado!');
+      alert('Erro: modalBody não encontrado!');
+      return;
+    }
+    
+    console.log('✅ Todos os elementos encontrados, abrindo modal...');
+    
+    // Configurar modal
     modalTitle.textContent = `Detalhes: ${supervisorName}`;
-    modalBody.innerHTML = '<div style="text-align: center; padding: 40px;">Carregando dados...</div>';
+    modalBody.innerHTML = '<div style="text-align: center; padding: 40px; background: white;">Carregando dados...</div>';
     
+    // Mostrar modal
     modal.style.display = 'block';
+    console.log('✅ Modal deveria estar visível agora!');
     
-    // Usar a URL correta conforme seu app.py
-    fetch(`/api/supervisor-details/${supervisorId}${window.location.search}`)
+    // Buscar dados via API
+    const url = `/api/supervisor-details/${supervisorId}${window.location.search}`;
+    console.log('🌐 Fazendo requisição para:', url);
+    
+    fetch(url)
       .then(response => {
+        console.log('📡 Resposta recebida:', response.status);
         if (!response.ok) {
           throw new Error(`HTTP ${response.status}: ${response.statusText}`);
         }
         return response.json();
       })
       .then(data => {
-        console.log('Dados recebidos:', data); // Debug
+        console.log('📊 Dados recebidos:', data);
         
         if (data.success) {
           renderAgentsDetails(data.agentes, data.total_atendimentos);
         } else {
           modalBody.innerHTML = `
-            <div style="text-align: center; padding: 40px; color: var(--muted);">
-              <h4 style="color: var(--text); margin-bottom: 16px;">Erro ao carregar dados</h4>
+            <div style="text-align: center; padding: 40px; color: #64748b; background: white;">
+              <h4 style="color: #334155; margin-bottom: 16px;">Erro ao carregar dados</h4>
               <p>${data.error || 'Erro desconhecido'}</p>
-              <button onclick="closeModal()" style="margin-top: 20px; padding: 8px 16px; background: var(--accent); color: white; border: none; border-radius: 4px; cursor: pointer;">Fechar</button>
+              <button onclick="closeModal()" style="margin-top: 20px; padding: 8px 16px; background: #3b82f6; color: white; border: none; border-radius: 4px; cursor: pointer;">Fechar</button>
             </div>
           `;
         }
       })
       .catch(error => {
-        console.error('Erro na requisição:', error);
+        console.error('❌ Erro na requisição:', error);
         modalBody.innerHTML = `
-          <div style="text-align: center; padding: 40px; color: var(--muted);">
-            <h4 style="color: var(--text); margin-bottom: 16px;">Erro de Conexão</h4>
+          <div style="text-align: center; padding: 40px; color: #64748b; background: white;">
+            <h4 style="color: #334155; margin-bottom: 16px;">Erro de Conexão</h4>
             <p>Não foi possível carregar os dados do supervisor.</p>
-            <p style="font-size: 12px; color: var(--muted); margin-top: 10px;">Erro: ${error.message}</p>
-            <button onclick="closeModal()" style="margin-top: 20px; padding: 8px 16px; background: var(--accent); color: white; border: none; border-radius: 4px; cursor: pointer;">Fechar</button>
+            <p style="font-size: 12px; color: #64748b; margin-top: 10px;">Erro: ${error.message}</p>
+            <button onclick="closeModal()" style="margin-top: 20px; padding: 8px 16px; background: #3b82f6; color: white; border: none; border-radius: 4px; cursor: pointer;">Fechar</button>
           </div>
         `;
       });
   }
 
+  // FUNÇÃO PARA RENDERIZAR DETALHES DOS AGENTES
   function renderAgentsDetails(agentes, totalAtendimentos) {
+    console.log('🎨 Renderizando agentes:', agentes?.length || 0);
+    
     const modalBody = document.getElementById('modalBody');
     
     if (!agentes || agentes.length === 0) {
       modalBody.innerHTML = `
-        <div class="no-atendimentos">
-          <h4 style="color: var(--text); margin-bottom: 16px;">Nenhum agente encontrado</h4>
+        <div style="text-align: center; padding: 20px; color: #64748b; font-style: italic; background: white;">
+          <h4 style="color: #334155; margin-bottom: 16px;">Nenhum agente encontrado</h4>
           <p>Este supervisor não possui agentes com atendimentos no período selecionado.</p>
         </div>
       `;
       return;
     }
 
-    let html = '<div class="agents-grid">';
+    let html = '<div class="agents-grid" style="background: white;">';
     
     agentes.forEach((agente, index) => {
-      // Escapar HTML para evitar problemas de serialização
       const nomeEscapado = escapeHtml(agente.nome || 'Agente sem nome');
       const qtdChamados = parseInt(agente.qtd_chamados || 0);
       
       html += `
-        <div class="agent-card">
-          <div class="agent-header" onclick="toggleAgentDetails(${index})">
-            <div class="agent-info">
-              <span class="agent-name">${nomeEscapado}</span>
-              <span class="agent-count">${qtdChamados}</span>
+        <div class="agent-card" style="background: white; border-bottom: 1px solid #e2e8f0;">
+          <div class="agent-header" onclick="toggleAgentDetails(${index})" style="padding: 16px 24px; display: flex; justify-content: space-between; align-items: center; cursor: pointer; background: white;">
+            <div class="agent-info" style="display: flex; align-items: center; gap: 12px;">
+              <span class="agent-name" style="font-weight: 600; color: #1e293b; font-size: 15px;">${nomeEscapado}</span>
+              <span class="agent-count" style="background: #3b82f6; color: white; padding: 4px 12px; border-radius: 12px; font-size: 12px; font-weight: 600;">${qtdChamados}</span>
             </div>
-            <span class="expand-icon" id="icon-${index}">▼</span>
+            <span class="expand-icon" id="icon-${index}" style="color: #64748b;">▼</span>
           </div>
-          <div class="agent-details" id="details-${index}" style="display: none;">
+          <div class="agent-details" id="details-${index}" style="display: none; padding: 16px 24px; background: #f8fafc; border-top: 1px solid #e2e8f0;">
       `;
       
       if (agente.atendimentos && Array.isArray(agente.atendimentos) && agente.atendimentos.length > 0) {
-        html += '<div class="atendimentos-list">';
+        html += '<div class="atendimentos-list" style="display: grid; gap: 12px;">';
         
-        // Mostrar os primeiros 3 atendimentos
         const atendimentosToShow = agente.atendimentos.slice(0, 3);
         
         atendimentosToShow.forEach(atendimento => {
-          // Validar e escapar dados do atendimento
           const id = parseInt(atendimento.id || 0);
           const classificacao = String(atendimento.classificacao || 'sem').toLowerCase();
           const conteudo = escapeHtml(String(atendimento.conteudo || 'Sem conteúdo'));
           const status = escapeHtml(String(atendimento.status || 'pendente'));
           
-          // Tratar data de forma segura
           let dataFormatada = 'Data não disponível';
           try {
             if (atendimento.data_hora) {
@@ -1246,24 +1279,23 @@
             console.warn('Erro ao formatar data:', atendimento.data_hora, e);
           }
           
-          // Validar classificação
           const classificacaoValida = ['basico', 'medio', 'complexo'].includes(classificacao) ? classificacao : 'sem';
           const classificacaoTexto = classificacaoValida === 'sem' ? 'Sem classificação' : classificacaoValida;
           
           html += `
-            <div class="atendimento-card">
-              <div class="atendimento-header">
-                <span class="atendimento-id">#${id}</span>
-                <span class="atendimento-date">${dataFormatada}</span>
+            <div class="atendimento-card" style="background: white; border: 1px solid #e2e8f0; border-radius: 6px; padding: 12px; font-size: 13px;">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                <span style="font-weight: 600; color: #3b82f6;">#${id}</span>
+                <span style="color: #64748b; font-size: 11px;">${dataFormatada}</span>
               </div>
-              <div class="atendimento-content">
+              <div style="color: #334155; line-height: 1.4; margin-bottom: 8px;">
                 ${conteudo.length > 150 ? conteudo.substring(0, 150) + '...' : conteudo}
               </div>
-              <div class="atendimento-footer">
-                <span class="classificacao-badge classificacao-${classificacaoValida}">
+              <div style="display: flex; justify-content: space-between; align-items: center; font-size: 11px;">
+                <span style="padding: 2px 8px; border-radius: 10px; font-weight: 500; text-transform: uppercase; background: ${classificacaoValida === 'basico' ? '#dcfce7' : classificacaoValida === 'medio' ? '#fef3c7' : classificacaoValida === 'complexo' ? '#fecaca' : '#f1f5f9'}; color: ${classificacaoValida === 'basico' ? '#166534' : classificacaoValida === 'medio' ? '#92400e' : classificacaoValida === 'complexo' ? '#991b1b' : '#64748b'};">
                   ${classificacaoTexto}
                 </span>
-                <span class="status-badge">${status}</span>
+                <span style="color: #64748b; font-weight: 500;">${status}</span>
               </div>
             </div>
           `;
@@ -1271,16 +1303,15 @@
         
         html += '</div>';
         
-        // Se há mais atendimentos, mostrar link para ver todos
         if (agente.atendimentos.length > 3) {
           html += `
-            <div class="show-more" onclick="showAllAtendimentos(${index})">
+            <div onclick="showAllAtendimentos(${index})" style="text-align: center; padding: 8px; color: #3b82f6; font-size: 12px; cursor: pointer; border-top: 1px solid #e2e8f0; margin-top: 8px; background: white;">
               Ver todos os ${agente.atendimentos.length} atendimentos ▼
             </div>
           `;
         }
       } else {
-        html += '<div class="no-atendimentos">Nenhum atendimento no período</div>';
+        html += '<div style="text-align: center; padding: 20px; color: #64748b; font-style: italic; background: white;">Nenhum atendimento no período</div>';
       }
       
       html += '</div></div>';
@@ -1288,18 +1319,28 @@
     
     html += '</div>';
     modalBody.innerHTML = html;
+    
+    console.log('✅ Agentes renderizados!');
   }
 
-  // Função para escapar HTML e evitar problemas de XSS/serialização
+  // FUNÇÃO PARA ESCAPAR HTML
   function escapeHtml(text) {
     const div = document.createElement('div');
     div.textContent = text;
     return div.innerHTML;
   }
 
+  // FUNÇÃO PARA EXPANDIR DETALHES DO AGENTE
   function toggleAgentDetails(index) {
+    console.log('🔄 Toggle agente:', index);
+    
     const details = document.getElementById(`details-${index}`);
     const icon = document.getElementById(`icon-${index}`);
+    
+    if (!details || !icon) {
+      console.error('❌ Elementos não encontrados para index:', index);
+      return;
+    }
     
     if (details.style.display === 'none' || details.style.display === '') {
       details.style.display = 'block';
@@ -1312,21 +1353,49 @@
     }
   }
 
+  // FUNÇÃO PLACEHOLDER
   function showAllAtendimentos(index) {
-    // Aqui poderia implementar uma expansão completa ou redirect
     alert('Funcionalidade para mostrar todos os atendimentos pode ser implementada aqui.');
   }
 
+  // FUNÇÃO PARA FECHAR MODAL
   function closeModal() {
-    document.getElementById('detailsModal').style.display = 'none';
+    console.log('🔒 Fechando modal...');
+    const modal = document.getElementById('detailsModal');
+    if (modal) {
+      modal.style.display = 'none';
+      console.log('✅ Modal fechado!');
+    } else {
+      console.error('❌ Modal não encontrado para fechar!');
+    }
   }
 
+  // FECHAR MODAL CLICANDO FORA
   window.onclick = function(event) {
     const modal = document.getElementById('detailsModal');
     if (event.target === modal) {
       closeModal();
     }
   }
+
+  // VERIFICAÇÃO FINAL
+  document.addEventListener('DOMContentLoaded', function() {
+    console.log('📋 Verificando elementos do modal...');
+    
+    const modal = document.getElementById('detailsModal');
+    const modalTitle = document.getElementById('modalTitle');
+    const modalBody = document.getElementById('modalBody');
+    
+    console.log('Modal encontrado:', !!modal);
+    console.log('Modal title encontrado:', !!modalTitle);
+    console.log('Modal body encontrado:', !!modalBody);
+    
+    if (modal && modalTitle && modalBody) {
+      console.log('✅ Todos os elementos do modal estão OK!');
+    } else {
+      console.error('❌ Alguns elementos do modal não foram encontrados!');
+    }
+  });
 </script>
 
 {% endblock %}

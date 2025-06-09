@@ -416,151 +416,55 @@
     text-transform: uppercase;
   }
 
+  /* MODAL - CORREÇÃO DEFINITIVA SEM DUPLICAÇÃO */
+  .dashboard-page .modal {
+    display: none;
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    width: 100% !important;
+    height: 100% !important;
+    background: rgba(0, 0, 0, 0.5) !important;
+    z-index: 1000 !important;
+  }
 
-/* Modal - CORREÇÃO DEFINITIVA PARA TRANSPARÊNCIA */
-.dashboard-page .modal {
-  display: none;
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background: rgba(0, 0, 0, 0.5) !important;
-  z-index: 1000;
-}
+  .dashboard-page .modal-content {
+    background: #ffffff !important;
+    background-color: #ffffff !important;
+    margin: 2% auto !important;
+    width: 90% !important;
+    max-width: 800px !important;
+    position: relative !important;
+    border-radius: 8px;
+    overflow: hidden;
+    max-height: 90vh;
+    display: flex;
+    flex-direction: column;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3) !important;
+    opacity: 1 !important;
+  }
 
-.dashboard-page .modal-content {
-  background: #ffffff !important; /* FORÇA fundo branco sólido */
-  background-color: #ffffff !important; /* Garantia dupla */
-  margin: 2% auto;
-  width: 90%;
-  max-width: 800px;
-  border-radius: 8px;
-  overflow: hidden;
-  max-height: 90vh;
-  display: flex;
-  flex-direction: column;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3) !important;
-  opacity: 1 !important; /* Remove qualquer transparência */
-}
-
-.dashboard-page .modal-header {
-  padding: 20px 24px;
-  background: var(--primary) !important;
-  color: var(--white) !important;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  flex-shrink: 0;
-}
-
-.dashboard-page .modal-title {
-  font-size: 18px;
-  font-weight: 600;
-  margin: 0;
-  color: var(--white) !important;
-}
-
-.dashboard-page .modal-close {
-  background: none;
-  border: none;
-  color: var(--white) !important;
-  font-size: 24px;
-  cursor: pointer;
-  padding: 4px;
-  border-radius: 4px;
-  transition: background 0.2s;
-}
-
-.dashboard-page .modal-close:hover {
-  background: rgba(255, 255, 255, 0.1);
-}
-
-.dashboard-page .modal-body {
-  padding: 0;
-  flex: 1;
-  overflow-y: auto;
-  background: #ffffff !important; /* FORÇA fundo branco no corpo */
-  background-color: #ffffff !important;
-}
-
-/* CORREÇÃO PARA OS ELEMENTOS DENTRO DO MODAL */
-.dashboard-page .agents-grid {
-  display: grid;
-  grid-template-columns: 1fr;
-  gap: 0;
-  background: #ffffff !important;
-}
-
-.dashboard-page .agent-card {
-  border-bottom: 1px solid var(--border);
-  transition: background 0.2s;
-  background: #ffffff !important;
-}
-
-.dashboard-page .agent-card:last-child {
-  border-bottom: none;
-}
-
-.dashboard-page .agent-header {
-  padding: 16px 24px;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  cursor: pointer;
-  background: #ffffff !important;
-  transition: background 0.2s;
-}
-
-.dashboard-page .agent-header:hover {
-  background: #fafbfc !important;
-}
-
-.dashboard-page .agent-details {
-  display: none;
-  padding: 16px 24px;
-  background: #f8fafc !important;
-  border-top: 1px solid var(--border);
-}
-
-.dashboard-page .atendimento-card {
-  background: #ffffff !important;
-  border: 1px solid var(--border);
-  border-radius: 6px;
-  padding: 12px;
-  font-size: 13px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-}
-
-.dashboard-page .no-atendimentos {
-  text-align: center;
-  padding: 20px;
-  color: var(--muted);
-  font-style: italic;
-  background: #ffffff !important;
-}
-  
-
-  .modal-header {
+  .dashboard-page .modal-header {
     padding: 20px 24px;
-    background: var(--primary);
-    color: var(--white);
+    background: var(--primary) !important;
+    color: var(--white) !important;
     display: flex;
     justify-content: space-between;
     align-items: center;
     flex-shrink: 0;
   }
 
-  .modal-title {
+  .dashboard-page .modal-title {
     font-size: 18px;
     font-weight: 600;
     margin: 0;
+    color: var(--white) !important;
   }
 
-  .modal-close {
+  .dashboard-page .modal-close {
     background: none;
     border: none;
-    color: var(--white);
+    color: var(--white) !important;
     font-size: 24px;
     cursor: pointer;
     padding: 4px;
@@ -568,60 +472,63 @@
     transition: background 0.2s;
   }
 
-  .modal-close:hover {
-    background: rgba(255, 255, 255, 0.1);
+  .dashboard-page .modal-close:hover {
+    background: rgba(255, 255, 255, 0.1) !important;
   }
 
-  .modal-body {
+  .dashboard-page .modal-body {
     padding: 0;
     flex: 1;
     overflow-y: auto;
-    background: var(--white); /* CORRIGIDO: Fundo sólido branco */
+    background: #ffffff !important;
+    background-color: #ffffff !important;
   }
 
-  /* Agents Grid */
-  .agents-grid {
+  /* ELEMENTOS DENTRO DO MODAL */
+  .dashboard-page .agents-grid {
     display: grid;
     grid-template-columns: 1fr;
     gap: 0;
+    background: #ffffff !important;
   }
 
-  .agent-card {
+  .dashboard-page .agent-card {
     border-bottom: 1px solid var(--border);
     transition: background 0.2s;
+    background: #ffffff !important;
   }
 
-  .agent-card:last-child {
+  .dashboard-page .agent-card:last-child {
     border-bottom: none;
   }
 
-  .agent-header {
+  .dashboard-page .agent-header {
     padding: 16px 24px;
     display: flex;
     justify-content: space-between;
     align-items: center;
     cursor: pointer;
-    background: var(--white);
+    background: #ffffff !important;
     transition: background 0.2s;
   }
 
-  .agent-header:hover {
-    background: #fafbfc;
+  .dashboard-page .agent-header:hover {
+    background: #fafbfc !important;
   }
 
-  .agent-info {
+  .dashboard-page .agent-info {
     display: flex;
     align-items: center;
     gap: 12px;
   }
 
-  .agent-name {
+  .dashboard-page .agent-name {
     font-weight: 600;
     color: var(--primary);
     font-size: 15px;
   }
 
-  .agent-count {
+  .dashboard-page .agent-count {
     background: var(--accent);
     color: var(--white);
     padding: 4px 12px;
@@ -630,29 +537,29 @@
     font-weight: 600;
   }
 
-  .expand-icon {
+  .dashboard-page .expand-icon {
     color: var(--muted);
     transition: transform 0.2s;
   }
 
-  .expand-icon.expanded {
+  .dashboard-page .expand-icon.expanded {
     transform: rotate(180deg);
   }
 
-  .agent-details {
+  .dashboard-page .agent-details {
     display: none;
     padding: 16px 24px;
-    background: #f8fafc;
+    background: #f8fafc !important;
     border-top: 1px solid var(--border);
   }
 
-  .atendimentos-list {
+  .dashboard-page .atendimentos-list {
     display: grid;
     gap: 12px;
   }
 
-  .atendimento-card {
-    background: var(--white);
+  .dashboard-page .atendimento-card {
+    background: #ffffff !important;
     border: 1px solid var(--border);
     border-radius: 6px;
     padding: 12px;
@@ -660,76 +567,77 @@
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
   }
 
-  .atendimento-header {
+  .dashboard-page .atendimento-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
     margin-bottom: 8px;
   }
 
-  .atendimento-id {
+  .dashboard-page .atendimento-id {
     font-weight: 600;
     color: var(--accent);
   }
 
-  .atendimento-date {
+  .dashboard-page .atendimento-date {
     color: var(--muted);
     font-size: 11px;
   }
 
-  .atendimento-content {
+  .dashboard-page .atendimento-content {
     color: var(--text);
     line-height: 1.4;
     margin-bottom: 8px;
   }
 
-  .atendimento-footer {
+  .dashboard-page .atendimento-footer {
     display: flex;
     justify-content: space-between;
     align-items: center;
     font-size: 11px;
   }
 
-  .classificacao-badge {
+  .dashboard-page .classificacao-badge {
     padding: 2px 8px;
     border-radius: 10px;
     font-weight: 500;
     text-transform: uppercase;
   }
 
-  .classificacao-basico {
+  .dashboard-page .classificacao-basico {
     background: #dcfce7;
     color: #166534;
   }
 
-  .classificacao-medio {
+  .dashboard-page .classificacao-medio {
     background: #fef3c7;
     color: #92400e;
   }
 
-  .classificacao-complexo {
+  .dashboard-page .classificacao-complexo {
     background: #fecaca;
     color: #991b1b;
   }
 
-  .classificacao-sem {
+  .dashboard-page .classificacao-sem {
     background: #f1f5f9;
     color: var(--muted);
   }
 
-  .status-badge {
+  .dashboard-page .status-badge {
     color: var(--muted);
     font-weight: 500;
   }
 
-  .no-atendimentos {
+  .dashboard-page .no-atendimentos {
     text-align: center;
     padding: 20px;
     color: var(--muted);
     font-style: italic;
+    background: #ffffff !important;
   }
 
-  .show-more {
+  .dashboard-page .show-more {
     text-align: center;
     padding: 8px;
     color: var(--accent);
@@ -738,10 +646,11 @@
     border-top: 1px solid var(--border);
     margin-top: 8px;
     transition: background 0.2s;
+    background: #ffffff !important;
   }
 
-  .show-more:hover {
-    background: #f0f9ff;
+  .dashboard-page .show-more:hover {
+    background: #f0f9ff !important;
   }
 
   /* Empty State */

@@ -813,7 +813,11 @@ from flask_login import login_required, current_user
 @app.route('/cadastros/agentes', methods=['GET', 'POST'])
 @login_required
 def agentes():
-    supervisores = User.query.filter_by(tipo='supervisor').all()
+    # CORREÇÃO: Incluir coordenadora na lista de supervisores
+    supervisores = User.query.filter(User.tipo.in_(['supervisor', 'coordenadora'])).all()
+    
+    # CORREÇÃO: SEMPRE mostrar todas as equipes para permitir compartilhamento
+    # Independente do tipo de usuário, mostra todas as equipes
     equipes = Equipe.query.all()
 
     if request.method == 'POST':
@@ -823,7 +827,7 @@ def agentes():
         supervisor_id = request.form.get('supervisor_id', '')
         equipes_ids = request.form.getlist('equipes')
 
-        # Validações
+        # Validações básicas
         if not nome:
             flash('Nome é obrigatório.', 'danger')
             return redirect(url_for('agentes'))
@@ -849,22 +853,27 @@ def agentes():
                 flash('Este Discord ID já está cadastrado para outro agente.', 'danger')
                 return redirect(url_for('agentes'))
 
-        # Valida se o supervisor existe e é do tipo correto
-        supervisor = User.query.filter_by(id=supervisor_id, tipo='supervisor').first()
+        # CORREÇÃO: Valida se o supervisor existe e é do tipo correto (incluindo coordenadora)
+        supervisor = User.query.filter(
+            User.id == supervisor_id, 
+            User.tipo.in_(['supervisor', 'coordenadora'])
+        ).first()
         if not supervisor:
             flash('Supervisor selecionado não é válido.', 'danger')
             return redirect(url_for('agentes'))
 
-        # Validação para supervisores
+        # VALIDAÇÃO ADICIONAL: Verificar se o supervisor atual pode criar agentes
+        # Supervisor só pode criar agentes se pelo menos uma das equipes selecionadas for dele
         if current_user.tipo == 'supervisor':
             equipes_do_supervisor = set(str(e.id) for e in Equipe.query.filter_by(supervisor_id=current_user.id).all())
             equipes_selecionadas = set(equipes_ids)
             
+            # Verifica se há pelo menos uma equipe em comum
             if not equipes_do_supervisor.intersection(equipes_selecionadas):
                 flash('Você deve incluir pelo menos uma de suas próprias equipes ao criar um agente.', 'warning')
                 return redirect(url_for('agentes'))
 
-        # Criação do agente (método defensivo)
+        # Criação do agente (método defensivo que corrigiu o erro data_criacao)
         try:
             agente_data = {
                 'nome': nome,
@@ -891,6 +900,20 @@ def agentes():
             return redirect(url_for('agentes'))
 
         return redirect(url_for('agentes'))
+
+    # Listagem de agentes (GET request - mantém a lógica de permissão atual para visualização)
+    if current_user.tipo in ['admin', 'coordenadora']:
+        agentes = Agente.query.all()
+    else:
+        agentes = db.session.query(Agente).join(
+            agente_equipe, Agente.id == agente_equipe.c.agente_id
+        ).join(
+            Equipe, agente_equipe.c.equipe_id == Equipe.id
+        ).filter(
+            Equipe.supervisor_id == current_user.id
+        ).distinct().all()
+
+    return render_template('agentes.html', agentes=agentes, supervisores=supervisores, equipes=equipes)
 
     # Listagem de agentes (GET request)
     if current_user.tipo in ['admin', 'coordenadora']:

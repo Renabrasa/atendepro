@@ -416,30 +416,130 @@
     text-transform: uppercase;
   }
 
-  /* Modal - CORRIGIDO PARA REMOVER TRANSPARÊNCIA */
-  .modal {
-    display: none;
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: rgba(0, 0, 0, 0.5);
-    z-index: 1000;
-  }
 
-  .modal-content {
-    background: var(--white); /* CORRIGIDO: Removida transparência */
-    margin: 2% auto;
-    width: 90%;
-    max-width: 800px;
-    border-radius: 8px;
-    overflow: hidden;
-    max-height: 90vh;
-    display: flex;
-    flex-direction: column;
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2); /* CORRIGIDO: Sombra menos transparente */
-  }
+/* Modal - CORREÇÃO DEFINITIVA PARA TRANSPARÊNCIA */
+.dashboard-page .modal {
+  display: none;
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.5) !important;
+  z-index: 1000;
+}
+
+.dashboard-page .modal-content {
+  background: #ffffff !important; /* FORÇA fundo branco sólido */
+  background-color: #ffffff !important; /* Garantia dupla */
+  margin: 2% auto;
+  width: 90%;
+  max-width: 800px;
+  border-radius: 8px;
+  overflow: hidden;
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3) !important;
+  opacity: 1 !important; /* Remove qualquer transparência */
+}
+
+.dashboard-page .modal-header {
+  padding: 20px 24px;
+  background: var(--primary) !important;
+  color: var(--white) !important;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+.dashboard-page .modal-title {
+  font-size: 18px;
+  font-weight: 600;
+  margin: 0;
+  color: var(--white) !important;
+}
+
+.dashboard-page .modal-close {
+  background: none;
+  border: none;
+  color: var(--white) !important;
+  font-size: 24px;
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 4px;
+  transition: background 0.2s;
+}
+
+.dashboard-page .modal-close:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.dashboard-page .modal-body {
+  padding: 0;
+  flex: 1;
+  overflow-y: auto;
+  background: #ffffff !important; /* FORÇA fundo branco no corpo */
+  background-color: #ffffff !important;
+}
+
+/* CORREÇÃO PARA OS ELEMENTOS DENTRO DO MODAL */
+.dashboard-page .agents-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0;
+  background: #ffffff !important;
+}
+
+.dashboard-page .agent-card {
+  border-bottom: 1px solid var(--border);
+  transition: background 0.2s;
+  background: #ffffff !important;
+}
+
+.dashboard-page .agent-card:last-child {
+  border-bottom: none;
+}
+
+.dashboard-page .agent-header {
+  padding: 16px 24px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  cursor: pointer;
+  background: #ffffff !important;
+  transition: background 0.2s;
+}
+
+.dashboard-page .agent-header:hover {
+  background: #fafbfc !important;
+}
+
+.dashboard-page .agent-details {
+  display: none;
+  padding: 16px 24px;
+  background: #f8fafc !important;
+  border-top: 1px solid var(--border);
+}
+
+.dashboard-page .atendimento-card {
+  background: #ffffff !important;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 12px;
+  font-size: 13px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.dashboard-page .no-atendimentos {
+  text-align: center;
+  padding: 20px;
+  color: var(--muted);
+  font-style: italic;
+  background: #ffffff !important;
+}
+  
 
   .modal-header {
     padding: 20px 24px;

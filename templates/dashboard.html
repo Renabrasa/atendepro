@@ -897,7 +897,164 @@
 }
 
 
+/* FORÇA TOTAL DO MODAL - MÁXIMA PRIORIDADE */
+body #detailsModal,
+html #detailsModal,
+* #detailsModal {
+  display: none !important;
+  position: fixed !important;
+  top: 0 !important;
+  left: 0 !important;
+  width: 100vw !important;
+  height: 100vh !important;
+  background: rgba(0, 0, 0, 0.5) !important;
+  z-index: 99999 !important;
+  overflow: auto !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  border: none !important;
+  transform: none !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+}
 
+/* Quando modal tem display block - MÁXIMA FORÇA */
+body #detailsModal[style*="block"],
+html #detailsModal[style*="block"],
+* #detailsModal[style*="block"] {
+  display: block !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+}
+
+/* CONTEÚDO DO MODAL - FORÇA MÁXIMA */
+body #detailsModal .modal-content,
+html #detailsModal .modal-content,
+* #detailsModal .modal-content,
+body #detailsModal > .modal-content,
+html #detailsModal > .modal-content {
+  background: #ffffff !important;
+  background-color: #ffffff !important;
+  margin: 50px auto !important;
+  width: 90% !important;
+  max-width: 800px !important;
+  border-radius: 8px !important;
+  overflow: hidden !important;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4) !important;
+  position: relative !important;
+  transform: none !important;
+  display: flex !important;
+  flex-direction: column !important;
+  max-height: calc(100vh - 100px) !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+  border: none !important;
+  outline: none !important;
+}
+
+/* HEADER DO MODAL - FORÇA MÁXIMA */
+body #detailsModal .modal-header,
+html #detailsModal .modal-header,
+* #detailsModal .modal-header {
+  padding: 20px 24px !important;
+  background: #1e293b !important;
+  background-color: #1e293b !important;
+  color: #ffffff !important;
+  display: flex !important;
+  justify-content: space-between !important;
+  align-items: center !important;
+  flex-shrink: 0 !important;
+  border: none !important;
+  margin: 0 !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+}
+
+/* TÍTULO DO MODAL */
+body #detailsModal .modal-title,
+html #detailsModal .modal-title,
+* #detailsModal .modal-title,
+body #detailsModal #modalTitle,
+html #detailsModal #modalTitle,
+* #detailsModal #modalTitle {
+  margin: 0 !important;
+  color: #ffffff !important;
+  font-size: 18px !important;
+  font-weight: 600 !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+}
+
+/* BOTÃO FECHAR */
+body #detailsModal .modal-close,
+html #detailsModal .modal-close,
+* #detailsModal .modal-close {
+  background: none !important;
+  background-color: transparent !important;
+  border: none !important;
+  color: #ffffff !important;
+  font-size: 24px !important;
+  cursor: pointer !important;
+  padding: 4px !important;
+  border-radius: 4px !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+}
+
+/* CORPO DO MODAL - FORÇA MÁXIMA */
+body #detailsModal .modal-body,
+html #detailsModal .modal-body,
+* #detailsModal .modal-body,
+body #detailsModal #modalBody,
+html #detailsModal #modalBody,
+* #detailsModal #modalBody {
+  padding: 0 !important;
+  flex: 1 !important;
+  overflow-y: auto !important;
+  background: #ffffff !important;
+  background-color: #ffffff !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+  border: none !important;
+  margin: 0 !important;
+}
+
+/* TODOS OS ELEMENTOS DENTRO DO MODAL */
+body #detailsModal *,
+html #detailsModal *,
+#detailsModal * {
+  opacity: 1 !important;
+  visibility: visible !important;
+}
+
+/* AGENTS GRID */
+body #detailsModal .agents-grid,
+html #detailsModal .agents-grid,
+* #detailsModal .agents-grid {
+  display: grid !important;
+  grid-template-columns: 1fr !important;
+  gap: 0 !important;
+  background: #ffffff !important;
+  background-color: #ffffff !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+}
+
+/* CARDS DOS AGENTES */
+body #detailsModal .agent-card,
+html #detailsModal .agent-card,
+* #detailsModal .agent-card {
+  border-bottom: 1px solid #e2e8f0 !important;
+  background: #ffffff !important;
+  background-color: #ffffff !important;
+  transition: background 0.2s !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+}
+
+/* ========================================== */
+/* FIM DA CORREÇÃO FORÇA BRUTA MÁXIMA        */
+/* ========================================== */
 
 </style>
 

@@ -807,29 +807,33 @@ from flask import request, flash, redirect, url_for, render_template
 from flask_login import login_required, current_user
 
 
+
+# Versão final limpa para substituir na rota /cadastros/agentes
+
 @app.route('/cadastros/agentes', methods=['GET', 'POST'])
 @login_required
 def agentes():
-    # Buscar supervisores (incluindo coordenadoras) para dropdown
-    supervisores = User.query.filter(User.tipo.in_(['supervisor', 'coordenadora'])).all()
-    
-    # CORREÇÃO: SEMPRE mostrar todas as equipes para permitir compartilhamento
-    # Independente do tipo de usuário, mostra todas as equipes
+    supervisores = User.query.filter_by(tipo='supervisor').all()
     equipes = Equipe.query.all()
 
     if request.method == 'POST':
-        nome = request.form['nome'].strip()  # Remove espaços extras
+        # Extração segura dos campos
+        nome = request.form.get('nome', '').strip()
         discord_id = request.form.get('discord_id', '').strip()
-        supervisor_id = request.form.get('supervisor_id')
+        supervisor_id = request.form.get('supervisor_id', '')
         equipes_ids = request.form.getlist('equipes')
 
-        # Validações básicas
+        # Validações
         if not nome:
-            flash('Nome do agente é obrigatório.', 'danger')
+            flash('Nome é obrigatório.', 'danger')
             return redirect(url_for('agentes'))
-
-        if len(nome) < 2:
-            flash('Nome do agente deve ter pelo menos 2 caracteres.', 'danger')
+            
+        if not supervisor_id:
+            flash('Selecione um supervisor principal.', 'danger')
+            return redirect(url_for('agentes'))
+            
+        if not equipes_ids:
+            flash('Selecione pelo menos uma equipe.', 'danger')
             return redirect(url_for('agentes'))
 
         # Verifica se já existe agente com mesmo nome
@@ -845,53 +849,35 @@ def agentes():
                 flash('Este Discord ID já está cadastrado para outro agente.', 'danger')
                 return redirect(url_for('agentes'))
 
-        # Valida supervisor
-        if not supervisor_id:
-            flash('Selecione um supervisor principal.', 'danger')
-            return redirect(url_for('agentes'))
-
         # Valida se o supervisor existe e é do tipo correto
-        supervisor = User.query.filter(
-            User.id == supervisor_id, 
-            User.tipo.in_(['supervisor', 'coordenadora'])
-        ).first()
+        supervisor = User.query.filter_by(id=supervisor_id, tipo='supervisor').first()
         if not supervisor:
             flash('Supervisor selecionado não é válido.', 'danger')
             return redirect(url_for('agentes'))
 
-        # Valida equipes
-        if not equipes_ids:
-            flash('Selecione pelo menos uma equipe.', 'danger')
-            return redirect(url_for('agentes'))
-
-        # VALIDAÇÃO ADICIONAL: Verificar se o supervisor atual pode criar agentes
-        # Supervisor só pode criar agentes se pelo menos uma das equipes selecionadas for dele
+        # Validação para supervisores
         if current_user.tipo == 'supervisor':
             equipes_do_supervisor = set(str(e.id) for e in Equipe.query.filter_by(supervisor_id=current_user.id).all())
             equipes_selecionadas = set(equipes_ids)
             
-            # Verifica se há pelo menos uma equipe em comum
             if not equipes_do_supervisor.intersection(equipes_selecionadas):
                 flash('Você deve incluir pelo menos uma de suas próprias equipes ao criar um agente.', 'warning')
                 return redirect(url_for('agentes'))
 
-        # Validar se as equipes selecionadas existem
-        selecionadas = Equipe.query.filter(Equipe.id.in_(equipes_ids)).all()
-        if len(selecionadas) != len(equipes_ids):
-            flash('Uma ou mais equipes selecionadas são inválidas.', 'danger')
-            return redirect(url_for('agentes'))
-
+        # Criação do agente (método defensivo)
         try:
-            # Criar novo agente
-            novo_agente = Agente(
-                nome=nome,
-                discord_id=discord_id if discord_id else None,
-                ativo=True,
-                supervisor_id=int(supervisor_id),
-                data_criacao=datetime.now()  # Adiciona data de criação se o campo existir
-            )
-
+            agente_data = {
+                'nome': nome,
+                'ativo': True,
+                'supervisor_id': int(supervisor_id)
+            }
+            if discord_id:
+                agente_data['discord_id'] = discord_id
+            
+            novo_agente = Agente(**agente_data)
+            
             # Associa às equipes selecionadas
+            selecionadas = Equipe.query.filter(Equipe.id.in_(equipes_ids)).all()
             novo_agente.equipes = selecionadas
 
             db.session.add(novo_agente)
@@ -901,10 +887,24 @@ def agentes():
             flash(f'Agente "{nome}" criado com sucesso! Supervisor principal: {supervisor.nome}. Equipes: {", ".join(equipes_nomes)}', 'success')
             
         except Exception as e:
-            db.session.rollback()
             flash(f'Erro ao criar agente: {str(e)}', 'danger')
-            
+            return redirect(url_for('agentes'))
+
         return redirect(url_for('agentes'))
+
+    # Listagem de agentes (GET request)
+    if current_user.tipo in ['admin', 'coordenadora']:
+        agentes = Agente.query.all()
+    else:
+        agentes = db.session.query(Agente).join(
+            agente_equipe, Agente.id == agente_equipe.c.agente_id
+        ).join(
+            Equipe, agente_equipe.c.equipe_id == Equipe.id
+        ).filter(
+            Equipe.supervisor_id == current_user.id
+        ).distinct().all()
+
+    return render_template('agentes.html', agentes=agentes, supervisores=supervisores, equipes=equipes)
 
     # Listagem de agentes (mantém a lógica de permissão atual para visualização)
     if current_user.tipo in ['admin', 'coordenadora']:

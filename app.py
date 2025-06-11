@@ -1202,16 +1202,18 @@ def admin_panel():
 
 # === CORREÇÃO PARA O BACKEND - SUBSTITUIR A FUNÇÃO painel_coordenacao() no app.py ===
 
+# SUBSTITUA a função painel_coordenacao() no app.py por esta versão corrigida
+
 @app.route('/painel_coordenacao')
 @login_required  
 def painel_coordenacao():
-    """Painel da Coordenação - APENAS DADOS REAIS DO BANCO"""
+    """Painel da Coordenação - APENAS DADOS REAIS DO BANCO - VERSÃO CORRIGIDA"""
     if current_user.tipo not in ['admin', 'coordenadora']:
         flash('Acesso negado.', 'danger')
         return redirect(url_for('dashboard'))
     
     try:
-        # === SISTEMA DE FILTROS FLEXÍVEL ===
+        # === SISTEMA DE FILTROS FLEXÍVEL CORRIGIDO ===
         hoje = datetime.now()
         
         # Verifica se há filtro personalizado
@@ -1232,28 +1234,38 @@ def painel_coordenacao():
                 periodo_usado = 'periodo'
                 app.logger.warning("Datas inválidas, usando período padrão de 7 dias")
         else:
-            if periodo not in [1, 7, 30, 90]:
-                periodo = 7
+            # === CORREÇÃO PRINCIPAL: Lógica especial para período = 1 (hoje) ===
+            if periodo == 1:
+                # Para "hoje", usa o dia completo (00:00:00 até 23:59:59)
+                hoje_date = hoje.date()
+                data_inicio = datetime.combine(hoje_date, datetime.min.time())
+                data_fim = datetime.combine(hoje_date, datetime.max.time())
+                app.logger.info(f"Filtro HOJE: {data_inicio.strftime('%Y-%m-%d %H:%M')} até {data_fim.strftime('%Y-%m-%d %H:%M')}")
+            else:
+                # Para outros períodos, usa a lógica anterior
+                if periodo not in [7, 30, 90]:
+                    periodo = 7
+                
+                data_fim = hoje
+                data_inicio = data_fim - timedelta(days=periodo)
+                app.logger.info(f"Período de {periodo} dias: {data_inicio.strftime('%Y-%m-%d %H:%M')} até {data_fim.strftime('%Y-%m-%d %H:%M')}")
             
-            data_fim = hoje
-            data_inicio = data_fim - timedelta(days=periodo)
             periodo_usado = 'periodo'
-            app.logger.info(f"Período predefinido: {periodo} dias")
         
-        app.logger.info(f"Período final: {data_inicio.strftime('%Y-%m-%d %H:%M')} até {data_fim.strftime('%Y-%m-%d %H:%M')}")
+        app.logger.info(f"Período final aplicado: {data_inicio.strftime('%Y-%m-%d %H:%M')} até {data_fim.strftime('%Y-%m-%d %H:%M')}")
         
-        # === 1. KPIs PRINCIPAIS ===
+        # === 1. KPIs PRINCIPAIS (resto da função permanece igual) ===
         try:
             total_supervisores = User.query.filter(User.tipo.in_(['supervisor', 'coordenadora'])).count()
             total_agentes = Agente.query.filter_by(ativo=True).count()
             
-            # Busca atendimentos no período
+            # Busca atendimentos no período CORRIGIDO
             atendimentos_periodo = Atendimento.query.filter(
                 Atendimento.data_hora >= data_inicio,
                 Atendimento.data_hora <= data_fim
             ).count()
             
-            app.logger.info(f"KPIs: {total_supervisores} sup, {total_agentes} agentes, {atendimentos_periodo} atendimentos")
+            app.logger.info(f"KPIs CORRIGIDOS: {total_supervisores} sup, {total_agentes} agentes, {atendimentos_periodo} atendimentos")
             
             media_por_supervisor = round(atendimentos_periodo / total_supervisores, 1) if total_supervisores > 0 else 0
             
@@ -1261,7 +1273,7 @@ def painel_coordenacao():
             app.logger.error(f"Erro nos KPIs: {e}")
             total_supervisores = total_agentes = atendimentos_periodo = media_por_supervisor = 0
         
-        # === 2. DADOS DOS SUPERVISORES ===
+        # === 2. DADOS DOS SUPERVISORES (código continua igual) ===
         supervisores_top_agentes = []
         supervisores_complexidade = []
         
@@ -1270,7 +1282,7 @@ def painel_coordenacao():
             
             for supervisor in supervisores:
                 try:
-                    # Atendimentos do supervisor no período filtrado
+                    # Atendimentos do supervisor no período filtrado CORRIGIDO
                     atendimentos_sup = Atendimento.query.filter(
                         Atendimento.supervisor_id == supervisor.id,
                         Atendimento.data_hora >= data_inicio,
@@ -1373,20 +1385,19 @@ def painel_coordenacao():
                 python_weekday = data_atual.weekday()  # 0=Segunda, 6=Domingo
                 js_day = (python_weekday + 1) % 7     # 0=Domingo, 6=Sábado
                 
-                # Busca dados REAIS do banco
+                # Busca dados REAIS do banco USANDO MESMA LÓGICA DO KPI
                 inicio_dia = datetime.combine(data_atual, datetime.min.time())
-                fim_dia = inicio_dia + timedelta(days=1)
+                fim_dia = datetime.combine(data_atual, datetime.max.time())
                 
                 volume_real = Atendimento.query.filter(
                     Atendimento.data_hora >= inicio_dia,
-                    Atendimento.data_hora < fim_dia
+                    Atendimento.data_hora <= fim_dia
                 ).count()
                 
-                # APENAS adiciona se há dados reais OU se é para mostrar dias com 0
                 heatmap_mes.append({
                     'dia_mes': int(data_atual.day),
                     'dia_semana': int(js_day),
-                    'volume': int(volume_real),  # APENAS dados reais, 0 se não houver
+                    'volume': int(volume_real),  # DADOS REAIS consistentes com KPI
                     'eh_hoje': data_atual == hoje_heatmap,
                     'data_completa': data_atual.strftime('%Y-%m-%d'),
                     'mes': int(data_atual.month),
@@ -1431,24 +1442,24 @@ def painel_coordenacao():
                 data_atual = segunda_atual + timedelta(days=i)
                 data_anterior = segunda_anterior + timedelta(days=i)
                 
-                # Busca dados REAIS para ambas as semanas
+                # Busca dados REAIS para ambas as semanas USANDO MESMA LÓGICA DO KPI
                 
                 # Semana anterior
                 inicio_anterior = datetime.combine(data_anterior, datetime.min.time())
-                fim_anterior = inicio_anterior + timedelta(days=1)
+                fim_anterior = datetime.combine(data_anterior, datetime.max.time())
                 volume_anterior = Atendimento.query.filter(
                     Atendimento.data_hora >= inicio_anterior,
-                    Atendimento.data_hora < fim_anterior
+                    Atendimento.data_hora <= fim_anterior
                 ).count()
                 
                 # Semana atual - SÓ para dias que já aconteceram
                 volume_atual = 0
                 if data_atual <= hoje_comp:
                     inicio_atual = datetime.combine(data_atual, datetime.min.time())
-                    fim_atual = inicio_atual + timedelta(days=1)
+                    fim_atual = datetime.combine(data_atual, datetime.max.time())
                     volume_atual = Atendimento.query.filter(
                         Atendimento.data_hora >= inicio_atual,
-                        Atendimento.data_hora < fim_atual
+                        Atendimento.data_hora <= fim_atual
                     ).count()
                 
                 # Verifica se há expediente (segunda a sexta)
@@ -1481,6 +1492,9 @@ def painel_coordenacao():
         # === 5. RESUMO EXECUTIVO ===
         try:
             dias_periodo = (data_fim - data_inicio).days
+            if dias_periodo == 0:  # Para o caso "hoje"
+                dias_periodo = 1
+                
             data_inicio_anterior = data_inicio - timedelta(days=dias_periodo)
             data_fim_anterior = data_inicio
             
@@ -1511,11 +1525,17 @@ def painel_coordenacao():
                 'mudanca_tipo': 'estavel'
             }
         
-        # === 6. DADOS PARA O TEMPLATE ===
+        # === 6. DADOS PARA O TEMPLATE CORRIGIDOS ===
         if periodo_usado == 'personalizado':
             periodo_label = f"{data_inicio.strftime('%d/%m')} a {data_fim.strftime('%d/%m/%Y')}"
         else:
-            periodo_label = "Hoje" if periodo == 1 else "Semana" if periodo == 7 else f"Últimos {periodo} dias"
+            # CORREÇÃO: Labels mais claros
+            if periodo == 1:
+                periodo_label = f"Hoje ({data_inicio.strftime('%d/%m/%Y')})"
+            elif periodo == 7:
+                periodo_label = "Últimos 7 dias"
+            else:
+                periodo_label = f"Últimos {periodo} dias"
         
         mes_atual = datetime.now().strftime('%B %Y')
         timestamp_atualizacao = datetime.now().strftime('%d/%m/%Y às %H:%M')
@@ -1544,7 +1564,7 @@ def painel_coordenacao():
             'filtro_ativo': periodo_usado == 'personalizado'
         }
         
-        app.logger.info("=== PAINEL COORDENAÇÃO - APENAS DADOS REAIS ===")
+        app.logger.info("=== PAINEL COORDENAÇÃO - CORRIGIDO ===")
         app.logger.info(f"Período: {periodo_label}")
         app.logger.info(f"Atendimentos REAIS: {atendimentos_periodo}")
         app.logger.info(f"Heatmap dias REAIS: {len(heatmap_mes)}")

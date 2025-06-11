@@ -1727,9 +1727,9 @@ document.addEventListener('DOMContentLoaded', function () {
                 // Classificação de intensidade baseada em dados reais
                 let intensity = 0;
                 if (volume > 0) {
-                    if (volume <= 5) intensity = 1;      // 1-5 atendimentos
-                    else if (volume <= 15) intensity = 2; // 6-15 atendimentos  
-                    else if (volume <= 30) intensity = 3; // 16-30 atendimentos
+                    if (volume <= 15) intensity = 1;      // 1-5 atendimentos
+                    else if (volume <= 40) intensity = 2; // 6-15 atendimentos  
+                    else if (volume <= 50) intensity = 3; // 16-30 atendimentos
                     else intensity = 4;                   // 31+ atendimentos
                 }
 

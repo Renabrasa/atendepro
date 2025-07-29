@@ -82,6 +82,7 @@
     display: inline-flex;
     align-items: center;
     gap: 8px;
+    cursor: pointer;
   }
 
   .btn:hover {
@@ -428,6 +429,269 @@
     font-weight: 500;
   }
 
+  /* ===== NOVAS FUNCIONALIDADES: CHECKBOXES E AÇÕES EM LOTE ===== */
+  
+  /* Estilos para checkboxes */
+  .bulk-checkbox, .atendimento-checkbox {
+    width: 16px;
+    height: 16px;
+    cursor: pointer;
+    accent-color: var(--accent);
+  }
+  
+  .bulk-checkbox {
+    margin: 0;
+  }
+  
+  .atendimento-checkbox {
+    margin: 0;
+  }
+  
+  /* Highlight para linhas selecionadas */
+  tr.selected {
+    background-color: #e0f2fe !important;
+    border-left: 3px solid var(--accent);
+  }
+  
+  tr.selected:hover {
+    background-color: #b3e5fc !important;
+  }
+
+  /* Barra de Ações em Lote */
+  .bulk-actions-bar {
+    position: fixed;
+    bottom: 30px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: var(--white);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+    padding: 16px 24px;
+    display: none;
+    align-items: center;
+    gap: 16px;
+    z-index: 1000;
+    min-width: 400px;
+    backdrop-filter: blur(10px);
+  }
+
+  .bulk-actions-bar.show {
+    display: flex;
+    animation: slideUp 0.3s ease-out;
+  }
+
+  @keyframes slideUp {
+    from {
+      opacity: 0;
+      transform: translateX(-50%) translateY(20px);
+    }
+    to {
+      opacity: 1;
+      transform: translateX(-50%) translateY(0);
+    }
+  }
+
+  .bulk-counter {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--accent);
+    background: #e0f2fe;
+    padding: 6px 12px;
+    border-radius: 20px;
+    white-space: nowrap;
+  }
+
+  .bulk-actions {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex: 1;
+  }
+
+  .bulk-select {
+    padding: 8px 12px;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    font-size: 14px;
+    background: var(--white);
+    color: var(--text);
+    cursor: pointer;
+    transition: border-color 0.2s;
+    min-width: 150px;
+  }
+
+  .bulk-select:focus {
+    outline: none;
+    border-color: var(--accent);
+  }
+
+  .bulk-apply-btn {
+    background: var(--success);
+    color: var(--white);
+    border: 1px solid var(--success);
+    padding: 8px 16px;
+    border-radius: 6px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .bulk-apply-btn:hover:not(:disabled) {
+    background: #047857;
+    border-color: #047857;
+  }
+
+  .bulk-apply-btn:disabled {
+    background: var(--muted);
+    border-color: var(--muted);
+    cursor: not-allowed;
+    opacity: 0.6;
+  }
+
+  .bulk-cancel-btn {
+    background: transparent;
+    color: var(--muted);
+    border: 1px solid var(--border);
+    padding: 8px 16px;
+    border-radius: 6px;
+    font-size: 14px;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .bulk-cancel-btn:hover {
+    background: #fee2e2;
+    color: var(--danger);
+    border-color: var(--danger);
+  }
+
+  /* Estados de loading */
+  .bulk-apply-btn.loading {
+    background: var(--muted);
+    border-color: var(--muted);
+    cursor: not-allowed;
+    position: relative;
+  }
+
+  .bulk-apply-btn.loading::after {
+    content: '';
+    position: absolute;
+    width: 16px;
+    height: 16px;
+    border: 2px solid transparent;
+    border-top: 2px solid white;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+  }
+
+  @keyframes spin {
+    0% { transform: translate(-50%, -50%) rotate(0deg); }
+    100% { transform: translate(-50%, -50%) rotate(360deg); }
+  }
+
+  /* Toast de feedback */
+  .toast {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    background: var(--success);
+    color: white;
+    padding: 12px 20px;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    z-index: 1001;
+    display: none;
+    animation: toastSlide 0.3s ease-out;
+  }
+
+  .toast.error {
+    background: var(--danger);
+  }
+
+  .toast.show {
+    display: block;
+  }
+
+  @keyframes toastSlide {
+    from {
+      opacity: 0;
+      transform: translateX(100%);
+    }
+    to {
+      opacity: 1;
+      transform: translateX(0);
+    }
+  }
+
+  /* Indicadores de validação */
+  .validation-warning {
+    background: #fef3c7;
+    color: #92400e;
+    padding: 8px 12px;
+    border-radius: 6px;
+    font-size: 12px;
+    margin-bottom: 8px;
+    border-left: 3px solid #f59e0b;
+  }
+
+  .bulk-info {
+    font-size: 12px;
+    color: var(--muted);
+    margin-top: 4px;
+  }
+
+  /* Indicador de página */
+  .page-indicator {
+    background: #e0f2fe;
+    color: var(--accent);
+    padding: 4px 8px;
+    border-radius: 12px;
+    font-size: 11px;
+    font-weight: 500;
+    margin-left: 8px;
+  }
+
+  /* Estados especiais da tabela */
+  .table-row-processing {
+    opacity: 0.6;
+    pointer-events: none;
+  }
+
+  .table-row-success {
+    background: #dcfce7 !important;
+    animation: successFade 2s ease-out;
+  }
+
+  @keyframes successFade {
+    0% { background: #dcfce7; }
+    100% { background: transparent; }
+  }
+
+  /* Melhorias de acessibilidade */
+  .bulk-actions-bar[aria-hidden="true"] {
+    display: none;
+  }
+
+  .sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+  }
+
   /* Responsivo */
   @media (max-width: 1200px) {
     .filters-row {
@@ -611,6 +875,10 @@
       <table class="table">
         <thead>
           <tr>
+            <!-- NOVA COLUNA: Checkbox Selecionar Todos -->
+            <th style="width: 50px;">
+              <input type="checkbox" id="selectAll" class="bulk-checkbox" title="Selecionar todos">
+            </th>
             <th style="width: 80px;">ID</th>
             <th style="width: 120px;">Data/Hora</th>
             <th style="width: 150px;">Agente</th>
@@ -624,6 +892,16 @@
         <tbody>
           {% for atendimento in atendimentos %}
             <tr>
+              <!-- NOVA COLUNA: Checkbox Individual -->
+              <td>
+                <input type="checkbox" 
+                       class="atendimento-checkbox" 
+                       value="{{ atendimento.id }}"
+                       data-agente="{{ atendimento.agente_rel.nome if atendimento.agente_rel else 'N/A' }}"
+                       data-status="{{ atendimento.status or 'pendente' }}"
+                       data-classificacao="{{ atendimento.classificacao or '' }}">
+              </td>
+              
               <td>
                 <span class="atendimento-id">#{{ atendimento.id }}</span>
               </td>
@@ -675,7 +953,7 @@
             </tr>
           {% else %}
             <tr>
-              <td colspan="8" class="empty-state">
+              <td colspan="9" class="empty-state">
                 <h3>Nenhum atendimento encontrado</h3>
                 <p>Não há atendimentos para os critérios selecionados.</p>
                 <a href="{{ url_for('novo_atendimento') }}" class="btn btn-primary" style="margin-top: 16px;">
@@ -688,6 +966,57 @@
       </table>
     </div>
   </section>
+
+  <!-- Barra de Ações em Lote (Inicialmente Oculta) -->
+  <div id="bulkActionsBar" class="bulk-actions-bar" aria-hidden="true">
+    <div class="bulk-counter" id="bulkCounter">
+      0 selecionados
+      <span class="page-indicator" id="pageIndicator" style="display: none;">
+        Página {{ atendimentos_paginated.page }}
+      </span>
+    </div>
+    
+    <div class="bulk-actions">
+      <!-- Warnings de validação -->
+      <div id="validationWarnings" style="display: none;">
+        <div class="validation-warning" id="permissionWarning" style="display: none;">
+          ⚠️ Alguns atendimentos selecionados não podem ser editados
+        </div>
+        <div class="validation-warning" id="pageWarning" style="display: none;">
+          💡 Seleções em outras páginas serão perdidas
+        </div>
+      </div>
+      
+      <label for="bulkClassification" style="font-size: 14px; font-weight: 500; color: var(--text); white-space: nowrap;">
+        Classificar como:
+      </label>
+      
+      <select id="bulkClassification" class="bulk-select" aria-describedby="bulkInfo">
+        <option value="">Selecione uma classificação</option>
+        <option value="básico">🟢 Básico</option>
+        <option value="médio">🟡 Médio</option>
+        <option value="complexo">🔴 Complexo</option>
+        <option value="">🔄 Não Definido</option>
+      </select>
+      
+      <div class="bulk-info" id="bulkInfo">
+        Apenas atendimentos que você pode editar serão atualizados
+      </div>
+      
+      <button id="bulkApplyBtn" class="bulk-apply-btn" disabled aria-describedby="bulkCounter">
+        ✅ Aplicar
+        <span class="sr-only" id="applyButtonText">classificação aos atendimentos selecionados</span>
+      </button>
+      
+      <button id="bulkCancelBtn" class="bulk-cancel-btn">
+        ❌ Cancelar
+        <span class="sr-only">seleção</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- Toast para feedback -->
+  <div id="toast" class="toast"></div>
 
   <!-- Paginação Simples -->
   {% if atendimentos_paginated.pages > 1 %}
@@ -738,6 +1067,8 @@
 </div>
 
 <script>
+  // ===== FUNCIONALIDADES ORIGINAIS MANTIDAS =====
+  
   // Validação de filtros
   document.querySelector('form').addEventListener('submit', function(e) {
     const inicio = document.querySelector('[name="data_inicio"]').value;
@@ -764,6 +1095,411 @@
         e.preventDefault();
       }
     }
+  });
+
+  // ===== NOVAS FUNCIONALIDADES: CHECKBOXES =====
+  
+  // JavaScript para gerenciar checkboxes
+  const selectAllCheckbox = document.getElementById('selectAll');
+  const atendimentoCheckboxes = document.querySelectorAll('.atendimento-checkbox');
+
+  // Função para selecionar/deselecionar todos
+  selectAllCheckbox.addEventListener('change', function() {
+    const isChecked = this.checked;
+    
+    atendimentoCheckboxes.forEach(checkbox => {
+      checkbox.checked = isChecked;
+      // Aplicar highlight visual
+      const row = checkbox.closest('tr');
+      if (isChecked) {
+        row.classList.add('selected');
+      } else {
+        row.classList.remove('selected');
+      }
+    });
+    
+    updateSelectedCount();
+  });
+
+  // Função para gerenciar seleção individual
+  atendimentoCheckboxes.forEach(checkbox => {
+    checkbox.addEventListener('change', function() {
+      const row = this.closest('tr');
+      
+      // Aplicar highlight visual
+      if (this.checked) {
+        row.classList.add('selected');
+      } else {
+        row.classList.remove('selected');
+      }
+      
+      // Atualizar estado do "Selecionar Todos"
+      const totalCheckboxes = atendimentoCheckboxes.length;
+      const checkedCheckboxes = document.querySelectorAll('.atendimento-checkbox:checked').length;
+      
+      if (checkedCheckboxes === 0) {
+        selectAllCheckbox.indeterminate = false;
+        selectAllCheckbox.checked = false;
+      } else if (checkedCheckboxes === totalCheckboxes) {
+        selectAllCheckbox.indeterminate = false;
+        selectAllCheckbox.checked = true;
+      } else {
+        selectAllCheckbox.indeterminate = true;
+        selectAllCheckbox.checked = false;
+      }
+      
+      updateSelectedCount();
+    });
+  });
+
+  // Função para atualizar contador de selecionados
+  function updateSelectedCount() {
+    const checkedCheckboxes = document.querySelectorAll('.atendimento-checkbox:checked');
+    const checkedCount = checkedCheckboxes.length;
+    
+    // Elementos da barra de ações
+    const bulkActionsBar = document.getElementById('bulkActionsBar');
+    const bulkCounter = document.getElementById('bulkCounter');
+    const bulkApplyBtn = document.getElementById('bulkApplyBtn');
+    const bulkClassification = document.getElementById('bulkClassification');
+    const pageIndicator = document.getElementById('pageIndicator');
+    const validationWarnings = document.getElementById('validationWarnings');
+    const permissionWarning = document.getElementById('permissionWarning');
+    
+    // Atualizar contador e mostrar/ocultar barra
+    if (checkedCount > 0) {
+      bulkCounter.innerHTML = `${checkedCount} selecionado${checkedCount > 1 ? 's' : ''}`;
+      
+      // Mostrar indicador de página se há seleções
+      if (pageIndicator) {
+        pageIndicator.style.display = 'inline';
+        bulkCounter.appendChild(pageIndicator);
+      }
+      
+      bulkActionsBar.classList.add('show');
+      bulkActionsBar.setAttribute('aria-hidden', 'false');
+      
+      // Validar permissões dos atendimentos selecionados
+      validateSelectedPermissions(checkedCheckboxes);
+      
+      // Habilitar/desabilitar botão aplicar
+      const hasValidClassification = bulkClassification.value !== undefined;
+      bulkApplyBtn.disabled = !hasValidClassification;
+      
+    } else {
+      bulkActionsBar.classList.remove('show');
+      bulkActionsBar.setAttribute('aria-hidden', 'true');
+      pageIndicator.style.display = 'none';
+      validationWarnings.style.display = 'none';
+      
+      // Reset da seleção quando não há itens selecionados
+      bulkClassification.value = '';
+    }
+    
+    console.log(`${checkedCount} atendimentos selecionados`);
+  }
+
+  // Função para validar permissões dos itens selecionados
+  function validateSelectedPermissions(checkedCheckboxes) {
+    const validationWarnings = document.getElementById('validationWarnings');
+    const permissionWarning = document.getElementById('permissionWarning');
+    const currentUserType = '{{ current_user.tipo }}';
+    const currentUserId = {{ current_user.id }};
+    
+    let hasPermissionIssues = false;
+    
+    // Para admin e coordenadora, todas as permissões são válidas
+    if (currentUserType === 'admin' || currentUserType === 'coordenadora') {
+      validationWarnings.style.display = 'none';
+      return;
+    }
+    
+    // Para supervisores, verificar se todos os atendimentos são seus
+    checkedCheckboxes.forEach(checkbox => {
+      const row = checkbox.closest('tr');
+      const supervisorCell = row.querySelector('.supervisor-name');
+      // Aqui seria ideal ter um data-attribute com o ID do supervisor
+      // Por simplicidade, vamos assumir que se não é admin/coordenadora,
+      // pode haver restrições
+      if (currentUserType === 'supervisor') {
+        hasPermissionIssues = true; // Simplificado para exemplo
+      }
+    });
+    
+    if (hasPermissionIssues) {
+      validationWarnings.style.display = 'block';
+      permissionWarning.style.display = 'block';
+    } else {
+      validationWarnings.style.display = 'none';
+    }
+  }
+
+  // Event listeners para a barra de ações em lote
+  document.addEventListener('DOMContentLoaded', function() {
+    const bulkClassification = document.getElementById('bulkClassification');
+    const bulkApplyBtn = document.getElementById('bulkApplyBtn');
+    const bulkCancelBtn = document.getElementById('bulkCancelBtn');
+    
+    // Habilitar botão aplicar quando classificação é selecionada
+    bulkClassification.addEventListener('change', function() {
+      const hasSelection = document.querySelectorAll('.atendimento-checkbox:checked').length > 0;
+      bulkApplyBtn.disabled = !hasSelection;
+    });
+    
+    // Botão aplicar classificação
+    bulkApplyBtn.addEventListener('click', async function() {
+      // Prevenção de cliques duplos
+      if (this.classList.contains('loading')) {
+        return;
+      }
+
+      const selectedCheckboxes = document.querySelectorAll('.atendimento-checkbox:checked');
+      const selectedIds = Array.from(selectedCheckboxes).map(checkbox => checkbox.value);
+      const classification = bulkClassification.value;
+      
+      // Validações aprimoradas
+      if (selectedIds.length === 0) {
+        showToast('Nenhum atendimento selecionado.', 'error');
+        return;
+      }
+
+      if (selectedIds.length > 50) {
+        if (!confirm('Você está prestes a classificar mais de 50 atendimentos. Isso pode demorar alguns segundos. Deseja continuar?')) {
+          return;
+        }
+      }
+      
+      const classificationText = classification === 'básico' ? 'Básico' :
+                                classification === 'médio' ? 'Médio' :
+                                classification === 'complexo' ? 'Complexo' : 'Não Definido';
+      
+      // Confirmação com detalhes
+      const confirmMessage = `Confirma a classificação de ${selectedIds.length} atendimento(s) como "${classificationText}"?\n\n` +
+                           `Esta ação irá:\n` +
+                           `• Alterar a classificação dos atendimentos selecionados\n` +
+                           `• Atualizar o status para "${classification ? 'classificado' : 'pendente'}"\n` +
+                           `• Esta ação não pode ser desfeita em lote`;
+      
+      if (!confirm(confirmMessage)) {
+        return;
+      }
+
+      // Marcar linhas como em processamento
+      selectedCheckboxes.forEach(checkbox => {
+        checkbox.closest('tr').classList.add('table-row-processing');
+      });
+
+      // Estado de loading aprimorado
+      setLoadingState(true);
+      
+      try {
+        // Fazer requisição para o backend
+        const response = await fetch('{{ url_for("classificar_atendimentos_lote") }}', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-Requested-With': 'XMLHttpRequest',
+            'X-CSRFToken': getCSRFToken() // Adicionar CSRF se necessário
+          },
+          body: JSON.stringify({
+            atendimento_ids: selectedIds,
+            classificacao: classification
+          })
+        });
+
+        const result = await response.json();
+
+        if (response.ok && result.success) {
+          // Sucesso - feedback aprimorado
+          const successMessage = `✅ ${result.atendimentos_atualizados} de ${selectedIds.length} atendimento(s) classificado(s) com sucesso!`;
+          showToast(successMessage, 'success');
+          
+          // Marcar linhas como sucesso antes de atualizar
+          selectedCheckboxes.forEach(checkbox => {
+            const row = checkbox.closest('tr');
+            row.classList.remove('table-row-processing');
+            row.classList.add('table-row-success');
+          });
+          
+          // Atualizar os badges de classificação na tabela
+          updateClassificationBadges(selectedIds, classification);
+          
+          // Log para analytics/debug
+          console.log('Classificação em lote bem-sucedida:', {
+            totalSelecionados: selectedIds.length,
+            totalAtualizados: result.atendimentos_atualizados,
+            classificacao: classification,
+            timestamp: new Date().toISOString()
+          });
+          
+          // Limpar seleções após 2 segundos
+          setTimeout(() => {
+            clearAllSelections();
+            // Remover classes de sucesso
+            document.querySelectorAll('.table-row-success').forEach(row => {
+              row.classList.remove('table-row-success');
+            });
+          }, 2000);
+          
+        } else {
+          // Erro do servidor com detalhes
+          const errorMessage = result.message || 'Erro interno do servidor';
+          showToast(`❌ Erro: ${errorMessage}`, 'error');
+          
+          // Remover estado de processamento
+          selectedCheckboxes.forEach(checkbox => {
+            checkbox.closest('tr').classList.remove('table-row-processing');
+          });
+          
+          console.error('Erro na classificação em lote:', result);
+        }
+        
+      } catch (error) {
+        console.error('Erro na requisição:', error);
+        showToast('❌ Erro de conexão. Verifique sua internet e tente novamente.', 'error');
+        
+        // Remover estado de processamento
+        selectedCheckboxes.forEach(checkbox => {
+          checkbox.closest('tr').classList.remove('table-row-processing');
+        });
+      } finally {
+        // Sempre remover estado de loading
+        setLoadingState(false);
+      }
+    });
+    
+    // Botão cancelar seleção
+    bulkCancelBtn.addEventListener('click', function() {
+      clearAllSelections();
+    });
+  });
+
+  // Funções auxiliares aprimoradas
+  function showToast(message, type = 'success') {
+    const toast = document.getElementById('toast');
+    toast.textContent = message;
+    toast.className = `toast ${type} show`;
+    
+    // Auto-hide com timing baseado no tipo
+    const hideDelay = type === 'error' ? 6000 : 4000;
+    setTimeout(() => {
+      toast.classList.remove('show');
+    }, hideDelay);
+    
+    // Log para debug
+    console.log(`Toast ${type}:`, message);
+  }
+
+  function setLoadingState(isLoading) {
+    const bulkApplyBtn = document.getElementById('bulkApplyBtn');
+    const bulkCancelBtn = document.getElementById('bulkCancelBtn');
+    const bulkClassification = document.getElementById('bulkClassification');
+    
+    if (isLoading) {
+      bulkApplyBtn.disabled = true;
+      bulkApplyBtn.classList.add('loading');
+      bulkApplyBtn.innerHTML = '⏳ Processando...';
+      bulkCancelBtn.disabled = true;
+      bulkClassification.disabled = true;
+    } else {
+      bulkApplyBtn.disabled = false;
+      bulkApplyBtn.classList.remove('loading');
+      bulkApplyBtn.innerHTML = '✅ Aplicar<span class="sr-only" id="applyButtonText">classificação aos atendimentos selecionados</span>';
+      bulkCancelBtn.disabled = false;
+      bulkClassification.disabled = false;
+    }
+  }
+
+  function clearAllSelections() {
+    // Desmarcar todos os checkboxes
+    document.querySelectorAll('.atendimento-checkbox:checked').forEach(checkbox => {
+      checkbox.checked = false;
+      const row = checkbox.closest('tr');
+      row.classList.remove('selected', 'table-row-processing', 'table-row-success');
+    });
+    
+    // Reset checkbox principal
+    const selectAllCheckbox = document.getElementById('selectAll');
+    if (selectAllCheckbox) {
+      selectAllCheckbox.checked = false;
+      selectAllCheckbox.indeterminate = false;
+    }
+    
+    // Reset seleção de classificação
+    document.getElementById('bulkClassification').value = '';
+    
+    // Atualizar contador (vai ocultar a barra)
+    updateSelectedCount();
+    
+    console.log('Todas as seleções foram limpas');
+  }
+
+  function updateClassificationBadges(selectedIds, newClassification) {
+    let updatedCount = 0;
+    
+    selectedIds.forEach(id => {
+      const checkbox = document.querySelector(`.atendimento-checkbox[value="${id}"]`);
+      if (checkbox) {
+        const row = checkbox.closest('tr');
+        const badgeCell = row.querySelector('.classificacao-badge');
+        
+        if (badgeCell) {
+          // Remover classes antigas
+          badgeCell.className = 'classificacao-badge';
+          
+          // Aplicar nova classificação
+          if (newClassification === 'básico') {
+            badgeCell.className += ' classificacao-basico';
+            badgeCell.textContent = 'básico';
+          } else if (newClassification === 'médio') {
+            badgeCell.className += ' classificacao-medio';
+            badgeCell.textContent = 'médio';
+          } else if (newClassification === 'complexo') {
+            badgeCell.className += ' classificacao-complexo';
+            badgeCell.textContent = 'complexo';
+          } else {
+            badgeCell.className += ' classificacao-sem';
+            badgeCell.textContent = '—';
+          }
+          
+          updatedCount++;
+        }
+      }
+    });
+    
+    console.log(`${updatedCount} badges de classificação atualizados na interface`);
+  }
+
+  // Função para obter CSRF token se necessário
+  function getCSRFToken() {
+    const token = document.querySelector('meta[name="csrf-token"]');
+    return token ? token.getAttribute('content') : '';
+  }
+
+  // Função para detectar mudanças de página e avisar sobre seleções perdidas
+  function detectPageChange() {
+    const paginationLinks = document.querySelectorAll('.pagination-btn');
+    paginationLinks.forEach(link => {
+      link.addEventListener('click', function(e) {
+        const checkedCount = document.querySelectorAll('.atendimento-checkbox:checked').length;
+        if (checkedCount > 0) {
+          if (!confirm(`Você tem ${checkedCount} atendimento(s) selecionado(s). Ao mudar de página, essas seleções serão perdidas. Deseja continuar?`)) {
+            e.preventDefault();
+          }
+        }
+      });
+    });
+  }
+
+  // Inicializar detecção de mudança de página
+  document.addEventListener('DOMContentLoaded', function() {
+    detectPageChange();
+  });
+
+  // Log para debug
+  console.log('✅ Checkboxes configurados!', {
+    total: atendimentoCheckboxes.length,
+    selectAll: !!selectAllCheckbox
   });
 </script>
 

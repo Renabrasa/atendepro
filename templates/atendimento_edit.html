@@ -660,7 +660,7 @@
       </a>
     </div>
     <div class="actions-right">
-      <a href="{{ url_for('atendimentos') }}" class="btn">
+      <a href="{{ return_url if return_url else url_for('atendimentos') }}" class="btn">
         Cancelar
       </a>
       <button type="submit" class="btn btn-primary" id="submitBtn" form="atendimentoForm">

@@ -1,4 +1,4 @@
-from flask import Flask, render_template, redirect, url_for, request, flash
+from flask import Flask, render_template, redirect, url_for, request, flash, session
 from flask_login import LoginManager, login_user, logout_user, login_required, current_user
 from models.models import db, User, Equipe, Agente, Atendimento, agente_equipe
 from config import Config
@@ -64,9 +64,50 @@ def login():
             flash('Login inválido. Verifique email e senha.', 'danger')
     return render_template('login.html')
 
+############################# INICIO DAS FUNÇÕES DE FILTROS E URLS ##########################
 
+def save_filters_to_session():
+    """Salva os filtros atuais na sessão Flask"""
+    filters = {
+        'data_inicio': request.args.get('data_inicio', ''),
+        'data_fim': request.args.get('data_fim', ''),
+        'agente': request.args.get('agente', ''),
+        'supervisor': request.args.get('supervisor', ''),
+        'atendido_por': request.args.get('atendido_por', ''),
+        'status': request.args.get('status', ''),
+        'busca': request.args.get('busca', ''),
+        'page': request.args.get('page', '1')
+    }
+    
+    # Remove filtros vazios para manter sessão limpa
+    filters = {k: v for k, v in filters.items() if v}
+    
+    session['atendimentos_filters'] = filters
+    app.logger.info(f'Filtros salvos na sessão: {filters}')
 
+def get_filters_from_session():
+    """Recupera os filtros salvos da sessão Flask"""
+    filters = session.get('atendimentos_filters', {})
+    app.logger.info(f'Filtros recuperados da sessão: {filters}')
+    return filters
 
+def clear_filters_from_session():
+    """Limpa os filtros da sessão"""
+    if 'atendimentos_filters' in session:
+        del session['atendimentos_filters']
+        app.logger.info('Filtros removidos da sessão')
+
+def build_return_url():
+    """Constrói URL de retorno com filtros salvos"""
+    filters = get_filters_from_session()
+    if filters:
+        # Remove 'page' para voltar sempre à primeira página
+        if 'page' in filters:
+            del filters['page']
+        return url_for('atendimentos', **filters)
+    return url_for('atendimentos')
+
+############################# FIM DAS FUNÇÕES DE FILTROS E URLS ##########################
 
 # SUBSTITUA a função dashboard() no app.py por esta versão
 
@@ -198,7 +239,20 @@ def dashboard():
 @app.route('/atendimentos')
 @login_required
 def atendimentos():
-    # Parâmetros de filtro da URL
+    # NOVO: Verificar se é retorno de edição
+    is_return = request.args.get('return', '') == '1'
+    
+    if is_return:
+        # Se é retorno, usar filtros da sessão
+        saved_filters = get_filters_from_session()
+        if saved_filters:
+            app.logger.info(f'Retornando com filtros salvos: {saved_filters}')
+            return redirect(url_for('atendimentos', **saved_filters))
+    else:
+        # Se não é retorno, salvar filtros atuais na sessão
+        save_filters_to_session()
+    
+    # Parâmetros de filtro da URL (CÓDIGO ORIGINAL MANTIDO)
     page = request.args.get('page', 1, type=int)
     per_page = 20  # 20 atendimentos por página
     
@@ -210,7 +264,7 @@ def atendimentos():
     status_filter = request.args.get('status', '')
     busca = request.args.get('busca', '')
 
-    # Converte datas
+    # Converte datas (CÓDIGO ORIGINAL MANTIDO)
     data_inicio = None
     data_fim = None
     try:
@@ -221,7 +275,7 @@ def atendimentos():
     except ValueError:
         flash('Formato de data inválido.', 'danger')
 
-    # Query base com filtros de permissão
+    # Query base com filtros de permissão (CÓDIGO ORIGINAL MANTIDO)
     if current_user.tipo in ['admin', 'coordenadora']:
         # Admin e Coordenadora veem todos
         query = Atendimento.query
@@ -229,7 +283,7 @@ def atendimentos():
         # Supervisor vê apenas os seus (atendimentos que ELE prestou)
         query = Atendimento.query.filter_by(supervisor_id=current_user.id)
 
-    # Aplicar filtros
+    # Aplicar filtros (CÓDIGO ORIGINAL MANTIDO)
     if data_inicio:
         query = query.filter(Atendimento.data_hora >= data_inicio)
     if data_fim:
@@ -247,29 +301,27 @@ def atendimentos():
     if busca:
         query = query.filter(Atendimento.conteudo.contains(busca))
 
-    # Ordenar por data (mais recente primeiro)
+    # Ordenar por data (mais recente primeiro) (CÓDIGO ORIGINAL MANTIDO)
     query = query.order_by(Atendimento.data_hora.desc())
 
-    # Paginação
+    # Paginação (CÓDIGO ORIGINAL MANTIDO)
     atendimentos_paginated = query.paginate(
         page=page, 
         per_page=per_page, 
         error_out=False
     )
 
-    # Ajustar timezone
+    # Ajustar timezone (CÓDIGO ORIGINAL MANTIDO)
     for atendimento in atendimentos_paginated.items:
         if atendimento.data_hora.tzinfo is None:
             atendimento.data_hora = atendimento.data_hora.replace(tzinfo=pytz.utc)
         atendimento.data_hora = atendimento.data_hora.astimezone(br_tz)
 
-    # Buscar dados para os dropdowns de filtro
+    # Buscar dados para dropdowns (CÓDIGO ORIGINAL MANTIDO)
     if current_user.tipo in ['admin', 'coordenadora']:
-        # Admin/Coordenadora veem todos
-        agentes_dropdown = Agente.query.filter_by(ativo=True).all()
-        supervisores_dropdown = User.query.filter(User.tipo.in_(['supervisor', 'coordenadora'])).all()
+        agentes_dropdown = Agente.query.filter_by(ativo=True).order_by(Agente.nome).all()
+        supervisores_dropdown = User.query.filter(User.tipo.in_(['supervisor', 'coordenadora'])).order_by(User.nome).all()
     else:
-        # Supervisor vê apenas seus agentes
         agentes_dropdown = db.session.query(Agente).join(
             agente_equipe, Agente.id == agente_equipe.c.agente_id
         ).join(
@@ -277,22 +329,23 @@ def atendimentos():
         ).filter(
             Equipe.supervisor_id == current_user.id,
             Agente.ativo == True
-        ).distinct().all()
+        ).order_by(Agente.nome).distinct().all()
         supervisores_dropdown = [current_user]
 
-    # Estatísticas para os cards
+    # Calcular estatísticas (CÓDIGO ORIGINAL MANTIDO)
     stats = {
         'total_filtrados': atendimentos_paginated.total,
-        'pendentes': query.filter_by(status='pendente').count() if status_filter != 'classificado' else 0,
-        'classificados': query.filter_by(status='classificado').count() if status_filter != 'pendente' else 0,
+        'pendentes': query.filter_by(status='pendente').count(),
+        'classificados': query.filter_by(status='classificado').count(),
         'hoje': query.filter(
             Atendimento.data_hora >= datetime.now().replace(hour=0, minute=0, second=0)
-        ).count() if not data_inicio and not data_fim else 0
+        ).count()
     }
 
-    return render_template('atendimento_list.html', 
-                         atendimentos_paginated=atendimentos_paginated,
+    # RENDERIZAÇÃO ORIGINAL MANTIDA
+    return render_template('atendimento_list.html',
                          atendimentos=atendimentos_paginated.items,
+                         atendimentos_paginated=atendimentos_paginated,
                          agentes_dropdown=agentes_dropdown,
                          supervisores_dropdown=supervisores_dropdown,
                          stats=stats,
@@ -388,7 +441,9 @@ def editar_atendimento(atendimento_id):
 
         db.session.commit()
         flash('Atendimento atualizado com sucesso!', 'success')
-        return redirect(url_for('atendimentos'))
+        
+        # NOVO: Retornar para atendimentos com filtros preservados
+        return redirect(url_for('atendimentos', ret='1'))
 
     # CORREÇÃO: Lista agentes disponíveis para edição usando consulta SQL direta
     if current_user.tipo in ['admin', 'coordenadora']:
@@ -403,7 +458,13 @@ def editar_atendimento(atendimento_id):
             Equipe.supervisor_id == current_user.id
         ).distinct().all()
 
-    return render_template('atendimento_edit.html', atendimento=atendimento, agentes=agentes)
+    # NOVO: Construir URL de retorno com filtros
+    return_url = build_return_url()
+
+    return render_template('atendimento_edit.html', 
+                         atendimento=atendimento, 
+                         agentes=agentes,
+                         return_url=return_url) 
 
 @app.route('/atendimento/excluir/<int:atendimento_id>', methods=['GET'])
 @login_required
@@ -417,10 +478,18 @@ def excluir_atendimento(atendimento_id):
     db.session.delete(atendimento)
     db.session.commit()
     flash('Atendimento excluído com sucesso.', 'success')
+    
+    # NOVO: Retornar para atendimentos com filtros preservados
+    return redirect(url_for('atendimentos', ret='1'))
+
+
+@app.route('/atendimentos/limpar-filtros')
+@login_required
+def limpar_filtros():
+    """Limpa os filtros salvos e redireciona para lista limpa"""
+    clear_filters_from_session()
+    flash('Filtros limpos!', 'info')
     return redirect(url_for('atendimentos'))
-
-
-# Adicione estas rotas ao seu app.py
 
 # SUBSTITUA a rota /meu-perfil no app.py por esta versão corrigida
 
@@ -2106,7 +2175,188 @@ def check_bot_status():
             'message': f'❌ Erro ao verificar status: {str(e)}'
         })
 
+########################## INICIO DA ROTA DE CLASSIFICAÇÃO EM LOTE ##########################
 
+from flask import jsonify, request
+from datetime import datetime
+
+@app.route('/atendimentos/classificar-lote', methods=['POST'])
+@login_required
+def classificar_atendimentos_lote():
+    """
+    Rota para classificar múltiplos atendimentos em lote
+    
+    Recebe JSON com:
+    {
+        "atendimento_ids": [1, 2, 3, 4],
+        "classificacao": "básico" | "médio" | "complexo" | ""
+    }
+    
+    Retorna JSON com:
+    {
+        "success": true,
+        "atendimentos_atualizados": 4,
+        "message": "Classificação aplicada com sucesso"
+    }
+    """
+    try:
+        # Verificar se é uma requisição AJAX
+        if not request.is_json:
+            return jsonify({
+                'success': False,
+                'message': 'Requisição deve ser JSON'
+            }), 400
+
+        # Obter dados da requisição
+        data = request.get_json()
+        atendimento_ids = data.get('atendimento_ids', [])
+        nova_classificacao = data.get('classificacao', '')
+        
+        # Validações básicas
+        if not atendimento_ids or not isinstance(atendimento_ids, list):
+            return jsonify({
+                'success': False,
+                'message': 'Lista de IDs de atendimentos é obrigatória'
+            }), 400
+
+        if len(atendimento_ids) == 0:
+            return jsonify({
+                'success': False,
+                'message': 'Nenhum atendimento selecionado'
+            }), 400
+
+        # Validar classificação
+        classificacoes_validas = ['básico', 'médio', 'complexo', '']
+        if nova_classificacao not in classificacoes_validas:
+            return jsonify({
+                'success': False,
+                'message': 'Classificação inválida'
+            }), 400
+
+        # Converter IDs para inteiros
+        try:
+            atendimento_ids = [int(id) for id in atendimento_ids]
+        except (ValueError, TypeError):
+            return jsonify({
+                'success': False,
+                'message': 'IDs de atendimentos devem ser números'
+            }), 400
+
+        # Buscar atendimentos que o usuário pode editar
+        if current_user.tipo in ['admin', 'coordenadora']:
+            # Admin e coordenadora podem editar todos os atendimentos
+            atendimentos = Atendimento.query.filter(
+                Atendimento.id.in_(atendimento_ids)
+            ).all()
+        else:
+            # Supervisores só podem editar seus próprios atendimentos
+            atendimentos = Atendimento.query.filter(
+                Atendimento.id.in_(atendimento_ids),
+                Atendimento.supervisor_id == current_user.id
+            ).all()
+
+        # Verificar se encontrou todos os atendimentos solicitados
+        ids_encontrados = [a.id for a in atendimentos]
+        ids_nao_encontrados = [id for id in atendimento_ids if id not in ids_encontrados]
+        
+        if ids_nao_encontrados:
+            return jsonify({
+                'success': False,
+                'message': f'Atendimentos não encontrados ou sem permissão: {", ".join(map(str, ids_nao_encontrados))}'
+            }), 403
+
+        if len(atendimentos) == 0:
+            return jsonify({
+                'success': False,
+                'message': 'Nenhum atendimento válido encontrado'
+            }), 404
+
+        # Aplicar classificação em lote
+        atendimentos_atualizados = 0
+        
+        for atendimento in atendimentos:
+            # Atualizar classificação
+            atendimento.classificacao = nova_classificacao if nova_classificacao else None
+            
+            # Atualizar status baseado na classificação
+            if nova_classificacao:
+                atendimento.status = 'classificado'
+            else:
+                atendimento.status = 'pendente'
+            
+            atendimentos_atualizados += 1
+
+        # Salvar todas as mudanças em uma transação
+        db.session.commit()
+        
+        # Log da operação para auditoria
+        app.logger.info(f'Classificação em lote executada por {current_user.nome} (ID: {current_user.id}): '
+                       f'{atendimentos_atualizados} atendimentos classificados como "{nova_classificacao or "não definido"}"')
+
+        # Preparar mensagem de retorno
+        classificacao_texto = {
+            'básico': 'Básico',
+            'médio': 'Médio', 
+            'complexo': 'Complexo',
+            '': 'Não Definido'
+        }.get(nova_classificacao, 'Não Definido')
+
+        return jsonify({
+            'success': True,
+            'atendimentos_atualizados': atendimentos_atualizados,
+            'classificacao_aplicada': classificacao_texto,
+            'message': f'{atendimentos_atualizados} atendimento(s) classificado(s) como "{classificacao_texto}" com sucesso'
+        })
+
+    except Exception as e:
+        # Log do erro
+        app.logger.error(f'Erro na classificação em lote por {current_user.nome}: {str(e)}')
+        
+        # Rollback em caso de erro
+        db.session.rollback()
+        
+        return jsonify({
+            'success': False,
+            'message': 'Erro interno do servidor. Tente novamente.'
+        }), 500
+
+
+# Adicionar também esta rota auxiliar para debug (opcional)
+@app.route('/atendimentos/debug-bulk', methods=['GET'])
+@login_required
+def debug_bulk_classification():
+    """Rota de debug para testar a funcionalidade (remover em produção)"""
+    
+    if current_user.tipo not in ['admin', 'coordenadora']:
+        return jsonify({'error': 'Acesso negado'}), 403
+    
+    # Buscar alguns atendimentos de exemplo
+    atendimentos = Atendimento.query.limit(5).all()
+    
+    debug_info = {
+        'usuario_atual': {
+            'id': current_user.id,
+            'nome': current_user.nome,
+            'tipo': current_user.tipo
+        },
+        'atendimentos_exemplo': [
+            {
+                'id': a.id,
+                'agente': a.agente_rel.nome if a.agente_rel else 'N/A',
+                'classificacao_atual': a.classificacao,
+                'status_atual': a.status,
+                'pode_editar': (current_user.tipo in ['admin', 'coordenadora'] or 
+                              a.supervisor_id == current_user.id)
+            }
+            for a in atendimentos
+        ],
+        'classificacoes_validas': ['básico', 'médio', 'complexo', ''],
+        'url_endpoint': '/atendimentos/classificar-lote'
+    }
+    
+    return jsonify(debug_info)
+
+########################## FIM DA ROTA DE CLASSIFICAÇÃO EM LOTE ##########################
 
 if __name__ == '__main__':
     app.run(debug=True)

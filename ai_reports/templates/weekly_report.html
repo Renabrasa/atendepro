@@ -1,0 +1,565 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AtendePro - Relatório Semanal AI</title>
+    <style>
+        /* Reset e base */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background-color: #f5f7fa;
+        }
+        
+        /* Container principal */
+        .email-container {
+            max-width: 600px;
+            margin: 0 auto;
+            background-color: #ffffff;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            border-radius: 8px;
+            overflow: hidden;
+        }
+        
+        /* Header com gradiente corporativo */
+        .header {
+            background: linear-gradient(135deg, #003366 0%, #004080 100%);
+            color: white;
+            padding: 30px 20px;
+            text-align: center;
+            position: relative;
+        }
+        
+        .header::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><pattern id="grid" width="10" height="10" patternUnits="userSpaceOnUse"><path d="M 10 0 L 0 0 0 10" fill="none" stroke="rgba(255,255,255,0.1)" stroke-width="0.5"/></pattern></defs><rect width="100" height="100" fill="url(%23grid)"/></svg>');
+            opacity: 0.3;
+        }
+        
+        .header-content {
+            position: relative;
+            z-index: 1;
+        }
+        
+        .logo {
+            font-size: 28px;
+            font-weight: bold;
+            margin-bottom: 8px;
+            letter-spacing: 1px;
+        }
+        
+        .subtitle {
+            font-size: 16px;
+            opacity: 0.9;
+            font-weight: 300;
+        }
+        
+        .ai-badge {
+            display: inline-block;
+            background: rgba(255, 255, 255, 0.2);
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            margin-top: 10px;
+            backdrop-filter: blur(10px);
+        }
+        
+        /* Seção de período */
+        .period-section {
+            background: linear-gradient(to right, #f8fafc, #e2e8f0);
+            padding: 20px;
+            border-left: 4px solid #003366;
+        }
+        
+        .period-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: #003366;
+            margin-bottom: 8px;
+        }
+        
+        .period-dates {
+            font-size: 14px;
+            color: #64748b;
+        }
+        
+        /* Cards de métricas */
+        .metrics-grid {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            padding: 25px 20px;
+            background: #ffffff;
+        }
+        
+        .metric-card {
+            flex: 1;
+            min-width: 150px;
+            background: linear-gradient(135deg, #f8fafc 0%, #ffffff 100%);
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            padding: 20px;
+            text-align: center;
+            transition: transform 0.2s ease;
+        }
+        
+        .metric-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+        
+        .metric-value {
+            font-size: 32px;
+            font-weight: bold;
+            color: #003366;
+            margin-bottom: 5px;
+        }
+        
+        .metric-label {
+            font-size: 12px;
+            color: #64748b;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        .metric-change {
+            font-size: 14px;
+            margin-top: 8px;
+            font-weight: 600;
+        }
+        
+        .change-positive {
+            color: #059669;
+        }
+        
+        .change-negative {
+            color: #dc2626;
+        }
+        
+        .change-neutral {
+            color: #64748b;
+        }
+        
+        /* Seções principais */
+        .section {
+            margin: 0;
+            border-top: 1px solid #e2e8f0;
+        }
+        
+        .section-header {
+            background: linear-gradient(to right, #f1f5f9, #ffffff);
+            padding: 20px;
+            border-left: 4px solid #3b82f6;
+        }
+        
+        .section-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: #1e293b;
+            margin-bottom: 5px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .section-icon {
+            width: 24px;
+            height: 24px;
+            background: #3b82f6;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 12px;
+        }
+        
+        .section-description {
+            font-size: 14px;
+            color: #64748b;
+        }
+        
+        .section-content {
+            padding: 25px 20px;
+        }
+        
+        /* Análise IA */
+        .ai-analysis {
+            background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
+            border: 1px solid #bfdbfe;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+            position: relative;
+        }
+        
+        .ai-analysis::before {
+            content: '🤖';
+            position: absolute;
+            top: -10px;
+            left: 20px;
+            background: #3b82f6;
+            color: white;
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+        }
+        
+        .ai-text {
+            font-size: 15px;
+            line-height: 1.7;
+            color: #1e40af;
+            margin-top: 5px;
+        }
+        
+        /* Lista de agentes */
+        .agents-list {
+            background: #f8fafc;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+        
+        .agent-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 15px 20px;
+            border-bottom: 1px solid #e2e8f0;
+            transition: background-color 0.2s ease;
+        }
+        
+        .agent-item:last-child {
+            border-bottom: none;
+        }
+        
+        .agent-item:hover {
+            background-color: #f1f5f9;
+        }
+        
+        .agent-info {
+            flex: 1;
+        }
+        
+        .agent-name {
+            font-weight: 600;
+            color: #1e293b;
+            margin-bottom: 3px;
+        }
+        
+        .agent-status {
+            font-size: 12px;
+            color: #64748b;
+        }
+        
+        .agent-metrics {
+            text-align: right;
+        }
+        
+        .agent-tickets {
+            font-size: 18px;
+            font-weight: bold;
+            color: #003366;
+        }
+        
+        .agent-change {
+            font-size: 12px;
+            margin-top: 2px;
+        }
+        
+        /* Status badges */
+        .status-badge {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.3px;
+        }
+        
+        .status-success {
+            background: #dcfce7;
+            color: #166534;
+        }
+        
+        .status-warning {
+            background: #fef3c7;
+            color: #92400e;
+        }
+        
+        .status-info {
+            background: #dbeafe;
+            color: #1e40af;
+        }
+        
+        .status-neutral {
+            background: #f1f5f9;
+            color: #475569;
+        }
+        
+        /* Recomendações */
+        .recommendations {
+            background: #ffffff;
+        }
+        
+        .recommendation-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 15px;
+            padding: 15px 0;
+            border-bottom: 1px solid #f1f5f9;
+        }
+        
+        .recommendation-item:last-child {
+            border-bottom: none;
+        }
+        
+        .recommendation-icon {
+            width: 32px;
+            height: 32px;
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 14px;
+            flex-shrink: 0;
+        }
+        
+        .recommendation-content {
+            flex: 1;
+        }
+        
+        .recommendation-text {
+            font-size: 15px;
+            color: #1e293b;
+            line-height: 1.6;
+        }
+        
+        .recommendation-priority {
+            font-size: 12px;
+            color: #059669;
+            font-weight: 600;
+            margin-top: 5px;
+        }
+        
+        /* Footer */
+        .footer {
+            background: #1e293b;
+            color: #94a3b8;
+            padding: 25px 20px;
+            text-align: center;
+        }
+        
+        .footer-text {
+            font-size: 14px;
+            margin-bottom: 10px;
+        }
+        
+        .footer-info {
+            font-size: 12px;
+            opacity: 0.7;
+        }
+        
+        .generated-info {
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 6px;
+            padding: 15px;
+            margin-top: 15px;
+            font-size: 12px;
+            color: #64748b;
+        }
+        
+        /* Responsivo */
+        @media (max-width: 600px) {
+            .email-container {
+                margin: 0;
+                border-radius: 0;
+            }
+            
+            .metrics-grid {
+                flex-direction: column;
+            }
+            
+            .metric-card {
+                min-width: 100%;
+            }
+            
+            .agent-item {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 10px;
+            }
+            
+            .agent-metrics {
+                text-align: left;
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="email-container">
+        <!-- Header -->
+        <div class="header">
+            <div class="header-content">
+                <div class="logo">AtendePro AI</div>
+                <div class="subtitle">Relatório Semanal Inteligente</div>
+                <div class="ai-badge">🤖 Powered by AI</div>
+            </div>
+        </div>
+        
+        <!-- Período -->
+        <div class="period-section">
+            <div class="period-title">📅 Período Analisado</div>
+            <div class="period-dates">{{ period_label }}</div>
+        </div>
+        
+        <!-- Métricas Principais -->
+        <div class="metrics-grid">
+            <div class="metric-card">
+                <div class="metric-value">{{ total_tickets }}</div>
+                <div class="metric-label">Atendimentos</div>
+                <div class="metric-change change-{{ trend_class }}">
+                    {{ change_text }}
+                </div>
+            </div>
+            
+            <div class="metric-card">
+                <div class="metric-value">{{ agents_count }}</div>
+                <div class="metric-label">Agentes Ativos</div>
+                <div class="metric-change change-neutral">
+                    {{ ranking_text }}
+                </div>
+            </div>
+        </div>
+        
+        <!-- Análise IA Global -->
+        <div class="section">
+            <div class="section-header">
+                <div class="section-title">
+                    <div class="section-icon">🧠</div>
+                    Análise IA - Tendências Gerais
+                </div>
+                <div class="section-description">Insights automáticos baseados em análise de dados</div>
+            </div>
+            <div class="section-content">
+                <div class="ai-analysis">
+                    <div class="ai-text">{{ global_analysis }}</div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Performance da Equipe -->
+        <div class="section">
+            <div class="section-header">
+                <div class="section-title">
+                    <div class="section-icon">👥</div>
+                    Performance da Sua Equipe
+                </div>
+                <div class="section-description">Análise individual dos agentes</div>
+            </div>
+            <div class="section-content">
+                <div class="agents-list">
+                    {% for agent in agents_performance %}
+                    <div class="agent-item">
+                        <div class="agent-info">
+                            <div class="agent-name">{{ agent.agent_name }}</div>
+                            <div class="agent-status">
+                                <span class="status-badge status-{{ agent.status }}">
+                                    {{ agent.performance_level }}
+                                </span>
+                                {% if agent.needs_attention %}
+                                <span class="status-badge status-warning">Atenção</span>
+                                {% endif %}
+                            </div>
+                        </div>
+                        <div class="agent-metrics">
+                            <div class="agent-tickets">{{ agent.current_tickets }}</div>
+                            <div class="agent-change change-{{ 'positive' if agent.change > 0 else 'negative' if agent.change < 0 else 'neutral' }}">
+                                {{ '+' if agent.change > 0 else '' }}{{ agent.change }} vs anterior
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+        
+        <!-- Análise Específica do Supervisor -->
+        <div class="section">
+            <div class="section-header">
+                <div class="section-title">
+                    <div class="section-icon">👤</div>
+                    Análise Personalizada
+                </div>
+                <div class="section-description">Insights específicos para sua equipe</div>
+            </div>
+            <div class="section-content">
+                <div class="ai-analysis">
+                    <div class="ai-text">{{ supervisor_analysis }}</div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Recomendações IA -->
+        <div class="section">
+            <div class="section-header">
+                <div class="section-title">
+                    <div class="section-icon">🎯</div>
+                    Recomendações Inteligentes
+                </div>
+                <div class="section-description">Ações sugeridas pela IA para próxima semana</div>
+            </div>
+            <div class="section-content">
+                <div class="recommendations">
+                    {% for recommendation in recommendations %}
+                    <div class="recommendation-item">
+                        <div class="recommendation-icon">{{ loop.index }}</div>
+                        <div class="recommendation-content">
+                            <div class="recommendation-text">{{ recommendation }}</div>
+                            <div class="recommendation-priority">Prioridade: {{ 'Alta' if loop.index <= 2 else 'Média' }}</div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+        
+        <!-- Footer -->
+        <div class="footer">
+            <div class="footer-text">
+                <strong>AtendePro AI Reports</strong> - Gestão Inteligente de Atendimentos
+            </div>
+            <div class="footer-info">
+                Este relatório foi gerado automaticamente pela IA em {{ generated_at }}
+            </div>
+            
+            <div class="generated-info">
+                <strong>Tecnologia:</strong> Análise gerada por Qwen 2.5 (3B) via Ollama<br>
+                <strong>Dados:</strong> Baseado em {{ data_source_info }}<br>
+                <strong>Próximo relatório:</strong> {{ next_report_date }}
+            </div>
+        </div>
+    </div>
+</body>
+</html>

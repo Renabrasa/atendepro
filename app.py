@@ -7,6 +7,7 @@ from collections import defaultdict
 import pytz
 from datetime import datetime, timedelta,date
 from collections import defaultdict
+from typing import Dict, List, Any, Optional
 
 
 app = Flask(__name__)
@@ -2357,6 +2358,202 @@ def debug_bulk_classification():
     return jsonify(debug_info)
 
 ########################## FIM DA ROTA DE CLASSIFICAÇÃO EM LOTE ##########################
+
+
+
+# ========================================
+# 🤖 ROTAS AI REPORTS ADMIN
+# ========================================
+
+@app.route('/admin/ai-reports')
+@login_required
+def admin_ai_reports():
+    """Painel de controle AI Reports"""
+    if not current_user.pode_acessar_admin():
+        flash('Acesso negado. Apenas administradores podem acessar este painel.', 'danger')
+        return redirect(url_for('dashboard'))
+    
+    try:
+        # Status do sistema
+        from ai_reports.scheduler import get_scheduler_status
+        from ai_reports.ai_analyzer import test_ai_connection
+        from ai_reports.email_sender import test_email_connection
+        
+        scheduler_status = get_scheduler_status()
+        ollama_status = test_ai_connection()
+        smtp_status = test_email_connection()
+        
+        # Estatísticas básicas
+        supervisors_count = User.query.filter_by(tipo='supervisor').count()
+        
+        return render_template('admin_ai_reports.html',
+                             scheduler_status=scheduler_status,
+                             ollama_status=ollama_status,
+                             smtp_status=smtp_status,
+                             supervisors_count=supervisors_count)
+        
+    except Exception as e:
+        app.logger.error(f'Erro no painel AI Reports: {e}')
+        flash(f'Erro ao carregar painel AI Reports: {str(e)}', 'danger')
+        return redirect(url_for('admin_panel'))
+
+
+@app.route('/admin/ai-reports/test-execution', methods=['POST'])
+@login_required
+def admin_test_ai_reports():
+    """Executar teste completo do sistema AI Reports"""
+    if not current_user.pode_executar_funcoes_destrutivas():
+        return jsonify({'error': 'Acesso negado'}), 403
+    
+    try:
+        app.logger.info(f'Teste AI Reports iniciado por {current_user.nome}')
+        
+        # Importar módulos necessários
+        from ai_reports.data_collector import collect_weekly_data
+        from ai_reports.ai_analyzer import analyze_weekly_data
+        from ai_reports.email_sender import send_weekly_reports
+        
+        # Passo 1: Coletar dados
+        app.logger.info('Coletando dados semanais...')
+        weekly_data = collect_weekly_data()
+        
+        supervisors_count = len(weekly_data['supervisors_data'])
+        total_tickets = weekly_data['global_stats']['current_week']['total_tickets']
+        
+        if supervisors_count == 0:
+            return jsonify({
+                'success': False,
+                'error': 'Nenhum supervisor encontrado no sistema'
+            })
+        
+        # Passo 2: Análise IA
+        app.logger.info('Executando análise IA...')
+        ai_analysis = analyze_weekly_data(weekly_data)
+        
+        insights_count = len(ai_analysis['global_analysis'].get('insights', []))
+        
+        # Passo 3: Envio de emails (REAL)
+        send_emails = request.form.get('send_emails') == 'true'
+        
+        if send_emails:
+            app.logger.info('Enviando emails reais para supervisores...')
+            email_results = send_weekly_reports(weekly_data, ai_analysis)
+            
+            result = {
+                'success': True,
+                'action': 'test_with_emails',
+                'supervisors_analyzed': supervisors_count,
+                'total_tickets': total_tickets,
+                'insights_generated': insights_count,
+                'emails_sent': email_results['successful_sends'],
+                'email_failures': email_results['failed_sends'],
+                'period': weekly_data['metadata']['current_week']['period_label']
+            }
+        else:
+            # Apenas preparar emails sem enviar
+            app.logger.info('Preparando emails (sem enviar)...')
+            from ai_reports.email_sender import EmailSender
+            
+            sender = EmailSender()
+            emails_prepared = 0
+            
+            for supervisor_analysis in ai_analysis['supervisors_analysis']:
+                for sup_data in weekly_data['supervisors_data']:
+                    if sup_data['supervisor']['id'] == supervisor_analysis['supervisor_id']:
+                        # Preparar dados sem enviar
+                        template_data = sender._prepare_template_data(sup_data, ai_analysis, weekly_data)
+                        emails_prepared += 1
+                        break
+            
+            result = {
+                'success': True,
+                'action': 'test_simulation',
+                'supervisors_analyzed': supervisors_count,
+                'total_tickets': total_tickets,
+                'insights_generated': insights_count,
+                'emails_prepared': emails_prepared,
+                'period': weekly_data['metadata']['current_week']['period_label']
+            }
+        
+        app.logger.info(f'Teste AI Reports concluído: {result}')
+        return jsonify(result)
+        
+    except Exception as e:
+        error_msg = f'Erro no teste AI Reports: {e}'
+        app.logger.error(error_msg)
+        return jsonify({
+            'success': False,
+            'error': error_msg
+        }), 500
+
+
+@app.route('/admin/ai-reports/toggle-scheduler', methods=['POST'])
+@login_required
+def admin_toggle_scheduler():
+    """Habilitar/desabilitar scheduler"""
+    if not current_user.pode_executar_funcoes_destrutivas():
+        return jsonify({'error': 'Acesso negado'}), 403
+    
+    try:
+        action = request.form.get('action')  # 'start' ou 'stop'
+        
+        if action == 'start':
+            from ai_reports.scheduler import start_scheduler
+            success = start_scheduler()
+            message = 'Scheduler iniciado com sucesso' if success else 'Falha ao iniciar scheduler'
+        elif action == 'stop':
+            from ai_reports.scheduler import stop_scheduler
+            stop_scheduler()
+            success = True
+            message = 'Scheduler parado com sucesso'
+        else:
+            return jsonify({'error': 'Ação inválida'}), 400
+        
+        return jsonify({
+            'success': success,
+            'message': message
+        })
+        
+    except Exception as e:
+        error_msg = f'Erro ao controlar scheduler: {e}'
+        app.logger.error(error_msg)
+        return jsonify({
+            'success': False,
+            'error': error_msg
+        }), 500
+
+
+@app.route('/admin/ai-reports/system-status')
+@login_required
+def admin_ai_reports_status():
+    """Retorna status atual do sistema AI Reports"""
+    if not current_user.pode_acessar_admin():
+        return jsonify({'error': 'Acesso negado'}), 403
+    
+    try:
+        from ai_reports.scheduler import get_scheduler_status
+        from ai_reports.ai_analyzer import test_ai_connection
+        from ai_reports.email_sender import test_email_connection
+        
+        status = {
+            'scheduler': get_scheduler_status(),
+            'ollama': test_ai_connection(),
+            'smtp': test_email_connection(),
+            'supervisors_count': User.query.filter_by(tipo='supervisor').count(),
+            'timestamp': datetime.now().isoformat()
+        }
+        
+        return jsonify(status)
+        
+    except Exception as e:
+        return jsonify({
+            'error': f'Erro ao obter status: {e}'
+        }), 500
+
+# ========================================
+# 🤖 FIM DAS ROTAS AI REPORTS ADMIN
+# ========================================
+
 
 if __name__ == '__main__':
     app.run(debug=True)

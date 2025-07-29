@@ -1666,107 +1666,134 @@ document.addEventListener('DOMContentLoaded', function () {
         temDadosReais = false;
     }
 
-    // === CRIAR HEATMAP APENAS COM DADOS REAIS ===
-    function createMonthHeatmap() {
-        console.log('🔥 Criando heatmap APENAS com dados reais...');
-        
-        const container = document.getElementById('heatmapCalendar');
-        if (!container) {
-            console.warn('⚠️ Container heatmapCalendar não encontrado');
-            return;
-        }
-        
-        container.innerHTML = '';
 
-        const diasSemana = ['Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb','Dom'];
-        const calendar = document.createElement('div');
-        calendar.className = 'heatmap-calendar';
+  // CORREÇÃO: Limitar heatmap a 35 dias e sem futuros
+  // =====================================================
 
-        // Cabeçalhos dos dias da semana
-        diasSemana.forEach(dia => {
-            const header = document.createElement('div');
-            header.className = 'heatmap-day-header';
-            header.textContent = dia;
-            calendar.appendChild(header);
-        });
 
-        if (heatmapMes && heatmapMes.length > 0) {
-            console.log(`📊 Renderizando ${heatmapMes.length} dias REAIS no heatmap`);
-            
-            // Ordena os dados por data
-            const dadosOrdenados = heatmapMes.sort((a, b) => {
-                const dataA = new Date(a.data_completa);
-                const dataB = new Date(b.data_completa);
-                return dataA - dataB;
-            });
-            
-            console.log(`📅 Primeiro dia REAL: ${dadosOrdenados[0]?.data_completa}`);
-            console.log(`📅 Último dia REAL: ${dadosOrdenados[dadosOrdenados.length - 1]?.data_completa}`);
-            
-            // Verifica se precisa de células vazias no início
-            const primeiroItem = dadosOrdenados[0];
-            if (primeiroItem) {
-                const primeiraData = new Date(primeiroItem.data_completa);
-                const primeiroDiaSemana = primeiraData.getDay(); // 0=Dom, 1=Seg, etc.
-                
-                console.log(`📅 Primeiro dia (${primeiroItem.dia_mes}): ${diasSemana[primeiroDiaSemana]} (getDay: ${primeiroDiaSemana}, backend: ${primeiroItem.dia_semana})`);
-                
-                // Adiciona células vazias no início para alinhar com o dia da semana correto
-                for (let i = 0; i < primeiroDiaSemana; i++) {
-                    const emptyCell = document.createElement('div');
-                    emptyCell.className = 'heatmap-day heat-0';
-                    emptyCell.innerHTML = `<div class="heatmap-day-number"></div><div class="heatmap-day-count"></div>`;
-                    calendar.appendChild(emptyCell);
-                }
-            }
-            
-            // Renderiza todos os dias com dados reais
-            dadosOrdenados.forEach(function (dia, index) {
-                const volume = dia.volume || 0;
-                
-                // Classificação de intensidade baseada em dados reais
-                let intensity = 0;
-                if (volume > 0) {
-                    if (volume <= 15) intensity = 1;      // 1-5 atendimentos
-                    else if (volume <= 40) intensity = 2; // 6-15 atendimentos  
-                    else if (volume <= 50) intensity = 3; // 16-30 atendimentos
-                    else intensity = 4;                   // 31+ atendimentos
-                }
+  function createMonthHeatmap() {
+      console.log('🔥 Criando heatmap APENAS com dados reais (LIMITADO)...');
+      
+      const container = document.getElementById('heatmapCalendar');
+      if (!container) {
+          console.warn('⚠️ Container heatmapCalendar não encontrado');
+          return;
+      }
+      
+      container.innerHTML = '';
 
-                const dayElement = document.createElement('div');
-                dayElement.className = `heatmap-day heat-${intensity} ${dia.eh_hoje ? 'today' : ''}`;
+      const diasSemana = ['Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb','Dom'];
+      const calendar = document.createElement('div');
+      calendar.className = 'heatmap-calendar';
 
-                dayElement.innerHTML = `
-                    <div class="heatmap-day-number">${dia.dia_mes}</div>
-                    <div class="heatmap-day-count">${volume}</div>
-                `;
+      // Cabeçalhos dos dias da semana
+      diasSemana.forEach(dia => {
+          const header = document.createElement('div');
+          header.className = 'heatmap-day-header';
+          header.textContent = dia;
+          calendar.appendChild(header);
+      });
 
-                // Tooltip detalhado
-                const dataObj = new Date(dia.data_completa);
-                const nomeDia = diasSemana[dataObj.getDay()];
-                const dataFormatada = dataObj.toLocaleDateString('pt-BR');
-                dayElement.title = `${dataFormatada}: ${nomeDia} - ${volume} atendimentos${volume === 0 ? ' (sem expediente ou sem dados)' : ''}`;
-                
-                calendar.appendChild(dayElement);
-                
-                // Log para verificação
-                if (dia.eh_hoje || volume > 0) {
-                    console.log(`📅 ${dataFormatada} (${nomeDia}): ${volume} atendimentos${dia.eh_hoje ? ' ← HOJE' : ''}`);
-                }
-            });
-            
-        } else {
-            console.warn('⚠️ Nenhum dado REAL de heatmap disponível');
-            // Mostra mensagem de que não há dados
-            const noDataMsg = document.createElement('div');
-            noDataMsg.style.cssText = 'grid-column: 1 / -1; text-align: center; padding: 20px; color: #999; font-style: italic;';
-            noDataMsg.textContent = 'Nenhum dado disponível ainda';
-            calendar.appendChild(noDataMsg);
-        }
+      if (heatmapMes && heatmapMes.length > 0) {
+          console.log(`📊 Dados disponíveis: ${heatmapMes.length} dias`);
+          
+          // NOVO: Filtrar apenas dias até hoje e limitar a 35 dias
+          const hoje = new Date();
+          hoje.setHours(23, 59, 59, 999); // Final do dia de hoje
+          
+          const dataLimite = new Date(hoje.getTime() - (35 * 24 * 60 * 60 * 1000)); // 35 dias atrás
+          
+          const dadosFiltrados = heatmapMes.filter(dia => {
+              const dataDia = new Date(dia.data_completa);
+              // Filtrar: deve ser >= data limite E <= hoje
+              return dataDia >= dataLimite && dataDia <= hoje;
+          }).sort((a, b) => {
+              const dataA = new Date(a.data_completa);
+              const dataB = new Date(b.data_completa);
+              return dataA - dataB;
+          });
+          
+          console.log(`📊 Filtrado: ${dadosFiltrados.length} dias (máx 35, sem futuros)`);
+          console.log(`📅 Período: ${dadosFiltrados[0]?.data_completa} até ${dadosFiltrados[dadosFiltrados.length - 1]?.data_completa}`);
+          
+          // Verifica se precisa de células vazias no início
+          const primeiroItem = dadosFiltrados[0];
+          if (primeiroItem) {
+              const primeiraData = new Date(primeiroItem.data_completa);
+              const primeiroDiaSemana = primeiraData.getDay(); // 0=Dom, 1=Seg, etc.
+              
+              console.log(`📅 Primeiro dia (${primeiroItem.dia_mes}): dia da semana ${primeiroDiaSemana}`);
+              
+              // Adiciona células vazias no início para alinhar com o dia da semana correto
+              for (let i = 0; i < primeiroDiaSemana; i++) {
+                  const emptyCell = document.createElement('div');
+                  emptyCell.className = 'heatmap-day heat-0';
+                  emptyCell.innerHTML = `<div class="heatmap-day-number"></div><div class="heatmap-day-count"></div>`;
+                  emptyCell.style.visibility = 'hidden'; // Invisível mas ocupa espaço
+                  calendar.appendChild(emptyCell);
+              }
+          }
+          
+          // Renderiza apenas os dias filtrados
+          dadosFiltrados.forEach(function (dia, index) {
+              const volume = dia.volume || 0;
+              
+              // Classificação de intensidade baseada em dados reais
+              let intensity = 0;
+              if (volume > 0) {
+                  if (volume <= 15) intensity = 1;      // 1-15 atendimentos
+                  else if (volume <= 40) intensity = 2; // 16-40 atendimentos  
+                  else if (volume <= 50) intensity = 3; // 41-50 atendimentos
+                  else intensity = 4;                   // 51+ atendimentos
+              }
 
-        container.appendChild(calendar);
-        console.log('✅ Heatmap com dados reais criado!');
-    }
+              const dayElement = document.createElement('div');
+              dayElement.className = `heatmap-day heat-${intensity} ${dia.eh_hoje ? 'today' : ''}`;
+
+              dayElement.innerHTML = `
+                  <div class="heatmap-day-number">${dia.dia_mes}</div>
+                  <div class="heatmap-day-count">${volume}</div>
+              `;
+
+              // Tooltip detalhado
+              const dataObj = new Date(dia.data_completa);
+              const nomeDia = diasSemana[dataObj.getDay()];
+              const dataFormatada = dataObj.toLocaleDateString('pt-BR');
+              dayElement.title = `${dataFormatada}: ${nomeDia} - ${volume} atendimentos${volume === 0 ? ' (sem expediente ou sem dados)' : ''}`;
+              
+              calendar.appendChild(dayElement);
+              
+              // Log para verificação (só os mais importantes)
+              if (dia.eh_hoje || volume > 0) {
+                  console.log(`📅 ${dataFormatada} (${nomeDia}): ${volume} atendimentos${dia.eh_hoje ? ' ← HOJE' : ''}`);
+              }
+          });
+          
+          // NOVO: Preencher células vazias no final se necessário (para completar últimas semanas)
+          const totalCelulas = calendar.children.length - 7; // Subtrair headers
+          const celulasNecessarias = Math.ceil(totalCelulas / 7) * 7;
+          const celulasVazias = celulasNecessarias - totalCelulas;
+          
+          for (let i = 0; i < celulasVazias; i++) {
+              const emptyCell = document.createElement('div');
+              emptyCell.className = 'heatmap-day heat-0';
+              emptyCell.innerHTML = `<div class="heatmap-day-number"></div><div class="heatmap-day-count"></div>`;
+              emptyCell.style.visibility = 'hidden'; // Invisível mas ocupa espaço para manter grid
+              calendar.appendChild(emptyCell);
+          }
+          
+      } else {
+          console.warn('⚠️ Nenhum dado REAL de heatmap disponível');
+          // Mostra mensagem de que não há dados
+          const noDataMsg = document.createElement('div');
+          noDataMsg.style.cssText = 'grid-column: 1 / -1; text-align: center; padding: 20px; color: #999; font-style: italic;';
+          noDataMsg.textContent = 'Nenhum dado disponível ainda';
+          calendar.appendChild(noDataMsg);
+      }
+
+      container.appendChild(calendar);
+      console.log('✅ Heatmap limitado criado (máx 35 dias, sem futuros)!');
+  }
 
     // === CRIAR COMPARATIVO SEMANAL APENAS COM DADOS REAIS ===
     function createWeeklyComparison() {

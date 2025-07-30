@@ -80,7 +80,6 @@ class AIAnalyzer:
                 'timestamp': datetime.now().isoformat()
             }
     
-    
     def analyze_weekly_data(self, weekly_data: Dict[str, Any]) -> Dict[str, Any]:
         """
         📊 Analisa dados semanais completos com IA
@@ -133,29 +132,6 @@ class AIAnalyzer:
             logger.error(f"❌ Erro na análise IA: {e}")
             raise
     
-    def _analyze_global_trends(self, weekly_data: Dict[str, Any]) -> Dict[str, Any]:
-        """
-        🌍 Analisa tendências globais do sistema
-        """
-        global_stats = weekly_data['global_stats']
-        
-        # Preparar dados para IA
-        analysis_prompt = self._build_global_analysis_prompt(global_stats, weekly_data)
-        
-        # Solicitar análise da IA
-        ai_response = self._query_ollama(analysis_prompt, "global_trends")
-        
-        return {
-            'trend_analysis': ai_response,
-            'key_metrics': {
-                'total_tickets': global_stats['current_week']['total_tickets'],
-                'change_percent': global_stats['comparison']['percent_change'],
-                'trend_direction': global_stats['comparison']['trend'],
-                'active_supervisors': global_stats['current_week']['active_supervisors']
-            },
-            'insights': self._extract_insights_from_ai_response(ai_response)
-        }
-    
     def _analyze_supervisor_performance(self, supervisor_data: Dict[str, Any], 
                                        weekly_data: Dict[str, Any]) -> Dict[str, Any]:
         """
@@ -185,14 +161,24 @@ class AIAnalyzer:
     
     def _analyze_agents_performance(self, agents_data: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
         """
-        👥 Analisa performance dos agentes
+        👥 Analisa performance dos agentes - VERSÃO CORRIGIDA
         """
         agents_insights = []
         
         for agent in agents_data:
             agent_name = agent['agent']['name']
-            current_tickets = agent['current_tickets']
-            change = agent['change']
+            current_tickets = agent.get('current_tickets', 0)
+            change = agent.get('change', 0)
+            
+            # CORREÇÃO: Acessar previous_tickets de forma segura
+            previous_tickets = 0
+            if 'previous_tickets' in agent:
+                previous_tickets = agent['previous_tickets']
+            elif hasattr(agent, 'previous_tickets'):
+                previous_tickets = agent.previous_tickets
+            else:
+                # Tentar calcular baseado no change
+                previous_tickets = current_tickets - change if change != 0 else 0
             
             # Classificar performance
             if change > 0:
@@ -209,8 +195,16 @@ class AIAnalyzer:
                 performance_level = "Estável"
                 status = "neutral"
             
+            # CORREÇÃO: Calcular change_percent de forma segura
+            try:
+                if previous_tickets > 0:
+                    change_percent = (change / previous_tickets) * 100
+                else:
+                    change_percent = 100 if current_tickets > 0 else 0
+            except (ZeroDivisionError, TypeError):
+                change_percent = 0
+            
             # Detectar padrões atípicos
-            change_percent = ((change / agent['previous_tickets']) * 100) if agent['previous_tickets'] > 0 else 0
             is_atypical = abs(change_percent) >= 50
             
             agents_insights.append({
@@ -341,55 +335,9 @@ class AIAnalyzer:
                 'alerts_summary': []
             }
     
-    def _build_global_analysis_prompt(self, global_stats: Dict[str, Any], weekly_data: Dict[str, Any]) -> str:
-        """
-        🔤 Constrói prompt para análise global usando prompts especializados
-        """
-        try:
-            from .ai_prompts import PromptBuilder
-            from .ai_refinements import PromptOptimizer
-            
-            # Gerar prompt base
-            base_prompt = PromptBuilder.global_trend_analysis(global_stats, weekly_data)
-            
-            # Aplicar otimizações
-            context = {
-                'change_percent': global_stats['comparison']['percent_change'],
-                'total_tickets': global_stats['current_week']['total_tickets']
-            }
-            
-            optimized_prompt = PromptOptimizer.enhance_global_prompt(base_prompt, context)
-            return optimized_prompt
-        except ImportError:
-            # Fallback básico se módulos não estiverem disponíveis
-            current_tickets = global_stats['current_week']['total_tickets']
-            previous_tickets = global_stats['previous_week']['total_tickets']
-            change = global_stats['comparison']['absolute_change']
-            change_percent = global_stats['comparison']['percent_change']
-            
-            period = weekly_data['metadata']['current_week']['period_label']
-            
-            prompt = f"""
-Analise os dados semanais de atendimento e forneça insights profissionais:
-
-PERÍODO: {period}
-ATENDIMENTOS ATUAIS: {current_tickets}
-ATENDIMENTOS ANTERIORES: {previous_tickets}
-VARIAÇÃO: {change:+d} ({change_percent:+.1f}%)
-
-Forneça uma análise concisa focando em:
-1. Interpretação da tendência geral
-2. Possíveis causas da variação
-3. Impacto operacional
-4. Ações recomendadas
-
-Seja objetivo e professional. Máximo 200 palavras.
-"""
-            return prompt.strip()
-    
     def _build_supervisor_analysis_prompt(self, supervisor_data: Dict[str, Any], weekly_data: Dict[str, Any]) -> str:
         """
-        🔤 Constrói prompt para análise de supervisor usando prompts especializados
+        🔤 Constrói prompt para análise de supervisor usando prompts especializados - VERSÃO CORRIGIDA
         """
         try:
             from .ai_prompts import PromptBuilder
@@ -416,14 +364,17 @@ Seja objetivo e professional. Máximo 200 palavras.
             # Fallback básico se módulos não estiverem disponíveis
             supervisor_name = supervisor_data['supervisor']['name']
             current = supervisor_data['current_week']['total_tickets']
-            previous = supervisor_data['previous_week']['total_tickets']
-            change = supervisor_data['comparison']['absolute_change']
-            change_percent = supervisor_data['comparison']['percent_change']
+            
+            # CORREÇÃO: Acessar dados do período anterior de forma segura
+            previous = supervisor_data.get('previous_week', {}).get('total_tickets', 0)
+            change = supervisor_data.get('comparison', {}).get('absolute_change', 0)
+            change_percent = supervisor_data.get('comparison', {}).get('percent_change', 0)
             
             agents = supervisor_data['current_week']['agents_performance']
             agents_summary = []
             for agent in agents[:3]:  # Top 3 agentes
-                agents_summary.append(f"{agent['agent']['name']}: {agent['current_tickets']} atendimentos ({agent['change']:+d})")
+                agent_change = agent.get('change', 0)
+                agents_summary.append(f"{agent['agent']['name']}: {agent['current_tickets']} atendimentos ({agent_change:+d})")
             
             period = weekly_data['metadata']['current_week']['period_label']
             
@@ -449,7 +400,7 @@ Seja conciso e actionable. Máximo 150 palavras.
     
     def _build_strategy_prompt(self, weekly_data: Dict[str, Any]) -> str:
         """
-        🔤 Constrói prompt para recomendações estratégicas usando prompts especializados
+        🔤 Constrói prompt para recomendações estratégicas usando prompts especializados - VERSÃO CORRIGIDA
         """
         try:
             from .ai_prompts import PromptBuilder
@@ -476,15 +427,20 @@ Seja conciso e actionable. Máximo 150 palavras.
             for sup in supervisors[:5]:  # Top 5
                 name = sup['supervisor']['name']
                 tickets = sup['current_week']['total_tickets']
-                change = sup['comparison']['absolute_change']
+                change = sup.get('comparison', {}).get('absolute_change', 0)
                 supervisors_summary.append(f"{name}: {tickets} atendimentos ({change:+d})")
+            
+            # CORREÇÃO: Acessar dados globais de forma segura
+            current_total = global_stats.get('current_week', {}).get('total_tickets', 0)
+            change_abs = global_stats.get('comparison', {}).get('absolute_change', 0)
+            change_pct = global_stats.get('comparison', {}).get('percent_change', 0)
             
             prompt = f"""
 Com base nos dados semanais, forneça 3-5 recomendações estratégicas para a gestão:
 
 CENÁRIO GERAL:
-- Total: {global_stats['current_week']['total_tickets']} atendimentos
-- Variação: {global_stats['comparison']['absolute_change']:+d} ({global_stats['comparison']['percent_change']:+.1f}%)
+- Total: {current_total} atendimentos
+- Variação: {change_abs:+d} ({change_pct:+.1f}%)
 
 SUPERVISORES:
 {chr(10).join(supervisors_summary)}

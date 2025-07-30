@@ -13,7 +13,7 @@ class PromptBuilder:
     🔤 Construtor de prompts especializados para análise IA
     
     Gera prompts otimizados para diferentes cenários de análise
-    de dados de atendimento e performance de equipes
+    de dados de atendimento interno de RH e performance de equipes
     """
     
     @staticmethod
@@ -28,44 +28,42 @@ class PromptBuilder:
         active_supervisors = global_stats['current_week']['active_supervisors']
         period = weekly_data['metadata']['current_week']['period_label']
         
-        # Determinar contexto da variação
-        if abs(change_percent) >= 30:
-            intensity = "significativa"
-        elif abs(change_percent) >= 15:
-            intensity = "moderada"
-        else:
-            intensity = "leve"
-        
         prompt = f"""
-Você é um analista sênior de operações de atendimento. Analise os dados semanais abaixo:
+Você é um analista de RH especializado em atendimento interno de funcionários.
 
-PERÍODO DE ANÁLISE: {period}
-• Atendimentos esta semana: {current_tickets}
-• Atendimentos semana anterior: {previous_tickets}
-• Variação: {change:+d} atendimentos ({change_percent:+.1f}%)
-• Supervisores ativos: {active_supervisors}
-• Intensidade da mudança: {intensity}
+SISTEMA: AtendePro - Sistema interno onde supervisores de RH atendem solicitações de funcionários (questões trabalhistas, dúvidas, suporte interno).
 
-TAREFA: Forneça uma análise profissional focada em:
+DADOS EXATOS DO PERÍODO:
+- Período atual: {period}
+- Atendimentos período atual: {current_tickets}
+- Atendimentos período anterior: {previous_tickets}
+- Variação exata: {change:+d} atendimentos ({change_percent:+.1f}%)
+- Supervisores ativos: {active_supervisors}
 
-1. INTERPRETAÇÃO DA TENDÊNCIA
-   - O que essa variação representa operacionalmente?
-   - É um padrão esperado ou atípico?
+REGRAS IMPORTANTES:
+- Use APENAS os números fornecidos acima
+- NÃO invente ou estime números diferentes
+- Foque em atendimento INTERNO de RH, não clientes externos
 
-2. POSSÍVEIS CAUSAS
-   - Fatores que podem explicar essa mudança
-   - Sazonalidade ou eventos específicos
+ANÁLISE SOLICITADA:
 
-3. IMPACTO OPERACIONAL
-   - Como isso afeta a carga de trabalho das equipes?
-   - Riscos ou oportunidades identificadas
+1. INTERPRETAÇÃO DOS DADOS REAIS
+   - O que significa esta variação de {change_percent:+.1f}% no atendimento interno?
+   - É normal para um sistema de RH interno?
 
-4. RECOMENDAÇÕES IMEDIATAS
-   - Ações que devem ser tomadas nesta semana
-   - Pontos de atenção para monitoramento
+2. POSSÍVEIS CAUSAS INTERNAS
+   - Fatores que afetam demanda de funcionários por suporte
+   - Sazonalidade empresarial ou eventos internos
 
-FORMATO: Resposta direta e actionable, máximo 180 palavras.
-FOCO: Insights práticos para gestão operacional.
+3. IMPACTO NA EQUIPE DE RH
+   - Como essa carga afeta os supervisores?
+   - Distribuição de trabalho entre {active_supervisors} supervisores
+
+4. RECOMENDAÇÕES PRÁTICAS
+   - Ações para otimizar atendimento interno
+   - Pontos de atenção para próximo período
+
+FORMATO: Máximo 150 palavras, foque apenas nos dados fornecidos.
 """
         return prompt.strip()
     
@@ -85,135 +83,54 @@ FOCO: Insights práticos para gestão operacional.
         agents = supervisor_data['current_week']['agents_performance']
         agents_count = len(agents)
         
-        # Análise da distribuição entre agentes
-        if agents:
-            total_agent_tickets = sum(a['current_tickets'] for a in agents)
-            top_agent = max(agents, key=lambda x: x['current_tickets'])
-            concentration = (top_agent['current_tickets'] / total_agent_tickets * 100) if total_agent_tickets > 0 else 0
-        else:
-            concentration = 0
-            top_agent = None
-        
-        # Contexto de performance
-        if change_percent >= 25:
-            performance_context = "alta crescimento"
-        elif change_percent >= 10:
-            performance_context = "crescimento moderado"
-        elif change_percent <= -25:
-            performance_context = "redução significativa"
-        elif change_percent <= -10:
-            performance_context = "redução moderada"
-        else:
-            performance_context = "estabilidade"
-        
-        ranking_text = f"(posição #{ranking_position} no ranking)" if ranking_position else ""
+        ranking_text = f"(#{ranking_position} no ranking)" if ranking_position else ""
         
         prompt = f"""
-Você é um consultor de gestão de equipes. Analise a performance do supervisor abaixo:
+Você é um consultor de gestão de RH analisando performance de supervisor interno.
 
-SUPERVISOR: {supervisor} {ranking_text}
-PERÍODO: {weekly_data['metadata']['current_week']['period_label']}
+CONTEXTO: {supervisor} é supervisor de RH que atende funcionários internos com questões trabalhistas, dúvidas corporativas e suporte geral.
 
-MÉTRICAS PRINCIPAIS:
-• Atendimentos: {current} (anterior: {previous})
-• Variação: {change:+d} ({change_percent:+.1f}%)
-• Contexto: {performance_context}
-• Agentes na equipe: {agents_count}
-• Concentração no top agente: {concentration:.1f}%
+DADOS EXATOS DO SUPERVISOR:
+- Nome: {supervisor} {ranking_text}
+- Período: {weekly_data['metadata']['current_week']['period_label']}
+- Atendimentos atuais: {current}
+- Atendimentos anteriores: {previous}
+- Variação exata: {change:+d} ({change_percent:+.1f}%)
+- Agentes na equipe: {agents_count}
 
-DISTRIBUIÇÃO POR AGENTE:
+DISTRIBUIÇÃO REAL POR AGENTE:
 """
         
         # Adicionar dados dos agentes
-        for i, agent in enumerate(agents[:5], 1):  # Top 5 agentes
+        for agent in agents[:5]:  # Top 5 agentes
             agent_change = agent['change']
-            agent_change_percent = (agent_change / agent['previous_tickets'] * 100) if agent['previous_tickets'] > 0 else 0
-            
-            prompt += f"• {agent['agent']['name']}: {agent['current_tickets']} atendimentos ({agent_change:+d}, {agent_change_percent:+.1f}%)\n"
+            prompt += f"• {agent['agent']['name']}: {agent['current_tickets']} atendimentos ({agent_change:+d} vs anterior)\n"
         
         prompt += f"""
-ANÁLISE SOLICITADA:
+REGRAS IMPORTANTES:
+- Use APENAS os números exatos fornecidos acima
+- NÃO crie números que não existem
+- Foque em atendimento INTERNO de funcionários
 
-1. AVALIAÇÃO GERAL
-   - Como avaliar esta performance no contexto atual?
-   - A distribuição de trabalho está equilibrada?
+ANÁLISE ESPECÍFICA:
 
-2. ANÁLISE DOS AGENTES
-   - Identifique padrões na equipe
-   - Sinalize agentes que precisam de atenção
+1. PERFORMANCE GERAL
+   - Como avaliar {current} atendimentos com variação de {change_percent:+.1f}%?
+   - Esta carga é adequada para um supervisor de RH?
+
+2. DISTRIBUIÇÃO DA EQUIPE
+   - A distribuição entre os {agents_count} agentes está equilibrada?
+   - Algum agente precisa de redistribuição de carga?
 
 3. OPORTUNIDADES DE MELHORIA
-   - Sugestões para otimizar a distribuição
-   - Como apoiar melhor a equipe
+   - Como otimizar atendimento interno aos funcionários?
+   - Sugestões para melhorar eficiência da equipe
 
-4. RECOMENDAÇÕES ESPECÍFICAS
-   - Ações concretas para esta semana
+4. RECOMENDAÇÕES CONCRETAS
+   - Ações específicas para próxima semana
    - Pontos de monitoramento contínuo
 
-FORMATO: Análise estruturada e prática, máximo 160 palavras.
-FOCO: Actionable insights para gestão da equipe.
-"""
-        return prompt.strip()
-    
-    @staticmethod
-    def agent_workload_analysis(agents_data: List[Dict[str, Any]], 
-                               supervisor_name: str) -> str:
-        """
-        👥 Prompt para análise de carga de trabalho dos agentes
-        """
-        if not agents_data:
-            return "Nenhum agente ativo para análise."
-        
-        total_tickets = sum(agent['current_tickets'] for agent in agents_data)
-        avg_tickets = total_tickets / len(agents_data) if agents_data else 0
-        
-        # Identificar agentes com carga atípica
-        overloaded = [a for a in agents_data if a['current_tickets'] >= avg_tickets * 1.5]
-        underloaded = [a for a in agents_data if a['current_tickets'] <= avg_tickets * 0.5 and a['current_tickets'] > 0]
-        big_changes = [a for a in agents_data if abs(a.get('change', 0)) >= 10]
-        
-        prompt = f"""
-Você é um especialista em distribuição de carga de trabalho. Analise a equipe do supervisor {supervisor_name}:
-
-CENÁRIO ATUAL:
-• Total de agentes: {len(agents_data)}
-• Total de atendimentos: {total_tickets}
-• Média por agente: {avg_tickets:.1f}
-• Agentes sobrecarregados: {len(overloaded)}
-• Agentes com baixa demanda: {len(underloaded)}
-• Agentes com mudanças significativas: {len(big_changes)}
-
-DETALHAMENTO POR AGENTE:
-"""
-        
-        for agent in agents_data:
-            current = agent['current_tickets']
-            change = agent.get('change', 0)
-            status = "⚠️" if current >= avg_tickets * 1.5 else "⬇️" if current <= avg_tickets * 0.5 else "✅"
-            
-            prompt += f"• {status} {agent['agent']['name']}: {current} atendimentos ({change:+d})\n"
-        
-        prompt += f"""
-ANÁLISE NECESSÁRIA:
-
-1. DISTRIBUIÇÃO DE CARGA
-   - A distribuição atual é eficiente?
-   - Identifique desequilíbrios problemáticos
-
-2. IDENTIFICAÇÃO DE RISCOS
-   - Agentes em risco de sobrecarga ou burnout
-   - Capacidade ociosa subutilizada
-
-3. REDISTRIBUIÇÃO SUGERIDA
-   - Como reequilibrar a carga de trabalho?
-   - Critérios para redistribuição
-
-4. AÇÕES PREVENTIVAS
-   - Como evitar desequilíbrios futuros?
-   - Monitoramento recomendado
-
-FORMATO: Recomendações práticas, máximo 140 palavras.
-FOCO: Otimização da distribuição e bem-estar da equipe.
+FORMATO: Máximo 130 palavras, seja específico e prático.
 """
         return prompt.strip()
     
@@ -227,70 +144,62 @@ FOCO: Otimização da distribuição e bem-estar da equipe.
         
         # Análise dos supervisores
         total_supervisors = len(supervisors)
-        high_performers = [s for s in supervisors if s['comparison']['percent_change'] >= 20]
-        struggling = [s for s in supervisors if s['comparison']['percent_change'] <= -20]
-        stable = [s for s in supervisors if abs(s['comparison']['percent_change']) < 20]
+        high_performers = [s for s in supervisors if s['comparison']['percent_change'] >= 15]
+        struggling = [s for s in supervisors if s['comparison']['percent_change'] <= -15]
+        stable = [s for s in supervisors if abs(s['comparison']['percent_change']) < 15]
         
-        # Top e bottom performers
+        # Top performer
         top_supervisor = max(supervisors, key=lambda x: x['current_week']['total_tickets']) if supervisors else None
-        bottom_supervisor = min(supervisors, key=lambda x: x['current_week']['total_tickets']) if supervisors else None
-        
-        # Análise de variabilidade
-        if supervisors:
-            ticket_counts = [s['current_week']['total_tickets'] for s in supervisors]
-            max_tickets = max(ticket_counts)
-            min_tickets = min(ticket_counts)
-            variability = ((max_tickets - min_tickets) / max_tickets * 100) if max_tickets > 0 else 0
-        else:
-            variability = 0
         
         prompt = f"""
-Você é um diretor de operações analisando performance semanal. Elabore recomendações estratégicas baseadas nos dados:
+Você é um diretor de RH analisando performance do sistema interno de atendimento.
 
-CENÁRIO ORGANIZACIONAL:
-• Período: {weekly_data['metadata']['current_week']['period_label']}
-• Total de atendimentos: {global_stats['current_week']['total_tickets']}
-• Variação global: {global_stats['comparison']['absolute_change']:+d} ({global_stats['comparison']['percent_change']:+.1f}%)
-• Supervisores ativos: {total_supervisors}
+CONTEXTO: AtendePro é sistema interno onde supervisores de RH atendem funcionários com questões trabalhistas, dúvidas corporativas e suporte.
+
+DADOS REAIS DO SISTEMA:
+- Período: {weekly_data['metadata']['current_week']['period_label']}
+- Total de atendimentos internos: {global_stats['current_week']['total_tickets']}
+- Variação do sistema: {global_stats['comparison']['absolute_change']:+d} ({global_stats['comparison']['percent_change']:+.1f}%)
+- Supervisores ativos: {total_supervisors}
 
 DISTRIBUIÇÃO DE PERFORMANCE:
-• Alto desempenho (+20%): {len(high_performers)} supervisores
-• Performance estável: {len(stable)} supervisores  
-• Necessitam apoio (-20%): {len(struggling)} supervisores
-• Variabilidade entre equipes: {variability:.1f}%
+- Supervisores com crescimento (+15%): {len(high_performers)}
+- Supervisores estáveis: {len(stable)}
+- Supervisores em declínio (-15%): {len(struggling)}
 """
         
         if top_supervisor:
-            prompt += f"• Top performer: {top_supervisor['supervisor']['name']} ({top_supervisor['current_week']['total_tickets']} atendimentos)\n"
-        
-        if bottom_supervisor and bottom_supervisor != top_supervisor:
-            prompt += f"• Menor volume: {bottom_supervisor['supervisor']['name']} ({bottom_supervisor['current_week']['total_tickets']} atendimentos)\n"
+            prompt += f"• Melhor performance: {top_supervisor['supervisor']['name']} ({top_supervisor['current_week']['total_tickets']} atendimentos)\n"
         
         prompt += f"""
-ESTRATÉGIAS SOLICITADAS:
+REGRAS IMPORTANTES:
+- Use APENAS os dados fornecidos acima
+- Foque em otimização de RH interno
+- NÃO invente números
 
-1. REDISTRIBUIÇÃO DE RECURSOS
-   - Como otimizar alocação entre equipes?
-   - Transferência de agentes ou responsabilidades
+RECOMENDAÇÕES ESTRATÉGICAS:
 
-2. DESENVOLVIMENTO DE EQUIPES
-   - Quais supervisores precisam de mentoria?
-   - Programas de capacitação recomendados
+1. REDISTRIBUIÇÃO DE CARGA
+   - Como balancear atendimentos entre supervisores?
+   - Transferência de responsabilidades entre equipes
 
-3. PROCESSOS E FERRAMENTAS
-   - Melhorias nos processos de atendimento
+2. CAPACITAÇÃO DE EQUIPE
+   - Supervisores que precisam de treinamento
+   - Programas de desenvolvimento interno
+
+3. OTIMIZAÇÃO DE PROCESSOS
+   - Melhorias no atendimento aos funcionários
    - Ferramentas para aumentar eficiência
 
-4. PREVENÇÃO E MONITORAMENTO
-   - Indicadores para acompanhar semanalmente
-   - Alertas antecipados de problemas
+4. MONITORAMENTO CONTÍNUO
+   - Indicadores chave para acompanhar
+   - Alertas para problemas futuros
 
-5. RECONHECIMENTO E MOTIVAÇÃO
-   - Como reconhecer boas performances?
-   - Estratégias para manter engajamento
+5. RECONHECIMENTO DE PERFORMANCE
+   - Como valorizar bons resultados
+   - Estratégias de motivação da equipe
 
-FORMATO: 5 recomendações estratégicas específicas e implementáveis.
-FOCO: Ações de médio prazo com impacto mensurável.
+FORMATO: 5 recomendações específicas e implementáveis, máximo 180 palavras.
 """
         return prompt.strip()
     
@@ -310,52 +219,112 @@ FOCO: Ações de médio prazo com impacto mensurável.
         if supervisors_analysis:
             top_performer = max(supervisors_analysis, key=lambda x: x['key_metrics']['current_tickets'])
             attention_needed = [s for s in supervisors_analysis if 
-                              abs(s['key_metrics']['change_percent']) >= 30 or 
-                              any(agent.get('needs_attention', False) for agent in s.get('agents_insights', []))]
+                              abs(s['key_metrics']['change_percent']) >= 25]
         else:
             top_performer = None
             attention_needed = []
         
         prompt = f"""
-Você é um C-level executivo preparando um briefing para a diretoria. Crie um resumo executivo conciso:
+Você é um executivo de RH preparando briefing sobre sistema interno de atendimento.
 
-PERFORMANCE SEMANAL - {period}
+CONTEXTO: AtendePro - sistema onde supervisores de RH atendem funcionários internos com questões trabalhistas e suporte corporativo.
 
-INDICADORES CHAVE:
-• Volume total: {total_tickets} atendimentos
-• Variação semanal: {change:+d} ({change_percent:+.1f}%)
-• Supervisores monitorados: {len(supervisors_analysis)}
-• Equipes requerendo atenção: {len(attention_needed)}
+DADOS EXATOS DO PERÍODO - {period}:
+- Volume total de atendimentos internos: {total_tickets}
+- Variação exata: {change:+d} ({change_percent:+.1f}%)
+- Supervisores monitorados: {len(supervisors_analysis)}
+- Equipes com variação significativa: {len(attention_needed)}
 """
         
         if top_performer:
             prompt += f"• Melhor performance: {top_performer['supervisor_name']} ({top_performer['key_metrics']['current_tickets']} atendimentos)\n"
         
         prompt += f"""
+REGRAS CRÍTICAS:
+- Use APENAS os números exatos fornecidos
+- NÃO invente dados que não existem
+- Foque em RH interno, não clientes externos
+
 RESUMO EXECUTIVO SOLICITADO:
 
 1. SITUAÇÃO ATUAL
-   - Status geral das operações
-   - Principais conquistas da semana
+   - Status do atendimento interno aos funcionários
+   - Principais resultados do período
 
 2. PONTOS DE ATENÇÃO
-   - Riscos operacionais identificados
    - Supervisores/equipes que precisam de suporte
+   - Riscos operacionais identificados
 
 3. TENDÊNCIAS OBSERVADAS
-   - Padrões emergentes
-   - Mudanças no comportamento operacional
+   - Padrões na demanda dos funcionários
+   - Mudanças no comportamento de atendimento
 
 4. DECISÕES NECESSÁRIAS
    - Ações que requerem aprovação executiva
-   - Recursos adicionais necessários
+   - Recursos adicionais para RH
 
-5. OUTLOOK PRÓXIMA SEMANA
-   - Expectativas e preparações
+5. PRÓXIMOS PASSOS
+   - Preparações para próximo período
    - Métricas para monitoramento
 
-FORMATO: Linguagem executiva, máximo 200 palavras.
-FOCO: Insights estratégicos e tomada de decisão.
+FORMATO: Linguagem executiva, máximo 160 palavras, use apenas dados reais.
+"""
+        return prompt.strip()
+    
+    @staticmethod
+    def agent_workload_analysis(agents_data: List[Dict[str, Any]], 
+                               supervisor_name: str) -> str:
+        """
+        👥 Prompt para análise de carga de trabalho dos agentes
+        """
+        if not agents_data:
+            return "Nenhum agente ativo para análise."
+        
+        total_tickets = sum(agent['current_tickets'] for agent in agents_data)
+        avg_tickets = total_tickets / len(agents_data) if agents_data else 0
+        
+        prompt = f"""
+Você é especialista em distribuição de carga de trabalho em RH.
+
+CONTEXTO: Analise equipe do supervisor {supervisor_name} que atende funcionários internos.
+
+DADOS EXATOS DA EQUIPE:
+- Total de agentes: {len(agents_data)}
+- Total de atendimentos: {total_tickets}
+- Média por agente: {avg_tickets:.1f}
+
+DISTRIBUIÇÃO REAL POR AGENTE:
+"""
+        
+        for agent in agents_data:
+            current = agent['current_tickets']
+            change = agent.get('change', 0)
+            prompt += f"• {agent['agent']['name']}: {current} atendimentos ({change:+d})\n"
+        
+        prompt += f"""
+REGRAS:
+- Use APENAS os números fornecidos
+- Foque em atendimento interno de RH
+
+ANÁLISE SOLICITADA:
+
+1. DISTRIBUIÇÃO ATUAL
+   - A carga está equilibrada entre agentes?
+   - Identifique desequilíbrios problemáticos
+
+2. IDENTIFICAÇÃO DE RISCOS
+   - Agentes sobrecarregados ou subutilizados
+   - Riscos para qualidade do atendimento
+
+3. REDISTRIBUIÇÃO SUGERIDA
+   - Como rebalancear a carga entre agentes?
+   - Critérios para redistribuição
+
+4. AÇÕES PREVENTIVAS
+   - Como manter equilíbrio futuro?
+   - Monitoramento recomendado
+
+FORMATO: Recomendações práticas, máximo 120 palavras.
 """
         return prompt.strip()
     
@@ -370,23 +339,30 @@ FOCO: Insights estratégicos e tomada de decisão.
         current_tickets = supervisor_data['current_week']['total_tickets']
         agents = supervisor_data['current_week']['agents_performance']
         
-        # Identificar anomalias
+        # Identificar anomalias reais
         anomalies = []
         
-        if abs(change_percent) >= 50:
-            anomalies.append(f"Variação extrema de {change_percent:+.1f}%")
+        if abs(change_percent) >= 40:
+            anomalies.append(f"Variação extrema de {change_percent:+.1f}% nos atendimentos")
         
         for agent in agents:
             agent_change_percent = (agent['change'] / agent['previous_tickets'] * 100) if agent['previous_tickets'] > 0 else 0
-            if abs(agent_change_percent) >= 100:
-                anomalies.append(f"{agent['agent']['name']}: mudança de {agent_change_percent:+.1f}%")
-            if agent['current_tickets'] >= 50:
-                anomalies.append(f"{agent['agent']['name']}: {agent['current_tickets']} atendimentos (possível sobrecarga)")
+            if abs(agent_change_percent) >= 75:
+                anomalies.append(f"{agent['agent']['name']}: variação de {agent_change_percent:+.1f}%")
+            if agent['current_tickets'] >= 30:
+                anomalies.append(f"{agent['agent']['name']}: {agent['current_tickets']} atendimentos (alta carga)")
         
         prompt = f"""
-Você é um analista de dados especializado em detecção de anomalias operacionais. Investigue as anomalias identificadas:
+Você é analista de dados de RH especializado em detecção de padrões atípicos.
 
-SUPERVISOR: {supervisor}
+CONTEXTO: Sistema interno onde supervisor {supervisor} atende funcionários.
+
+DADOS EXATOS:
+- Supervisor: {supervisor}
+- Atendimentos atuais: {current_tickets}
+- Variação: {change_percent:+.1f}%
+- Agentes na equipe: {len(agents)}
+
 ANOMALIAS DETECTADAS: {len(anomalies)}
 """
         
@@ -394,31 +370,29 @@ ANOMALIAS DETECTADAS: {len(anomalies)}
             prompt += f"{i}. {anomaly}\n"
         
         prompt += f"""
-CONTEXTO OPERACIONAL:
-• Atendimentos atuais: {current_tickets}
-• Variação semanal: {change_percent:+.1f}%
-• Agentes na equipe: {len(agents)}
+REGRAS:
+- Use APENAS os dados fornecidos
+- Foque em causas internas de RH
 
-INVESTIGAÇÃO REQUERIDA:
+INVESTIGAÇÃO:
 
 1. ANÁLISE DAS ANOMALIAS
-   - Quais são as possíveis causas?
-   - São eventos pontuais ou tendências?
+   - Possíveis causas internas
+   - Eventos pontuais ou tendências?
 
 2. CLASSIFICAÇÃO DE RISCO
-   - Grau de criticidade de cada anomalia
-   - Impacto potencial nas operações
+   - Criticidade para operação de RH
+   - Impacto no atendimento aos funcionários
 
 3. AÇÕES IMEDIATAS
-   - O que deve ser feito imediatamente?
+   - O que fazer agora?
    - Quem deve ser notificado?
 
 4. PREVENÇÃO FUTURA
-   - Como detectar sinais precoces?
-   - Medidas preventivas recomendadas
+   - Como detectar precocemente?
+   - Medidas preventivas
 
-FORMATO: Análise investigativa, máximo 150 palavras.
-FOCO: Identificação de causas e ações corretivas.
+FORMATO: Análise objetiva, máximo 130 palavras.
 """
         return prompt.strip()
     
@@ -428,7 +402,7 @@ FOCO: Identificação de causas e ações corretivas.
         🎨 Prompt personalizado para insights específicos
         """
         prompt = f"""
-Você é um consultor sênior de operações de atendimento. Analise a situação abaixo:
+Você é consultor sênior de RH especializado em atendimento interno.
 
 CONTEXTO: {context}
 
@@ -438,13 +412,17 @@ DADOS DISPONÍVEIS:
 PERGUNTA ESPECÍFICA:
 {question}
 
-ANÁLISE SOLICITADA:
-• Forneça uma resposta fundamentada nos dados
-• Seja específico e actionable
-• Máximo 120 palavras
-• Foco em insights práticos para gestão
+REGRAS:
+- Use APENAS dados fornecidos
+- Foque em RH interno
+- Seja específico e actionável
 
-FORMATO: Resposta direta com recomendações concretas.
+ANÁLISE:
+- Resposta fundamentada nos dados reais
+- Máximo 100 palavras
+- Recomendações práticas para gestão
+
+FORMATO: Resposta direta e concreta.
 """
         return prompt.strip()
 

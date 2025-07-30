@@ -15,7 +15,7 @@ class PromptBuilder:
     Gera prompts ultra-específicos para análise de produtividade em contabilidade
     """
     
-    @staticmethod
+    '''@staticmethod
     def global_trend_analysis(global_stats: Dict[str, Any], weekly_data: Dict[str, Any]) -> str:
         """
         🌍 Prompt para análise de tendências globais
@@ -52,15 +52,14 @@ IMPACTO: {"Supervisores com mais trabalho" if change > 0 else "Supervisores com 
 
 AÇÃO: {"Monitorar sobrecarga e treinar agentes" if change > 0 else "Verificar se agentes estão ociosos"}
 """
-        return prompt.strip()
-    
+        return prompt.strip()'''    
+
     @staticmethod
     def supervisor_performance_analysis(supervisor_data: Dict[str, Any], 
                                     weekly_data: Dict[str, Any],
                                     ranking_position: Optional[int] = None) -> str:
-        """
-        👤 Prompt ULTRA-RESTRITIVO para supervisor
-        """
+        """Análise conversacional e inteligente do supervisor"""
+        
         supervisor = supervisor_data['supervisor']['name']
         current = supervisor_data['current_week']['total_tickets']
         previous = supervisor_data['previous_week']['total_tickets']
@@ -69,30 +68,46 @@ AÇÃO: {"Monitorar sobrecarga e treinar agentes" if change > 0 else "Verificar 
         
         agents = supervisor_data['current_week']['agents_performance']
         
+        # Análise automática de padrões
+        top_agent = max(agents, key=lambda x: x['current_tickets']) if agents else None
+        concern_agents = [a for a in agents if a['change'] > 5]
+        improved_agents = [a for a in agents if a['change'] < -3]
+        
         prompt = f"""
-    VOCÊ DEVE RESPONDER EXATAMENTE NESTE FORMATO - NÃO DESVIE:
+    CONTEXTO: Empresa de contabilidade onde agentes escalam casos complexos para supervisores.
 
-    SUPERVISOR: {supervisor} prestou {current} atendimentos (anterior: {previous}). Variação: {change:+d} ({change_percent:+.1f}%).
+    DADOS OBJETIVOS DE {supervisor}:
+    - Atendimentos prestados: {current} (anterior: {previous}) 
+    - Variação: {change:+d} ({change_percent:+.1f}%)
+    - Ranking: {ranking_position if ranking_position else 'N/A'}º posição
+    - Equipe: {len(agents)} agentes
 
-    ANÁLISE: {"Supervisor com mais trabalho que antes" if change > 0 else "Supervisor com menos trabalho que antes"}.
-
-    AGENTES:
+    DESTAQUE DOS AGENTES:
     """
         
-        for agent in agents[:3]:
-            name = agent['agent']['name']
-            curr = agent['current_tickets']
-            ch = agent['change']
-            prompt += f"- {name}: {curr} atendimentos ({ch:+d})\n"
+        if top_agent:
+            top_change = top_agent['change']
+            prompt += f"• {top_agent['agent']['name']}: {top_agent['current_tickets']} casos ({top_change:+d})\n"
+        
+        for agent in agents[1:3]:  # Próximos 2 agentes
+            prompt += f"• {agent['agent']['name']}: {agent['current_tickets']} casos ({agent['change']:+d})\n"
         
         prompt += f"""
-    AÇÃO: {"Treinar agentes que mais solicitam atendimento" if any(a['current_tickets'] > 15 for a in agents) else "Monitorar evolução"}.
+    INSTRUÇÕES OBRIGATÓRIAS:
+    - NÃO mencione: férias, escola, sazonalidade, aulas, período escolar
+    - Foque APENAS em empresa de contabilidade
+    - Linguagem conversacional e profissional
+    - Máximo 70 palavras
+    - Insights acionáveis e específicos
 
-    REGRAS OBRIGATÓRIAS:
-    - NÃO mencione: férias, escola, sazonalidade, aulas
-    - Use APENAS empresa de contabilidade
-    - Máximo 50 palavras
-    - Responda EXATAMENTE no formato acima
+    GERE ANÁLISE CONVERSACIONAL:
+    Escreva como consultor experiente falando para {supervisor}:
+    - Comente a performance ({current} casos, {change:+d})
+    - Destaque agente principal e insights
+    - Sugira ação específica e prática
+    - Tom profissional mas humano
+
+    FORMATO EXEMPLO: "{supervisor}, sua equipe processou {current} casos esta semana. Destaque para [agente] que [insight específico]. Recomendo [ação concreta] para [resultado esperado]."
     """
         return prompt.strip()
     

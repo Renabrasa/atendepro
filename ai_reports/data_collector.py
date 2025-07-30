@@ -65,6 +65,12 @@ class DataCollector:
                 previous_period_start, previous_period_end
             )
             
+            # NOVO: Gerar insights inteligentes baseados nos dados coletados
+            intelligent_insights = self._generate_intelligent_insights(supervisors_data)
+            
+            # NOVO: Criar dashboard executivo para substituir análise IA problemática
+            executive_dashboard = self._create_executive_dashboard(global_stats, intelligent_insights)
+            
             # Estruturar dados finais
             analysis_data = {
                 'metadata': {
@@ -89,11 +95,16 @@ class DataCollector:
                     }
                 },
                 'supervisors_data': supervisors_data,
-                'global_stats': global_stats
+                'global_stats': global_stats,
+                # NOVOS: Campos adicionados conforme o plano de implementação
+                'intelligent_insights': intelligent_insights,
+                'executive_dashboard': executive_dashboard
             }
             
             if self.debug:
                 logger.info(f"✅ Dados coletados: {len(supervisors_data)} supervisores, {global_stats['current_week']['total_tickets']} atendimentos no período atual")
+                logger.info(f"🧠 Insights gerados: {len(intelligent_insights['performance_alerts'])} alertas, {len(intelligent_insights['concentration_patterns'])} padrões")
+                logger.info(f"📊 Dashboard executivo: {executive_dashboard['total_tickets']} atendimentos, {executive_dashboard['supervisor_count']} supervisores")
             
             return analysis_data
             
@@ -111,19 +122,19 @@ class DataCollector:
         Returns:
             Tuple com (atual_inicio, atual_fim, anterior_inicio, anterior_fim)
         """
-        # Ajustar para fim do dia da data alvo
-        end_date = target_date.replace(hour=23, minute=59, second=59, microsecond=999999)
+        reference_date = target_date - timedelta(days=1)
+        end_date = reference_date.replace(hour=23, minute=59, second=59, microsecond=999999)
         
-        # Período atual: últimos 7 dias (dia -6 até hoje)
+        # Período atual: 7 dias até ontem
         current_period_end = end_date
         current_period_start = (end_date - timedelta(days=6)).replace(hour=0, minute=0, second=0, microsecond=0)
         
-        # Período anterior: 7 dias anteriores ao período atual (dia -13 até dia -7)
+        # Período anterior: 7 dias antes do período atual
         previous_period_end = (current_period_start - timedelta(seconds=1))
         previous_period_start = (previous_period_end - timedelta(days=6)).replace(hour=0, minute=0, second=0, microsecond=0)
         
         return current_period_start, current_period_end, previous_period_start, previous_period_end
-    
+        
     def _collect_supervisors_data(self, current_start: datetime, current_end: datetime,
                                  previous_start: datetime, previous_end: datetime) -> List[Dict[str, Any]]:
         """
@@ -494,7 +505,64 @@ class DataCollector:
                 'error': str(e),
                 'timestamp': datetime.now().isoformat()
             }
+    # ADICIONAR no final da classe DataCollector:
 
+    def _generate_intelligent_insights(self, supervisors_data: List[Dict]) -> Dict[str, Any]:
+        """Gera insights automáticos baseados em padrões reais"""
+        insights = {
+            'performance_alerts': [],
+            'concentration_patterns': [],
+            'recommendations': [],
+            'ranking_summary': []
+        }
+        
+        # Detectar supervisores com variação significativa
+        for sup_data in supervisors_data:
+            name = sup_data['supervisor']['name']
+            change_percent = sup_data['comparison']['percent_change']
+            current_tickets = sup_data['current_week']['total_tickets']
+            
+            if abs(change_percent) >= 25:
+                insights['performance_alerts'].append(
+                    f"{name}: {change_percent:+.1f}% - requer atenção"
+                )
+            
+            # Analisar concentração de agentes
+            agents = sup_data['current_week']['agents_performance']
+            if agents and current_tickets > 0:
+                top_agent = max(agents, key=lambda x: x['current_tickets'])
+                concentration = (top_agent['current_tickets'] / current_tickets) * 100
+                
+                if concentration >= 35:
+                    insights['concentration_patterns'].append(
+                        f"{name}: {top_agent['agent']['name']} concentra {concentration:.0f}% dos casos"
+                    )
+        
+        # Gerar ranking automaticamente
+        sorted_supervisors = sorted(supervisors_data, 
+                                key=lambda x: x['current_week']['total_tickets'], 
+                                reverse=True)
+        
+        for i, sup in enumerate(sorted_supervisors[:3], 1):
+            change = sup['comparison']['absolute_change']
+            insights['ranking_summary'].append(
+                f"{i}º {sup['supervisor']['name']}: {sup['current_week']['total_tickets']} ({change:+d})"
+            )
+        
+        return insights
+
+    def _create_executive_dashboard(self, global_stats: Dict, insights: Dict) -> Dict[str, Any]:
+        """Cria dashboard executivo para substituir análise IA"""
+        return {
+            'total_tickets': global_stats['current_week']['total_tickets'],
+            'variation': global_stats['comparison']['absolute_change'],
+            'variation_percent': global_stats['comparison']['percent_change'],
+            'supervisor_count': global_stats['current_week']['active_supervisors'],
+            'ranking': insights['ranking_summary'],
+            'alerts': insights['performance_alerts'],
+            'patterns': insights['concentration_patterns'],
+            'recommendations': insights['recommendations']
+        }
 
 # Função de conveniência para uso externo
 def collect_weekly_data(target_date: datetime = None) -> Dict[str, Any]:

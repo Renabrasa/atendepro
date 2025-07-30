@@ -95,7 +95,7 @@ class AIAnalyzer:
                 logger.info("🧠 Iniciando análise IA dos dados semanais...")
             
             # Gerar análise global
-            global_analysis = self._analyze_global_trends(weekly_data)
+            #global_analysis = self._analyze_global_trends(weekly_data)
             
             # Gerar análise por supervisor
             supervisors_analysis = []
@@ -113,10 +113,12 @@ class AIAnalyzer:
                     'ai_model': self.model,
                     'analysis_period': weekly_data['metadata']['current_week']['period_label']
                 },
-                'global_analysis': global_analysis,
+                # REMOVER: 'global_analysis': global_analysis,
+                'executive_dashboard': weekly_data.get('executive_dashboard', {}),
+                'intelligent_insights': weekly_data.get('intelligent_insights', {}),
                 'supervisors_analysis': supervisors_analysis,
                 'strategic_recommendations': strategic_recommendations,
-                'summary': self._generate_executive_summary(weekly_data, global_analysis, supervisors_analysis)
+                'summary': self._generate_executive_summary(weekly_data, supervisors_analysis)
             }
             
             if self.debug:
@@ -458,13 +460,14 @@ Seja específico e prático. Uma recomendação por linha.
             payload = {
                 "model": self.model,
                 "prompt": prompt,
-                "system": "Você é um analista de contabilidade. NUNCA mencione férias escolares, sazonalidade ou educação. Foque APENAS em empresa de contabilidade interna. Use APENAS os dados fornecidos.",
+                "system": "Você é supervisor de contabil. NUNCA mencione férias escolares, sazonalidade ou educação. Foque APENAS em empresa de contabilidade interna. Use APENAS dados fornecidos.",
                 "stream": False,
                 "options": {
-                    "temperature": 0.05,  # Ainda mais baixo
-                    "top_p": 0.7,
-                    "max_tokens": 150,    # Ainda menor
-                    "repeat_penalty": 1.3
+                    "temperature": 0.05,      # Reduzido de 0.3 para 0.05
+                    "top_p": 0.7,            # Reduzido de 0.9 para 0.7  
+                    "max_tokens": 150,       # Reduzido de 400 para 150
+                    "repeat_penalty": 1.3,   # Aumentado de 1.1 para 1.3
+                    "stop": ["ANÁLISE:", "CONTEXTO:", "DADOS:", "INSTRUÇÕES:"]
                 }
             }
             

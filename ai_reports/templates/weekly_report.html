@@ -415,6 +415,83 @@
                 width: 100%;
             }
         }
+
+        /* Dashboard Executivo */
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+
+        .dashboard-metrics {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 25px;
+            border-radius: 12px;
+            text-align: center;
+        }
+
+        .metric-large .metric-number {
+            display: block;
+            font-size: 48px;
+            font-weight: bold;
+            line-height: 1;
+        }
+
+        .metric-large .metric-label {
+            display: block;
+            font-size: 14px;
+            opacity: 0.9;
+            margin-top: 5px;
+        }
+
+        .metric-large .metric-change {
+            display: block;
+            font-size: 18px;
+            font-weight: 600;
+            margin-top: 10px;
+        }
+
+        .dashboard-ranking, .dashboard-alerts, .dashboard-patterns {
+            background: #f8fafc;
+            padding: 20px;
+            border-radius: 8px;
+            border-left: 4px solid #3b82f6;
+        }
+
+        .ranking-list, .alerts-list, .patterns-list {
+            list-style: none;
+            padding: 0;
+            margin: 10px 0 0 0;
+        }
+
+        .ranking-list li, .alerts-list li, .patterns-list li {
+            padding: 8px 0;
+            border-bottom: 1px solid #e2e8f0;
+            font-size: 14px;
+        }
+
+        .conversational-analysis {
+            background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+            border: 1px solid #7dd3fc;
+            border-radius: 12px;
+            padding: 25px;
+        }
+
+        .consultant-message {
+            font-size: 16px;
+            line-height: 1.7;
+            color: #0c4a6e;
+            font-style: italic;
+        }
+
+        @media (max-width: 600px) {
+            .dashboard-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
     </style>
 </head>
 <body>
@@ -453,18 +530,56 @@
             </div>
         </div>
         
-        <!-- Análise IA Global -->
-        <div class="section">
+                <div class="section">
             <div class="section-header">
                 <div class="section-title">
-                    <div class="section-icon">🧠</div>
-                    Análise IA - Tendências Gerais
+                    <div class="section-icon">📊</div>
+                    Dashboard Executivo
                 </div>
-                <div class="section-description">Insights automáticos baseados em análise de dados</div>
+                <div class="section-description">Métricas automáticas do sistema</div>
             </div>
             <div class="section-content">
-                <div class="ai-analysis">
-                    <div class="ai-text">{{ global_analysis }}</div>
+                <div class="dashboard-grid">
+                    <div class="dashboard-metrics">
+                        <div class="metric-large">
+                            <span class="metric-number">{{ executive_dashboard.total_tickets }}</span>
+                            <span class="metric-label">Total de Atendimentos</span>
+                            <span class="metric-change change-{{ trend_class }}">
+                                {{ executive_dashboard.variation_percent:+.1f }}%
+                            </span>
+                        </div>
+                    </div>
+                    
+                    <div class="dashboard-ranking">
+                        <h4>🏆 Top Supervisores</h4>
+                        <ul class="ranking-list">
+                            {% for rank in executive_dashboard.ranking %}
+                            <li>{{ rank }}</li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                    
+                    {% if executive_dashboard.alerts %}
+                    <div class="dashboard-alerts">
+                        <h4>⚠️ Atenção Necessária</h4>
+                        <ul class="alerts-list">
+                            {% for alert in executive_dashboard.alerts %}
+                            <li>{{ alert }}</li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                    {% endif %}
+                    
+                    {% if executive_dashboard.patterns %}
+                    <div class="dashboard-patterns">
+                        <h4>🎯 Padrões Identificados</h4>
+                        <ul class="patterns-list">
+                            {% for pattern in executive_dashboard.patterns %}
+                            <li>{{ pattern }}</li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                    {% endif %}
                 </div>
             </div>
         </div>
@@ -506,17 +621,20 @@
         </div>
         
         <!-- Análise Específica do Supervisor -->
+        <!-- LOCALIZAR e ALTERAR: -->
         <div class="section">
             <div class="section-header">
                 <div class="section-title">
                     <div class="section-icon">👤</div>
                     Análise Personalizada
                 </div>
-                <div class="section-description">Insights específicos para sua equipe</div>
+                <div class="section-description">Insights específicos da sua equipe</div>
             </div>
             <div class="section-content">
-                <div class="ai-analysis">
-                    <div class="ai-text">{{ supervisor_analysis }}</div>
+                <div class="conversational-analysis">
+                    <div class="consultant-message">
+                        {{ supervisor_analysis }}
+                    </div>
                 </div>
             </div>
         </div>
@@ -555,7 +673,7 @@
             </div>
             
             <div class="generated-info">
-                <strong>Tecnologia:</strong> Análise gerada por Qwen 2.5 (3B) via Ollama<br>
+                <strong>Tecnologia:</strong> Análise gerada por Inteligência Artificial<br>
                 <strong>Dados:</strong> Baseado em {{ data_source_info }}<br>
                 <strong>Próximo relatório:</strong> {{ next_report_date }}
             </div>

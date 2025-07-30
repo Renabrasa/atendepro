@@ -2573,21 +2573,26 @@ def ai_reports_custom_test():
        
        # Preparar dados completos para email
        template_data = {
-           'supervisor_name': supervisor.nome,
-           'period_label': weekly_data['metadata']['current_week']['period_label'],
-           'generated_at': datetime.now().strftime('%d/%m/%Y às %H:%M'),
-           'next_report_date': proxima_segunda.strftime('%d/%m/%Y'),
-           'total_tickets': supervisor_data['current_week']['total_tickets'],
-           'change_text': f"{supervisor_data['comparison']['absolute_change']:+d} ({supervisor_data['comparison']['percent_change']:+.1f}%)",
-           'trend_class': 'positive' if supervisor_data['comparison']['absolute_change'] > 0 else 'negative' if supervisor_data['comparison']['absolute_change'] < 0 else 'neutral',
-           'agents_count': len(supervisor_data['current_week']['agents_performance']),
-           'ranking_text': f"#{ranking_position} no ranking",
-           'global_analysis': ai_analysis['global_analysis']['trend_analysis'] if 'global_analysis' in ai_analysis else 'Análise global indisponível',
-           'supervisor_analysis': supervisor_ai_analysis['performance_analysis'] if supervisor_ai_analysis else 'Análise específica indisponível',
-           'recommendations': supervisor_ai_analysis['recommendations'] if supervisor_ai_analysis else ['Monitorar performance manualmente'],
-           'agents_performance': supervisor_data['current_week']['agents_performance'][:5],  # Top 5 agentes
-           'data_source_info': f"{len(weekly_data['supervisors_data'])} supervisores, {ai_analysis['summary']['total_tickets']} atendimentos totais",
-           'ai_model': ai_analysis['metadata']['ai_model']
+            'supervisor_name': supervisor.nome,
+            'period_label': weekly_data['metadata']['current_week']['period_label'],
+            'generated_at': datetime.now().strftime('%d/%m/%Y às %H:%M'),
+            'next_report_date': proxima_segunda.strftime('%d/%m/%Y'),
+            'total_tickets': supervisor_data['current_week']['total_tickets'],
+            'change_text': f"{supervisor_data['comparison']['absolute_change']:+d} ({supervisor_data['comparison']['percent_change']:+.1f}%)",
+            'trend_class': 'positive' if supervisor_data['comparison']['absolute_change'] > 0 else 'negative' if supervisor_data['comparison']['absolute_change'] < 0 else 'neutral',
+            'agents_count': len(supervisor_data['current_week']['agents_performance']),
+            'ranking_text': f"#{ranking_position} no ranking",
+            
+            # REMOVER: 'global_analysis': ai_analysis['global_analysis']['trend_analysis'],
+            # ADICIONAR:
+            'executive_dashboard': ai_analysis.get('executive_dashboard', {}),
+            'intelligent_insights': ai_analysis.get('intelligent_insights', {}),
+            
+            'supervisor_analysis': supervisor_ai_analysis['performance_analysis'] if supervisor_ai_analysis else 'Análise específica indisponível',
+            'recommendations': supervisor_ai_analysis['recommendations'] if supervisor_ai_analysis else ['Monitorar performance manualmente'],
+            'agents_performance': supervisor_data['current_week']['agents_performance'][:5],
+            'data_source_info': f"{len(weekly_data['supervisors_data'])} supervisores, {ai_analysis['summary']['total_tickets']} atendimentos totais",
+            'ai_model': ai_analysis['metadata']['ai_model']
        }
        
        # Enviar email usando seu EmailSender

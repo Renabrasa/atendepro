@@ -230,8 +230,8 @@ class EmailSender:
         return results
     
     def _prepare_template_data(self, supervisor_data: Dict[str, Any], 
-                              ai_analysis: Dict[str, Any],
-                              weekly_data: Dict[str, Any]) -> Dict[str, Any]:
+                          ai_analysis: Dict[str, Any],
+                          weekly_data: Dict[str, Any]) -> Dict[str, Any]:
         """
         📋 Prepara dados para renderização do template
         """
@@ -303,8 +303,9 @@ class EmailSender:
             'agents_count': len(supervisor_data['current_week']['agents_performance']),
             'ranking_text': ranking_text,
             
-            # Análises IA
-            'global_analysis': ai_analysis['global_analysis']['trend_analysis'],
+            # CORRIGIDO: Usar novos campos ao invés de global_analysis
+            'executive_dashboard': ai_analysis.get('executive_dashboard', {}),
+            'intelligent_insights': ai_analysis.get('intelligent_insights', {}),
             'supervisor_analysis': supervisor_ai_analysis['performance_analysis'] if supervisor_ai_analysis else 'Análise indisponível',
             'recommendations': supervisor_ai_analysis['recommendations'] if supervisor_ai_analysis else ['Revisar dados manualmente'],
             
@@ -431,35 +432,56 @@ class EmailSender:
         total_tickets = template_data['total_tickets']
         change_text = template_data['change_text']
         
+        # Usar executive_dashboard ao invés de global_analysis
+        executive_dashboard = template_data.get('executive_dashboard', {})
+        dashboard_summary = f"Dashboard: {executive_dashboard.get('total_tickets', 0)} atendimentos totais"
+        
         text_content = f"""
-AtendePro AI - Relatório Semanal
+    AtendePro AI - Relatório Semanal
 
-Olá, {supervisor_name}!
+    Olá, {supervisor_name}!
 
-PERÍODO: {period}
+    PERÍODO: {period}
 
-RESUMO:
-• Total de atendimentos: {total_tickets}
-• Variação: {change_text}
-• Agentes ativos: {template_data['agents_count']}
-• Posição: {template_data['ranking_text']}
+    RESUMO:
+    • Total de atendimentos: {total_tickets}
+    • Variação: {change_text}
+    • Agentes ativos: {template_data['agents_count']}
+    • Posição: {template_data['ranking_text']}
 
-ANÁLISE IA:
-{template_data['global_analysis']}
+    DASHBOARD EXECUTIVO:
+    {dashboard_summary}
+    """
+        
+        # Adicionar ranking se disponível
+        ranking = executive_dashboard.get('ranking', [])
+        if ranking:
+            text_content += "\nTOP SUPERVISORES:\n"
+            for rank in ranking[:3]:
+                text_content += f"• {rank}\n"
+        
+        # Adicionar alertas se disponíveis
+        alerts = executive_dashboard.get('alerts', [])
+        if alerts:
+            text_content += "\nALERTAS:\n"
+            for alert in alerts[:3]:
+                text_content += f"⚠️ {alert}\n"
+        
+        text_content += f"""
 
-ANÁLISE ESPECÍFICA:
-{template_data['supervisor_analysis']}
+    ANÁLISE ESPECÍFICA:
+    {template_data['supervisor_analysis']}
 
-RECOMENDAÇÕES:
-"""
+    RECOMENDAÇÕES:
+    """
         
         for i, rec in enumerate(template_data['recommendations'], 1):
             text_content += f"{i}. {rec}\n"
         
         text_content += f"""
 
-AGENTES DA EQUIPE:
-"""
+    AGENTES DA EQUIPE:
+    """
         
         for agent in template_data['agents_performance']:
             status_text = "⚠️" if agent['needs_attention'] else "✅"
@@ -467,11 +489,11 @@ AGENTES DA EQUIPE:
         
         text_content += f"""
 
-Este relatório foi gerado automaticamente em {template_data['generated_at']}.
-Próximo relatório: {template_data['next_report_date']}
+    Este relatório foi gerado automaticamente em {template_data['generated_at']}.
+    Próximo relatório: {template_data['next_report_date']}
 
-AtendePro AI Reports - Gestão Inteligente de Atendimentos
-"""
+    AtendePro AI Reports - Gestão Inteligente de Atendimentos
+    """
         
         return text_content.strip()
     
@@ -502,8 +524,36 @@ AtendePro AI Reports - Gestão Inteligente de Atendimentos
                 'trend_class': 'positive',
                 'agents_count': 3,
                 'ranking_text': '#2 no ranking',
-                'global_analysis': 'Sistema apresentou crescimento saudável de 25% nesta semana. Demanda equilibrada entre equipes.',
-                'supervisor_analysis': 'Equipe demonstrou excelente performance com distribuição balanceada. Agente A se destacou positivamente.',
+                
+                # CORRIGIDO: Usar executive_dashboard ao invés de global_analysis
+                'executive_dashboard': {
+                    'total_tickets': 75,
+                    'variation': 15,
+                    'variation_percent': 25.0,
+                    'supervisor_count': 3,
+                    'ranking': [
+                        '1º Supervisor A: 30 (+8)',
+                        '2º Supervisor Teste: 25 (+5)',
+                        '3º Supervisor C: 20 (+2)'
+                    ],
+                    'alerts': [
+                        'Supervisor A: +36.4% - requer atenção'
+                    ],
+                    'patterns': [
+                        'Supervisor A: Agente X concentra 40% dos casos'
+                    ]
+                },
+                'intelligent_insights': {
+                    'performance_alerts': ['Supervisor A: +36.4% - requer atenção'],
+                    'concentration_patterns': ['Supervisor A: Agente X concentra 40% dos casos'],
+                    'ranking_summary': [
+                        '1º Supervisor A: 30 (+8)',
+                        '2º Supervisor Teste: 25 (+5)',
+                        '3º Supervisor C: 20 (+2)'
+                    ]
+                },
+                
+                'supervisor_analysis': 'Supervisor Teste, sua equipe processou 25 casos esta semana. Agente A se destaca com 12 atendimentos, demonstrando boa capacidade técnica. Recomendo manter atual distribuição para otimizar performance.',
                 'recommendations': [
                     'Manter atual distribuição de carga entre agentes',
                     'Reconhecer performance do Agente A',

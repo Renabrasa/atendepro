@@ -12,8 +12,7 @@ class PromptBuilder:
     """
     🔤 Construtor de prompts especializados para análise IA
     
-    Gera prompts otimizados para diferentes cenários de análise
-    de dados de atendimento interno de RH e performance de equipes
+    Gera prompts otimizados para análise de escalações em empresa de contabilidade
     """
     
     @staticmethod
@@ -29,41 +28,41 @@ class PromptBuilder:
         period = weekly_data['metadata']['current_week']['period_label']
         
         prompt = f"""
-Você é um analista de RH especializado em atendimento interno de funcionários.
+Você é um analista de operações de uma empresa de contabilidade.
 
-SISTEMA: AtendePro - Sistema interno onde supervisores de RH atendem solicitações de funcionários (questões trabalhistas, dúvidas, suporte interno).
+CONTEXTO DO SISTEMA:
+- AtendePro registra escalações de casos complexos para supervisores
+- Agentes atendem clientes, quando não conseguem resolver, escalam para supervisores
+- Também registra atendimentos internos (questões trabalhistas dos funcionários)
+- Cada atendimento representa um caso que exigiu conhecimento especializado
 
-DADOS EXATOS DO PERÍODO:
-- Período atual: {period}
-- Atendimentos período atual: {current_tickets}
-- Atendimentos período anterior: {previous_tickets}
-- Variação exata: {change:+d} atendimentos ({change_percent:+.1f}%)
+DADOS REAIS DO PERÍODO:
+- Período analisado: {period}
+- Total de escalações/atendimentos: {current_tickets}
+- Período anterior: {previous_tickets}
+- Variação: {change:+d} ({change_percent:+.1f}%)
 - Supervisores ativos: {active_supervisors}
-
-REGRAS IMPORTANTES:
-- Use APENAS os números fornecidos acima
-- NÃO invente ou estime números diferentes
-- Foque em atendimento INTERNO de RH, não clientes externos
 
 ANÁLISE SOLICITADA:
 
-1. INTERPRETAÇÃO DOS DADOS REAIS
-   - O que significa esta variação de {change_percent:+.1f}% no atendimento interno?
-   - É normal para um sistema de RH interno?
+1. INTERPRETAÇÃO DA VARIAÇÃO
+   - O que significa {change_percent:+.1f}% de variação nas escalações?
+   - Indica melhoria ou piora na autonomia dos agentes?
 
-2. POSSÍVEIS CAUSAS INTERNAS
-   - Fatores que afetam demanda de funcionários por suporte
-   - Sazonalidade empresarial ou eventos internos
+2. POSSÍVEIS CAUSAS
+   - Agentes precisando mais suporte técnico?
+   - Casos mais complexos surgindo?
+   - Mudanças na legislação contábil?
 
-3. IMPACTO NA EQUIPE DE RH
-   - Como essa carga afeta os supervisores?
-   - Distribuição de trabalho entre {active_supervisors} supervisores
+3. IMPACTO OPERACIONAL
+   - Como isso afeta a carga dos supervisores?
+   - Indica necessidade de treinamento dos agentes?
 
-4. RECOMENDAÇÕES PRÁTICAS
-   - Ações para otimizar atendimento interno
-   - Pontos de atenção para próximo período
+4. RECOMENDAÇÕES
+   - Ações para otimizar escalações
+   - Como melhorar autonomia dos agentes
 
-FORMATO: Máximo 150 palavras, foque apenas nos dados fornecidos.
+FORMATO: Use apenas os dados fornecidos, máximo 140 palavras, foque em contabilidade.
 """
         return prompt.strip()
     
@@ -86,51 +85,50 @@ FORMATO: Máximo 150 palavras, foque apenas nos dados fornecidos.
         ranking_text = f"(#{ranking_position} no ranking)" if ranking_position else ""
         
         prompt = f"""
-Você é um consultor de gestão de RH analisando performance de supervisor interno.
+Você é um gestor de operações de contabilidade analisando escalações de casos.
 
-CONTEXTO: {supervisor} é supervisor de RH que atende funcionários internos com questões trabalhistas, dúvidas corporativas e suporte geral.
+CONTEXTO:
+- {supervisor} é supervisor que resolve casos complexos escalados pelos agentes
+- Agentes escalam quando não conseguem resolver problemas dos clientes
+- Sistema também registra atendimentos internos (questões de funcionários)
 
-DADOS EXATOS DO SUPERVISOR:
-- Nome: {supervisor} {ranking_text}
+DADOS EXATOS:
+- Supervisor: {supervisor} {ranking_text}
 - Período: {weekly_data['metadata']['current_week']['period_label']}
-- Atendimentos atuais: {current}
-- Atendimentos anteriores: {previous}
-- Variação exata: {change:+d} ({change_percent:+.1f}%)
-- Agentes na equipe: {agents_count}
+- Escalações recebidas: {current} (anterior: {previous})
+- Variação: {change:+d} ({change_percent:+.1f}%)
+- Agentes que escalaram: {agents_count}
 
-DISTRIBUIÇÃO REAL POR AGENTE:
+ESCALAÇÕES POR AGENTE:
 """
         
         # Adicionar dados dos agentes
         for agent in agents[:5]:  # Top 5 agentes
             agent_change = agent['change']
-            prompt += f"• {agent['agent']['name']}: {agent['current_tickets']} atendimentos ({agent_change:+d} vs anterior)\n"
+            prompt += f"• {agent['agent']['name']}: {agent['current_tickets']} escalações ({agent_change:+d})\n"
         
         prompt += f"""
-REGRAS IMPORTANTES:
-- Use APENAS os números exatos fornecidos acima
-- NÃO crie números que não existem
-- Foque em atendimento INTERNO de funcionários
-
 ANÁLISE ESPECÍFICA:
 
-1. PERFORMANCE GERAL
-   - Como avaliar {current} atendimentos com variação de {change_percent:+.1f}%?
-   - Esta carga é adequada para um supervisor de RH?
+1. PERFORMANCE DO SUPERVISOR
+   - {current} escalações indica sobrecarga ou demanda normal?
+   - Variação de {change_percent:+.1f}% é preocupante?
 
-2. DISTRIBUIÇÃO DA EQUIPE
-   - A distribuição entre os {agents_count} agentes está equilibrada?
-   - Algum agente precisa de redistribuição de carga?
+2. ANÁLISE DOS AGENTES
+   - Quais agentes estão escalando mais casos?
+   - Indica necessidade de treinamento específico?
+   - Algum agente demonstrando evolução/autonomia?
 
-3. OPORTUNIDADES DE MELHORIA
-   - Como otimizar atendimento interno aos funcionários?
-   - Sugestões para melhorar eficiência da equipe
+3. DISTRIBUIÇÃO DE CARGA
+   - A distribuição entre agentes está equilibrada?
+   - Algum agente pode estar sobrecarregado ou ocioso?
 
-4. RECOMENDAÇÕES CONCRETAS
-   - Ações específicas para próxima semana
-   - Pontos de monitoramento contínuo
+4. RECOMENDAÇÕES PRÁTICAS
+   - Como reduzir escalações desnecessárias?
+   - Quais agentes precisam de suporte adicional?
+   - Ações para próxima semana
 
-FORMATO: Máximo 130 palavras, seja específico e prático.
+FORMATO: Use apenas dados fornecidos, máximo 120 palavras, foque em contabilidade.
 """
         return prompt.strip()
     
@@ -144,62 +142,60 @@ FORMATO: Máximo 130 palavras, seja específico e prático.
         
         # Análise dos supervisores
         total_supervisors = len(supervisors)
-        high_performers = [s for s in supervisors if s['comparison']['percent_change'] >= 15]
-        struggling = [s for s in supervisors if s['comparison']['percent_change'] <= -15]
-        stable = [s for s in supervisors if abs(s['comparison']['percent_change']) < 15]
+        high_load = [s for s in supervisors if s['comparison']['percent_change'] >= 20]
+        decreasing_load = [s for s in supervisors if s['comparison']['percent_change'] <= -20]
+        stable = [s for s in supervisors if abs(s['comparison']['percent_change']) < 20]
         
-        # Top performer
+        # Supervisor com mais escalações
         top_supervisor = max(supervisors, key=lambda x: x['current_week']['total_tickets']) if supervisors else None
         
         prompt = f"""
-Você é um diretor de RH analisando performance do sistema interno de atendimento.
+Você é diretor de operações de empresa de contabilidade analisando escalações.
 
-CONTEXTO: AtendePro é sistema interno onde supervisores de RH atendem funcionários com questões trabalhistas, dúvidas corporativas e suporte.
+CONTEXTO:
+- Sistema registra casos complexos escalados pelos agentes para supervisores
+- Cada escalação indica que agente não conseguiu resolver sozinho
+- Meta: reduzir escalações melhorando autonomia dos agentes
 
-DADOS REAIS DO SISTEMA:
+DADOS DO SISTEMA:
 - Período: {weekly_data['metadata']['current_week']['period_label']}
-- Total de atendimentos internos: {global_stats['current_week']['total_tickets']}
-- Variação do sistema: {global_stats['comparison']['absolute_change']:+d} ({global_stats['comparison']['percent_change']:+.1f}%)
+- Total de escalações: {global_stats['current_week']['total_tickets']}
+- Variação geral: {global_stats['comparison']['absolute_change']:+d} ({global_stats['comparison']['percent_change']:+.1f}%)
 - Supervisores ativos: {total_supervisors}
 
-DISTRIBUIÇÃO DE PERFORMANCE:
-- Supervisores com crescimento (+15%): {len(high_performers)}
-- Supervisores estáveis: {len(stable)}
-- Supervisores em declínio (-15%): {len(struggling)}
+DISTRIBUIÇÃO DE CARGA:
+- Supervisores com aumento de escalações (+20%): {len(high_load)}
+- Supervisores com carga estável: {len(stable)}
+- Supervisores com redução de escalações (-20%): {len(decreasing_load)}
 """
         
         if top_supervisor:
-            prompt += f"• Melhor performance: {top_supervisor['supervisor']['name']} ({top_supervisor['current_week']['total_tickets']} atendimentos)\n"
+            prompt += f"• Maior volume: {top_supervisor['supervisor']['name']} ({top_supervisor['current_week']['total_tickets']} escalações)\n"
         
         prompt += f"""
-REGRAS IMPORTANTES:
-- Use APENAS os dados fornecidos acima
-- Foque em otimização de RH interno
-- NÃO invente números
-
 RECOMENDAÇÕES ESTRATÉGICAS:
 
 1. REDISTRIBUIÇÃO DE CARGA
-   - Como balancear atendimentos entre supervisores?
-   - Transferência de responsabilidades entre equipes
+   - Como balancear escalações entre supervisores?
+   - Realocação de agentes entre equipes?
 
-2. CAPACITAÇÃO DE EQUIPE
-   - Supervisores que precisam de treinamento
-   - Programas de desenvolvimento interno
+2. CAPACITAÇÃO DE AGENTES
+   - Quais agentes precisam de treinamento técnico?
+   - Temas de contabilidade que geram mais escalações?
 
 3. OTIMIZAÇÃO DE PROCESSOS
-   - Melhorias no atendimento aos funcionários
-   - Ferramentas para aumentar eficiência
+   - Como reduzir escalações desnecessárias?
+   - Ferramentas para aumentar autonomia dos agentes?
 
-4. MONITORAMENTO CONTÍNUO
-   - Indicadores chave para acompanhar
-   - Alertas para problemas futuros
+4. MONITORAMENTO DE PERFORMANCE
+   - Indicadores para detectar sobrecarga precocemente?
+   - Métricas de evolução dos agentes?
 
-5. RECONHECIMENTO DE PERFORMANCE
-   - Como valorizar bons resultados
-   - Estratégias de motivação da equipe
+5. GESTÃO DE COMPLEXIDADE
+   - Como identificar casos que sempre escalam?
+   - Especialização de supervisores por tipo de problema?
 
-FORMATO: 5 recomendações específicas e implementáveis, máximo 180 palavras.
+FORMATO: 5 recomendações específicas, máximo 160 palavras, foque em contabilidade.
 """
         return prompt.strip()
     
@@ -218,56 +214,54 @@ FORMATO: 5 recomendações específicas e implementáveis, máximo 180 palavras.
         # Análise dos supervisores
         if supervisors_analysis:
             top_performer = max(supervisors_analysis, key=lambda x: x['key_metrics']['current_tickets'])
-            attention_needed = [s for s in supervisors_analysis if 
-                              abs(s['key_metrics']['change_percent']) >= 25]
+            high_variance = [s for s in supervisors_analysis if 
+                           abs(s['key_metrics']['change_percent']) >= 25]
         else:
             top_performer = None
-            attention_needed = []
+            high_variance = []
         
         prompt = f"""
-Você é um executivo de RH preparando briefing sobre sistema interno de atendimento.
+Você é executivo de empresa de contabilidade analisando escalações operacionais.
 
-CONTEXTO: AtendePro - sistema onde supervisores de RH atendem funcionários internos com questões trabalhistas e suporte corporativo.
+CONTEXTO:
+- Sistema registra casos complexos que agentes escalam para supervisores
+- Escalações indicam necessidade de conhecimento especializado
+- Meta empresarial: desenvolver autonomia dos agentes
 
-DADOS EXATOS DO PERÍODO - {period}:
-- Volume total de atendimentos internos: {total_tickets}
-- Variação exata: {change:+d} ({change_percent:+.1f}%)
+DADOS EXECUTIVOS - {period}:
+- Total de escalações: {total_tickets}
+- Variação: {change:+d} ({change_percent:+.1f}%)
 - Supervisores monitorados: {len(supervisors_analysis)}
-- Equipes com variação significativa: {len(attention_needed)}
+- Supervisores com variação alta: {len(high_variance)}
 """
         
         if top_performer:
-            prompt += f"• Melhor performance: {top_performer['supervisor_name']} ({top_performer['key_metrics']['current_tickets']} atendimentos)\n"
+            prompt += f"• Maior volume: {top_performer['supervisor_name']} ({top_performer['key_metrics']['current_tickets']} escalações)\n"
         
         prompt += f"""
-REGRAS CRÍTICAS:
-- Use APENAS os números exatos fornecidos
-- NÃO invente dados que não existem
-- Foque em RH interno, não clientes externos
+RESUMO EXECUTIVO:
 
-RESUMO EXECUTIVO SOLICITADO:
+1. STATUS OPERACIONAL
+   - Situação geral das escalações na contabilidade
+   - Impacto na produtividade dos supervisores
 
-1. SITUAÇÃO ATUAL
-   - Status do atendimento interno aos funcionários
-   - Principais resultados do período
+2. PONTOS CRÍTICOS
+   - Supervisores sobrecarregados com escalações
+   - Agentes que precisam de desenvolvimento urgente
 
-2. PONTOS DE ATENÇÃO
-   - Supervisores/equipes que precisam de suporte
-   - Riscos operacionais identificados
-
-3. TENDÊNCIAS OBSERVADAS
-   - Padrões na demanda dos funcionários
-   - Mudanças no comportamento de atendimento
+3. TENDÊNCIAS IDENTIFICADAS
+   - Padrões nas escalações (tipos de casos, complexidade)
+   - Evolução da autonomia dos agentes
 
 4. DECISÕES NECESSÁRIAS
-   - Ações que requerem aprovação executiva
-   - Recursos adicionais para RH
+   - Investimentos em treinamento
+   - Redistribuição de equipes ou especialização
 
-5. PRÓXIMOS PASSOS
-   - Preparações para próximo período
-   - Métricas para monitoramento
+5. PRÓXIMAS AÇÕES
+   - Metas para redução de escalações
+   - Plano de capacitação dos agentes
 
-FORMATO: Linguagem executiva, máximo 160 palavras, use apenas dados reais.
+FORMATO: Linguagem executiva, máximo 140 palavras, foque em resultados de contabilidade.
 """
         return prompt.strip()
     
@@ -278,53 +272,53 @@ FORMATO: Linguagem executiva, máximo 160 palavras, use apenas dados reais.
         👥 Prompt para análise de carga de trabalho dos agentes
         """
         if not agents_data:
-            return "Nenhum agente ativo para análise."
+            return "Nenhuma escalação de agente registrada."
         
         total_tickets = sum(agent['current_tickets'] for agent in agents_data)
         avg_tickets = total_tickets / len(agents_data) if agents_data else 0
         
         prompt = f"""
-Você é especialista em distribuição de carga de trabalho em RH.
+Você é gestor de equipe de contabilidade analisando escalações dos agentes.
 
-CONTEXTO: Analise equipe do supervisor {supervisor_name} que atende funcionários internos.
+CONTEXTO:
+- Agentes escalam casos complexos para supervisor {supervisor_name}
+- Escalações indicam dificuldade técnica ou casos incomuns
+- Meta: desenvolver autonomia dos agentes
 
-DADOS EXATOS DA EQUIPE:
-- Total de agentes: {len(agents_data)}
-- Total de atendimentos: {total_tickets}
+DADOS DA EQUIPE:
+- Agentes ativos: {len(agents_data)}
+- Total de escalações: {total_tickets}
 - Média por agente: {avg_tickets:.1f}
 
-DISTRIBUIÇÃO REAL POR AGENTE:
+ESCALAÇÕES POR AGENTE:
 """
         
         for agent in agents_data:
             current = agent['current_tickets']
             change = agent.get('change', 0)
-            prompt += f"• {agent['agent']['name']}: {current} atendimentos ({change:+d})\n"
+            status = "🔴" if current >= avg_tickets * 1.8 else "🟡" if current >= avg_tickets * 1.2 else "🟢"
+            prompt += f"• {status} {agent['agent']['name']}: {current} escalações ({change:+d})\n"
         
         prompt += f"""
-REGRAS:
-- Use APENAS os números fornecidos
-- Foque em atendimento interno de RH
+ANÁLISE DE DESENVOLVIMENTO:
 
-ANÁLISE SOLICITADA:
+1. AUTONOMIA DOS AGENTES
+   - Quais agentes estão evoluindo (menos escalações)?
+   - Quais agentes precisam de mais suporte técnico?
 
-1. DISTRIBUIÇÃO ATUAL
-   - A carga está equilibrada entre agentes?
-   - Identifique desequilíbrios problemáticos
+2. DISTRIBUIÇÃO DE DIFICULDADES
+   - Carga de escalações está equilibrada?
+   - Algum agente está sobrecarregando supervisores?
 
-2. IDENTIFICAÇÃO DE RISCOS
-   - Agentes sobrecarregados ou subutilizados
-   - Riscos para qualidade do atendimento
+3. OPORTUNIDADES DE TREINAMENTO
+   - Temas de contabilidade que geram mais escalações?
+   - Agentes prontos para casos mais complexos?
 
-3. REDISTRIBUIÇÃO SUGERIDA
-   - Como rebalancear a carga entre agentes?
-   - Critérios para redistribuição
+4. AÇÕES RECOMENDADAS
+   - Redistribuição de responsabilidades?
+   - Treinamentos específicos necessários?
 
-4. AÇÕES PREVENTIVAS
-   - Como manter equilíbrio futuro?
-   - Monitoramento recomendado
-
-FORMATO: Recomendações práticas, máximo 120 palavras.
+FORMATO: Recomendações práticas para contabilidade, máximo 100 palavras.
 """
         return prompt.strip()
     
@@ -339,27 +333,33 @@ FORMATO: Recomendações práticas, máximo 120 palavras.
         current_tickets = supervisor_data['current_week']['total_tickets']
         agents = supervisor_data['current_week']['agents_performance']
         
-        # Identificar anomalias reais
+        # Identificar anomalias
         anomalies = []
         
-        if abs(change_percent) >= 40:
-            anomalies.append(f"Variação extrema de {change_percent:+.1f}% nos atendimentos")
+        if abs(change_percent) >= 50:
+            anomalies.append(f"Variação extrema de {change_percent:+.1f}% nas escalações")
+        
+        if current_tickets >= 40:
+            anomalies.append(f"Volume alto: {current_tickets} escalações (possível sobrecarga)")
         
         for agent in agents:
+            if agent['current_tickets'] >= 15:
+                anomalies.append(f"{agent['agent']['name']}: {agent['current_tickets']} escalações (necessita treinamento?)")
+            
             agent_change_percent = (agent['change'] / agent['previous_tickets'] * 100) if agent['previous_tickets'] > 0 else 0
-            if abs(agent_change_percent) >= 75:
-                anomalies.append(f"{agent['agent']['name']}: variação de {agent_change_percent:+.1f}%")
-            if agent['current_tickets'] >= 30:
-                anomalies.append(f"{agent['agent']['name']}: {agent['current_tickets']} atendimentos (alta carga)")
+            if agent_change_percent >= 100:
+                anomalies.append(f"{agent['agent']['name']}: aumento de {agent_change_percent:.0f}% nas escalações")
         
         prompt = f"""
-Você é analista de dados de RH especializado em detecção de padrões atípicos.
+Você é analista de qualidade de empresa de contabilidade.
 
-CONTEXTO: Sistema interno onde supervisor {supervisor} atende funcionários.
+CONTEXTO:
+- {supervisor} recebe escalações de casos complexos dos agentes
+- Anomalias podem indicar problemas de treinamento ou sobrecarga
 
-DADOS EXATOS:
+DADOS:
 - Supervisor: {supervisor}
-- Atendimentos atuais: {current_tickets}
+- Escalações atuais: {current_tickets}
 - Variação: {change_percent:+.1f}%
 - Agentes na equipe: {len(agents)}
 
@@ -370,29 +370,26 @@ ANOMALIAS DETECTADAS: {len(anomalies)}
             prompt += f"{i}. {anomaly}\n"
         
         prompt += f"""
-REGRAS:
-- Use APENAS os dados fornecidos
-- Foque em causas internas de RH
-
 INVESTIGAÇÃO:
 
-1. ANÁLISE DAS ANOMALIAS
-   - Possíveis causas internas
-   - Eventos pontuais ou tendências?
+1. CAUSAS POSSÍVEIS
+   - Casos mais complexos aparecendo?
+   - Agentes precisando de mais treinamento?
+   - Mudanças na legislação contábil?
 
-2. CLASSIFICAÇÃO DE RISCO
-   - Criticidade para operação de RH
-   - Impacto no atendimento aos funcionários
+2. IMPACTO OPERACIONAL
+   - Risco de sobrecarga do supervisor?
+   - Qualidade do atendimento comprometida?
 
 3. AÇÕES IMEDIATAS
-   - O que fazer agora?
-   - Quem deve ser notificado?
+   - Redistribuição temporária de casos?
+   - Suporte adicional necessário?
 
-4. PREVENÇÃO FUTURA
-   - Como detectar precocemente?
-   - Medidas preventivas
+4. PREVENÇÃO
+   - Treinamentos específicos?
+   - Monitoramento mais frequente?
 
-FORMATO: Análise objetiva, máximo 130 palavras.
+FORMATO: Análise objetiva para contabilidade, máximo 110 palavras.
 """
         return prompt.strip()
     
@@ -402,27 +399,20 @@ FORMATO: Análise objetiva, máximo 130 palavras.
         🎨 Prompt personalizado para insights específicos
         """
         prompt = f"""
-Você é consultor sênior de RH especializado em atendimento interno.
+Você é consultor especializado em operações de contabilidade.
 
 CONTEXTO: {context}
 
-DADOS DISPONÍVEIS:
-{data_summary}
+DADOS: {data_summary}
 
-PERGUNTA ESPECÍFICA:
-{question}
+PERGUNTA: {question}
 
 REGRAS:
-- Use APENAS dados fornecidos
-- Foque em RH interno
-- Seja específico e actionável
+- Foque em escalações e desenvolvimento de agentes
+- Use apenas dados fornecidos
+- Contexto: empresa de contabilidade
 
-ANÁLISE:
-- Resposta fundamentada nos dados reais
-- Máximo 100 palavras
-- Recomendações práticas para gestão
-
-FORMATO: Resposta direta e concreta.
+ANÁLISE: Resposta prática, máximo 80 palavras.
 """
         return prompt.strip()
 

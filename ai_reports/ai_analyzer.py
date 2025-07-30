@@ -454,16 +454,17 @@ Seja específico e prático. Uma recomendação por linha.
             if self.debug:
                 logger.info(f"🤖 Consultando Ollama - {context}")
             
+            # Adicionar system prompt restritivo
             payload = {
                 "model": self.model,
                 "prompt": prompt,
+                "system": "Você é um analista de contabilidade. NUNCA mencione férias escolares, sazonalidade ou educação. Foque APENAS em empresa de contabilidade interna. Use APENAS os dados fornecidos.",
                 "stream": False,
                 "options": {
-                    "temperature": 0.1,        # ⬇️ Reduzido de 0.3 para 0.1 (mais determinístico)
-                    "top_p": 0.8,             # ⬇️ Reduzido de 0.9 para 0.8 (menos criativo)
-                    "max_tokens": 200,        # ⬇️ Reduzido de 400 para 200 (respostas menores)
-                    "repeat_penalty": 1.2,    # ⬆️ Aumentado de 1.1 para 1.2 (evita repetições)
-                    "stop": ["ANÁLISE:", "CONTEXTO:", "DADOS:"]  # 🆕 Para parar em certas palavras
+                    "temperature": 0.05,  # Ainda mais baixo
+                    "top_p": 0.7,
+                    "max_tokens": 150,    # Ainda menor
+                    "repeat_penalty": 1.3
                 }
             }
             

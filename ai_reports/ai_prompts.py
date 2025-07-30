@@ -56,10 +56,10 @@ AÇÃO: {"Monitorar sobrecarga e treinar agentes" if change > 0 else "Verificar 
     
     @staticmethod
     def supervisor_performance_analysis(supervisor_data: Dict[str, Any], 
-                                       weekly_data: Dict[str, Any],
-                                       ranking_position: Optional[int] = None) -> str:
+                                    weekly_data: Dict[str, Any],
+                                    ranking_position: Optional[int] = None) -> str:
         """
-        👤 Prompt para análise de performance de supervisor
+        👤 Prompt ULTRA-RESTRITIVO para supervisor
         """
         supervisor = supervisor_data['supervisor']['name']
         current = supervisor_data['current_week']['total_tickets']
@@ -69,57 +69,31 @@ AÇÃO: {"Monitorar sobrecarga e treinar agentes" if change > 0 else "Verificar 
         
         agents = supervisor_data['current_week']['agents_performance']
         
-        ranking_text = f"(#{ranking_position})" if ranking_position else ""
-        
-        # Identificar agente com maior variação
-        max_increase_agent = None
-        max_decrease_agent = None
-        max_increase = 0
-        max_decrease = 0
-        
-        for agent in agents:
-            agent_change_percent = (agent['change'] / agent['previous_tickets'] * 100) if agent['previous_tickets'] > 0 else 0
-            if agent_change_percent > max_increase:
-                max_increase = agent_change_percent
-                max_increase_agent = agent
-            if agent_change_percent < max_decrease:
-                max_decrease = agent_change_percent
-                max_decrease_agent = agent
-        
         prompt = f"""
-INSTRUÇÕES CRÍTICAS:
-- Use APENAS os dados fornecidos
-- NÃO mencione férias, escola, sazonalidade
-- Cite nomes dos agentes
-- Máximo 90 palavras
-- NÃO invente números
+    VOCÊ DEVE RESPONDER EXATAMENTE NESTE FORMATO - NÃO DESVIE:
 
-DADOS REAIS DO SUPERVISOR {supervisor} {ranking_text}:
-Atendimentos prestados: {current} (anterior: {previous})
-Variação: {change:+d} ({change_percent:+.1f}%)
+    SUPERVISOR: {supervisor} prestou {current} atendimentos (anterior: {previous}). Variação: {change:+d} ({change_percent:+.1f}%).
 
-AGENTES (atendimentos solicitados):
-"""
+    ANÁLISE: {"Supervisor com mais trabalho que antes" if change > 0 else "Supervisor com menos trabalho que antes"}.
+
+    AGENTES:
+    """
         
-        for agent in agents[:3]:  # Top 3 para economizar espaço
+        for agent in agents[:3]:
             name = agent['agent']['name']
             curr = agent['current_tickets']
-            prev = agent['previous_tickets']
             ch = agent['change']
-            percent = (ch / prev * 100) if prev > 0 else 0
-            prompt += f"{name}: {curr} (anterior: {prev}) = {ch:+d} ({percent:+.1f}%)\n"
+            prompt += f"- {name}: {curr} atendimentos ({ch:+d})\n"
         
         prompt += f"""
-ANÁLISE OBRIGATÓRIA (template fixo):
+    AÇÃO: {"Treinar agentes que mais solicitam atendimento" if any(a['current_tickets'] > 15 for a in agents) else "Monitorar evolução"}.
 
-SUPERVISOR: {supervisor} prestou {current} atendimentos ({change:+d}).
-
-AGENTE DESTAQUE: {max_increase_agent['agent']['name'] if max_increase_agent and max_increase > 20 else "Nenhum destaque significativo"} {"solicitou mais atendimentos" if max_increase_agent and max_increase > 20 else ""}.
-
-AGENTE EVOLUÇÃO: {max_decrease_agent['agent']['name'] if max_decrease_agent and max_decrease < -20 else "Nenhuma evolução significativa"} {"reduziu solicitações" if max_decrease_agent and max_decrease < -20 else ""}.
-
-RECOMENDAÇÃO: {"Treinar " + max_increase_agent['agent']['name'] if max_increase_agent and max_increase > 30 else "Monitorar evolução da equipe"}.
-"""
+    REGRAS OBRIGATÓRIAS:
+    - NÃO mencione: férias, escola, sazonalidade, aulas
+    - Use APENAS empresa de contabilidade
+    - Máximo 50 palavras
+    - Responda EXATAMENTE no formato acima
+    """
         return prompt.strip()
     
     @staticmethod

@@ -616,17 +616,69 @@ Seja específico, prático e focado em resultados mensuráveis.
             }
         }
 
-# Função helper para facilitar uso
-def analyze_autonomy_data(autonomy_data: Dict[str, Any], ollama_url: str = "http://localhost:11434") -> Dict[str, Any]:
-    """
-    Função helper para análise de dados de autonomia
-    
-    Usage:
-        from ai_reports.ai_analyzer import analyze_autonomy_data
-        analysis = analyze_autonomy_data(data)
-    """
-    analyzer = AutonomyAIAnalyzer(ollama_url)
-    return analyzer.analyze_weekly_data(autonomy_data)
+    def _aggregate_identified_gaps(self, priority_agents):
+        """Agrega gaps identificados dos agentes prioritários"""
+        gap_frequency = {}
+        all_gaps = []
+        
+        for agent in priority_agents:
+            agent_gaps = agent.get('gaps', [])
+            all_gaps.extend(agent_gaps)
+            
+            for gap in agent_gaps:
+                gap_frequency[gap] = gap_frequency.get(gap, 0) + 1
+        
+        # Retorna os gaps mais frequentes
+        sorted_gaps = sorted(gap_frequency.items(), key=lambda x: x[1], reverse=True)
+        
+        return {
+            'most_common_gaps': sorted_gaps[:5],  # Top 5 gaps
+            'total_gaps_identified': len(all_gaps),
+            'unique_gaps': len(gap_frequency),
+            'gap_distribution': gap_frequency
+        }
+
+    def _generate_training_recommendations(self, priority_agents):
+        """Gera recomendações de treinamento baseado nos agentes prioritários"""
+        if not priority_agents:
+            return ["Nenhuma recomendação específica - equipe operando normalmente"]
+        
+        recommendations = []
+        
+        # Contar gaps por tipo
+        gap_counts = {}
+        for agent in priority_agents:
+            for gap in agent.get('gaps', []):
+                gap_counts[gap] = gap_counts.get(gap, 0) + 1
+        
+        # Gerar recomendações baseadas nos gaps mais comuns
+        for gap, count in sorted(gap_counts.items(), key=lambda x: x[1], reverse=True)[:3]:
+            if count > 1:
+                recommendations.append(f"Treinamento em {gap} para {count} agentes")
+            else:
+                recommendations.append(f"Capacitação pontual em {gap}")
+        
+        # Recomendação geral se há muitos agentes críticos
+        critical_count = len([a for a in priority_agents if a.get('risk_level') == 'critical'])
+        if critical_count >= 3:
+            recommendations.append("Programa intensivo de capacitação técnica")
+        
+        return recommendations[:4]  # Máximo 4 recomendações
+        
+        
+        
+        
+    # Função helper para facilitar uso
+    def analyze_autonomy_data(autonomy_data: Dict[str, Any], ollama_url: str = "http://localhost:11434") -> Dict[str, Any]:
+        """
+        Função helper para análise de dados de autonomia
+        
+        Usage:
+            from ai_reports.ai_analyzer import analyze_autonomy_data
+            analysis = analyze_autonomy_data(data)
+        """
+        analyzer = AutonomyAIAnalyzer(ollama_url)
+        return analyzer.analyze_weekly_data(autonomy_data)
 
 if __name__ == "__main__":
     # Teste rápido

@@ -22,7 +22,7 @@ class DataCollector:
     🔍 Coletor de dados para relatórios AI
     
     Responsável por extrair dados estruturados do banco de dados
-    para alimentar a análise da IA
+    para alimentar a análise da IA com base nos últimos 15 dias
     """
     
     def __init__(self):
@@ -33,7 +33,7 @@ class DataCollector:
     
     def get_data_for_week_analysis(self, target_date: datetime = None) -> Dict[str, Any]:
         """
-        📊 Coleta dados completos para análise semanal
+        📊 Coleta dados completos para análise dos últimos 15 dias
         
         Args:
             target_date: Data de referência (padrão: hoje)
@@ -45,25 +45,24 @@ class DataCollector:
             target_date = datetime.now()
         
         try:
-            # Definir períodos da semana atual e anterior
-            current_week_start, current_week_end = self._get_week_boundaries(target_date)
-            previous_week_start = current_week_start - timedelta(days=7)
-            previous_week_end = current_week_start - timedelta(seconds=1)
+            # Nova lógica: últimos 15 dias divididos em 2 períodos de 7 dias cada
+            current_period_start, current_period_end, previous_period_start, previous_period_end = self._get_15_days_periods(target_date)
             
             if self.debug:
-                logger.info(f"📅 Analisando semana: {current_week_start.strftime('%d/%m')} até {current_week_end.strftime('%d/%m')}")
-                logger.info(f"📅 Comparando com: {previous_week_start.strftime('%d/%m')} até {previous_week_end.strftime('%d/%m')}")
+                logger.info(f"📅 Período atual: {current_period_start.strftime('%d/%m')} até {current_period_end.strftime('%d/%m')}")
+                logger.info(f"📅 Período anterior: {previous_period_start.strftime('%d/%m')} até {previous_period_end.strftime('%d/%m')}")
+                logger.info(f"📅 Total: 15 dias de análise completa")
             
             # Coletar dados por supervisor
             supervisors_data = self._collect_supervisors_data(
-                current_week_start, current_week_end,
-                previous_week_start, previous_week_end
+                current_period_start, current_period_end,
+                previous_period_start, previous_period_end
             )
             
             # Coletar dados globais
             global_stats = self._collect_global_stats(
-                current_week_start, current_week_end,
-                previous_week_start, previous_week_end
+                current_period_start, current_period_end,
+                previous_period_start, previous_period_end
             )
             
             # Estruturar dados finais
@@ -71,15 +70,22 @@ class DataCollector:
                 'metadata': {
                     'generated_at': datetime.now().isoformat(),
                     'target_date': target_date.isoformat(),
+                    'analysis_type': '15_days_comparison',
                     'current_week': {
-                        'start': current_week_start.isoformat(),
-                        'end': current_week_end.isoformat(),
-                        'period_label': f"{current_week_start.strftime('%d/%m')} a {current_week_end.strftime('%d/%m')}"
+                        'start': current_period_start.isoformat(),
+                        'end': current_period_end.isoformat(),
+                        'period_label': f"{current_period_start.strftime('%d/%m')} a {current_period_end.strftime('%d/%m')}"
                     },
                     'previous_week': {
-                        'start': previous_week_start.isoformat(),
-                        'end': previous_week_end.isoformat(),
-                        'period_label': f"{previous_week_start.strftime('%d/%m')} a {previous_week_end.strftime('%d/%m')}"
+                        'start': previous_period_start.isoformat(),
+                        'end': previous_period_end.isoformat(),
+                        'period_label': f"{previous_period_start.strftime('%d/%m')} a {previous_period_end.strftime('%d/%m')}"
+                    },
+                    'total_analysis_period': {
+                        'start': previous_period_start.isoformat(),
+                        'end': current_period_end.isoformat(),
+                        'period_label': f"Análise: {previous_period_start.strftime('%d/%m')} a {current_period_end.strftime('%d/%m')} (15 dias)",
+                        'days_analyzed': 15
                     }
                 },
                 'supervisors_data': supervisors_data,
@@ -87,7 +93,7 @@ class DataCollector:
             }
             
             if self.debug:
-                logger.info(f"✅ Dados coletados: {len(supervisors_data)} supervisores, {global_stats['current_week']['total_tickets']} atendimentos")
+                logger.info(f"✅ Dados coletados: {len(supervisors_data)} supervisores, {global_stats['current_week']['total_tickets']} atendimentos no período atual")
             
             return analysis_data
             
@@ -95,25 +101,28 @@ class DataCollector:
             logger.error(f"❌ Erro na coleta de dados: {e}")
             raise
     
-    def _get_week_boundaries(self, target_date: datetime) -> Tuple[datetime, datetime]:
+    def _get_15_days_periods(self, target_date: datetime) -> Tuple[datetime, datetime, datetime, datetime]:
         """
-        📅 Calcula início e fim da semana (Segunda a Domingo)
+        📅 Calcula os últimos 15 dias divididos em 2 períodos para comparação
         
         Args:
-            target_date: Data de referência
+            target_date: Data de referência (hoje)
             
         Returns:
-            Tuple com (início_semana, fim_semana)
+            Tuple com (atual_inicio, atual_fim, anterior_inicio, anterior_fim)
         """
-        # Calcular início da semana (segunda-feira)
-        days_since_monday = target_date.weekday()  # 0=segunda, 6=domingo
-        week_start = target_date - timedelta(days=days_since_monday)
-        week_start = week_start.replace(hour=0, minute=0, second=0, microsecond=0)
+        # Ajustar para fim do dia da data alvo
+        end_date = target_date.replace(hour=23, minute=59, second=59, microsecond=999999)
         
-        # Calcular fim da semana (domingo)
-        week_end = week_start + timedelta(days=6, hours=23, minutes=59, seconds=59)
+        # Período atual: últimos 7 dias (dia -6 até hoje)
+        current_period_end = end_date
+        current_period_start = (end_date - timedelta(days=6)).replace(hour=0, minute=0, second=0, microsecond=0)
         
-        return week_start, week_end
+        # Período anterior: 7 dias anteriores ao período atual (dia -13 até dia -7)
+        previous_period_end = (current_period_start - timedelta(seconds=1))
+        previous_period_start = (previous_period_end - timedelta(days=6)).replace(hour=0, minute=0, second=0, microsecond=0)
+        
+        return current_period_start, current_period_end, previous_period_start, previous_period_end
     
     def _collect_supervisors_data(self, current_start: datetime, current_end: datetime,
                                  previous_start: datetime, previous_end: datetime) -> List[Dict[str, Any]]:
@@ -152,13 +161,13 @@ class DataCollector:
         
         Args:
             supervisor: Objeto User do supervisor
-            current_start, current_end: Período da semana atual
-            previous_start, previous_end: Período da semana anterior
+            current_start, current_end: Período atual (últimos 7 dias)
+            previous_start, previous_end: Período anterior (7 dias anteriores)
             
         Returns:
             Dict com dados do supervisor
         """
-        # Atendimentos da semana atual
+        # Atendimentos do período atual
         current_tickets = Atendimento.query.filter(
             and_(
                 Atendimento.supervisor_id == supervisor.id,
@@ -167,7 +176,7 @@ class DataCollector:
             )
         ).all()
         
-        # Atendimentos da semana anterior
+        # Atendimentos do período anterior
         previous_tickets = Atendimento.query.filter(
             and_(
                 Atendimento.supervisor_id == supervisor.id,
@@ -176,8 +185,8 @@ class DataCollector:
             )
         ).count()
         
-        # Analisar agentes da semana atual
-        agents_analysis = self._analyze_supervisor_agents(supervisor, current_tickets)
+        # Analisar agentes do período atual
+        agents_analysis = self._analyze_supervisor_agents(supervisor, current_tickets, previous_start, previous_end)
         
         # Calcular métricas
         current_total = len(current_tickets)
@@ -196,10 +205,12 @@ class DataCollector:
             'current_week': {
                 'total_tickets': current_total,
                 'tickets_by_day': self._group_by_day(current_tickets),
-                'agents_performance': agents_analysis
+                'agents_performance': agents_analysis,
+                'period_label': f"{current_start.strftime('%d/%m')} a {current_end.strftime('%d/%m')}"
             },
             'previous_week': {
-                'total_tickets': previous_tickets
+                'total_tickets': previous_tickets,
+                'period_label': f"{previous_start.strftime('%d/%m')} a {previous_end.strftime('%d/%m')}"
             },
             'comparison': {
                 'absolute_change': change,
@@ -210,17 +221,19 @@ class DataCollector:
         }
         
         if self.debug:
-            logger.info(f"👤 {supervisor.nome}: {current_total} atendimentos ({change:+d} vs anterior)")
+            logger.info(f"👤 {supervisor.nome}: {current_total} atendimentos ({change:+d} vs período anterior)")
         
         return supervisor_data
     
-    def _analyze_supervisor_agents(self, supervisor: User, tickets: List[Atendimento]) -> List[Dict[str, Any]]:
+    def _analyze_supervisor_agents(self, supervisor: User, tickets: List[Atendimento], 
+                                  previous_start: datetime, previous_end: datetime) -> List[Dict[str, Any]]:
         """
         🧑‍💼 Analisa performance dos agentes de um supervisor
         
         Args:
             supervisor: Supervisor a analisar
-            tickets: Lista de atendimentos da semana
+            tickets: Lista de atendimentos do período atual
+            previous_start, previous_end: Período anterior para comparação
             
         Returns:
             Lista com dados de cada agente
@@ -241,8 +254,15 @@ class DataCollector:
             if not agent:
                 continue
             
-            # Contar atendimentos semana anterior para comparação
-            previous_count = self._get_agent_previous_week_count(agent_id, supervisor.id)
+            # Contar atendimentos do período anterior para comparação
+            previous_count = Atendimento.query.filter(
+                and_(
+                    Atendimento.agente_id == agent_id,
+                    Atendimento.supervisor_id == supervisor.id,
+                    Atendimento.data_hora >= previous_start,
+                    Atendimento.data_hora <= previous_end
+                )
+            ).count()
             
             current_count = len(agent_tickets)
             change = current_count - previous_count
@@ -266,32 +286,6 @@ class DataCollector:
         agents_analysis.sort(key=lambda x: x['current_tickets'], reverse=True)
         
         return agents_analysis
-    
-    def _get_agent_previous_week_count(self, agent_id: int, supervisor_id: int) -> int:
-        """
-        📊 Conta atendimentos do agente na semana anterior
-        
-        Args:
-            agent_id: ID do agente
-            supervisor_id: ID do supervisor
-            
-        Returns:
-            Número de atendimentos na semana anterior
-        """
-        # Calcular semana anterior
-        target_date = datetime.now() - timedelta(days=7)
-        prev_start, prev_end = self._get_week_boundaries(target_date)
-        
-        count = Atendimento.query.filter(
-            and_(
-                Atendimento.agente_id == agent_id,
-                Atendimento.supervisor_id == supervisor_id,
-                Atendimento.data_hora >= prev_start,
-                Atendimento.data_hora <= prev_end
-            )
-        ).count()
-        
-        return count
     
     def _group_by_day(self, tickets: List[Atendimento]) -> Dict[str, int]:
         """
@@ -318,11 +312,11 @@ class DataCollector:
     def _identify_patterns(self, current_tickets: List[Atendimento], previous_count: int,
                           agents_analysis: List[Dict]) -> List[str]:
         """
-        🔍 Identifica padrões interessantes nos dados
+        🔍 Identifica padrões interessantes nos dados dos últimos 15 dias
         
         Args:
-            current_tickets: Atendimentos da semana atual
-            previous_count: Total da semana anterior
+            current_tickets: Atendimentos do período atual
+            previous_count: Total do período anterior
             agents_analysis: Análise dos agentes
             
         Returns:
@@ -331,38 +325,44 @@ class DataCollector:
         insights = []
         current_count = len(current_tickets)
         
-        # Variação significativa
+        # Variação significativa entre períodos
         if previous_count > 0:
             change_percent = ((current_count - previous_count) / previous_count) * 100
-            if abs(change_percent) >= 30:
+            if abs(change_percent) >= 25:
                 if change_percent > 0:
-                    insights.append(f"Aumento significativo de {change_percent:.1f}% nos atendimentos")
+                    insights.append(f"Crescimento de {change_percent:.1f}% nos últimos 7 dias comparado aos 7 anteriores")
                 else:
-                    insights.append(f"Redução significativa de {abs(change_percent):.1f}% nos atendimentos")
+                    insights.append(f"Redução de {abs(change_percent):.1f}% nos últimos 7 dias comparado aos 7 anteriores")
         
         # Concentração em poucos agentes
         if len(agents_analysis) > 1:
             total_tickets = sum(agent['current_tickets'] for agent in agents_analysis)
             if total_tickets > 0:
                 top_agent_percent = (agents_analysis[0]['current_tickets'] / total_tickets) * 100
-                if top_agent_percent >= 60:
-                    insights.append(f"Concentração alta: {agents_analysis[0]['agent']['name']} responsável por {top_agent_percent:.1f}% dos atendimentos")
+                if top_agent_percent >= 50:
+                    insights.append(f"Concentração: {agents_analysis[0]['agent']['name']} responsável por {top_agent_percent:.1f}% dos atendimentos")
         
         # Agentes com mudanças atípicas
         for agent in agents_analysis:
             if agent['previous_tickets'] > 0:
                 agent_change_percent = ((agent['change'] / agent['previous_tickets']) * 100)
-                if agent_change_percent >= 50:
-                    insights.append(f"{agent['agent']['name']}: aumento atípico de {agent_change_percent:.1f}%")
-                elif agent_change_percent <= -50:
-                    insights.append(f"{agent['agent']['name']}: redução atípica de {abs(agent_change_percent):.1f}%")
+                if agent_change_percent >= 40:
+                    insights.append(f"{agent['agent']['name']}: aumento de {agent_change_percent:.1f}% nos últimos 7 dias")
+                elif agent_change_percent <= -40:
+                    insights.append(f"{agent['agent']['name']}: redução de {abs(agent_change_percent):.1f}% nos últimos 7 dias")
+        
+        # Insights sobre volume total
+        if current_count >= 50:
+            insights.append(f"Alto volume: {current_count} atendimentos nos últimos 7 dias")
+        elif current_count <= 5 and previous_count > 10:
+            insights.append(f"Volume baixo: apenas {current_count} atendimentos nos últimos 7 dias")
         
         return insights
     
     def _collect_global_stats(self, current_start: datetime, current_end: datetime,
                              previous_start: datetime, previous_end: datetime) -> Dict[str, Any]:
         """
-        🌍 Coleta estatísticas globais do sistema
+        🌍 Coleta estatísticas globais do sistema para os últimos 15 dias
         
         Returns:
             Dict com estatísticas gerais
@@ -388,7 +388,7 @@ class DataCollector:
         # Agentes ativos
         active_agents = Agente.query.filter_by(ativo=True).count()
         
-        # Top supervisor da semana
+        # Top supervisor do período atual
         top_supervisor_data = db.session.query(
             User.nome,
             func.count(Atendimento.id).label('ticket_count')
@@ -414,10 +414,12 @@ class DataCollector:
                 'total_tickets': current_total,
                 'active_supervisors': active_supervisors,
                 'active_agents': active_agents,
-                'top_supervisor': top_supervisor
+                'top_supervisor': top_supervisor,
+                'period_label': f"{current_start.strftime('%d/%m')} a {current_end.strftime('%d/%m')}"
             },
             'previous_week': {
-                'total_tickets': previous_total
+                'total_tickets': previous_total,
+                'period_label': f"{previous_start.strftime('%d/%m')} a {previous_end.strftime('%d/%m')}"
             },
             'comparison': {
                 'absolute_change': global_change,
@@ -434,7 +436,7 @@ class DataCollector:
             Dict com resultado do teste
         """
         try:
-            logger.info("🧪 Iniciando teste de coleta de dados...")
+            logger.info("🧪 Iniciando teste de coleta de dados (15 dias)...")
             
             # Contar registros básicos
             total_users = User.query.count()
@@ -442,13 +444,20 @@ class DataCollector:
             total_tickets = Atendimento.query.count()
             supervisors = User.query.filter_by(tipo='supervisor').count()
             
-            # Teste de coleta semanal (só metadata)
-            current_week_start, current_week_end = self._get_week_boundaries(datetime.now())
+            # Teste de coleta dos últimos 15 dias
+            current_start, current_end, previous_start, previous_end = self._get_15_days_periods(datetime.now())
             
-            weekly_tickets = Atendimento.query.filter(
+            current_tickets = Atendimento.query.filter(
                 and_(
-                    Atendimento.data_hora >= current_week_start,
-                    Atendimento.data_hora <= current_week_end
+                    Atendimento.data_hora >= current_start,
+                    Atendimento.data_hora <= current_end
+                )
+            ).count()
+            
+            previous_tickets = Atendimento.query.filter(
+                and_(
+                    Atendimento.data_hora >= previous_start,
+                    Atendimento.data_hora <= previous_end
                 )
             ).count()
             
@@ -461,14 +470,21 @@ class DataCollector:
                     'total_tickets': total_tickets,
                     'supervisors': supervisors
                 },
-                'current_week': {
-                    'period': f"{current_week_start.strftime('%d/%m')} a {current_week_end.strftime('%d/%m')}",
-                    'tickets': weekly_tickets
+                'analysis_periods': {
+                    'current_period': {
+                        'period': f"{current_start.strftime('%d/%m')} a {current_end.strftime('%d/%m')}",
+                        'tickets': current_tickets
+                    },
+                    'previous_period': {
+                        'period': f"{previous_start.strftime('%d/%m')} a {previous_end.strftime('%d/%m')}",
+                        'tickets': previous_tickets
+                    },
+                    'total_days_analyzed': 15
                 },
                 'database_status': 'Connected and accessible'
             }
             
-            logger.info(f"✅ Teste concluído: {supervisors} supervisores, {weekly_tickets} atendimentos esta semana")
+            logger.info(f"✅ Teste concluído: {supervisors} supervisores, {current_tickets + previous_tickets} atendimentos nos últimos 15 dias")
             return test_result
             
         except Exception as e:
@@ -483,7 +499,7 @@ class DataCollector:
 # Função de conveniência para uso externo
 def collect_weekly_data(target_date: datetime = None) -> Dict[str, Any]:
     """
-    🔧 Função utilitária para coletar dados semanais
+    🔧 Função utilitária para coletar dados dos últimos 15 dias
     
     Args:
         target_date: Data de referência (padrão: hoje)

@@ -12,7 +12,7 @@ class PromptBuilder:
     """
     🔤 Construtor de prompts especializados para análise IA
     
-    Gera prompts otimizados para análise de escalações em empresa de contabilidade
+    Gera prompts para análise de produtividade e demanda de atendimentos em contabilidade
     """
     
     @staticmethod
@@ -28,41 +28,39 @@ class PromptBuilder:
         period = weekly_data['metadata']['current_week']['period_label']
         
         prompt = f"""
-Você é um analista de operações de uma empresa de contabilidade.
+Você é um analista de produtividade de empresa de contabilidade.
 
-CONTEXTO DO SISTEMA:
-- AtendePro registra escalações de casos complexos para supervisores
-- Agentes atendem clientes, quando não conseguem resolver, escalam para supervisores
-- Também registra atendimentos internos (questões trabalhistas dos funcionários)
-- Cada atendimento representa um caso que exigiu conhecimento especializado
-
-DADOS REAIS DO PERÍODO:
-- Período analisado: {period}
-- Total de escalações/atendimentos: {current_tickets}
-- Período anterior: {previous_tickets}
-- Variação: {change:+d} ({change_percent:+.1f}%)
+DADOS REAIS DO SISTEMA:
+- Período atual: {period}
+- Total de atendimentos prestados por supervisores: {current_tickets}
+- Período anterior: {previous_tickets} atendimentos
+- Variação real: {change:+d} atendimentos ({change_percent:+.1f}%)
 - Supervisores ativos: {active_supervisors}
+
+CONTEXTO:
+- Cada atendimento = supervisor ajudou agente/funcionário com caso complexo
+- Aumento = agentes precisaram mais suporte (possível sobrecarga ou casos complexos)
+- Redução = agentes mais autônomos ou menor demanda de clientes
 
 ANÁLISE SOLICITADA:
 
-1. INTERPRETAÇÃO DA VARIAÇÃO
-   - O que significa {change_percent:+.1f}% de variação nas escalações?
-   - Indica melhoria ou piora na autonomia dos agentes?
+1. INTERPRETAÇÃO DOS NÚMEROS REAIS
+   - {change_percent:+.1f}% significa que supervisores prestaram {change:+d} atendimentos a mais/menos
+   - Indica maior/menor dependência dos agentes?
 
-2. POSSÍVEIS CAUSAS
-   - Agentes precisando mais suporte técnico?
-   - Casos mais complexos surgindo?
-   - Mudanças na legislação contábil?
+2. POSSÍVEIS CAUSAS OPERACIONAIS
+   - Se aumentou: agentes com dificuldades ou casos mais complexos?
+   - Se reduziu: agentes mais capacitados ou menor demanda?
 
-3. IMPACTO OPERACIONAL
-   - Como isso afeta a carga dos supervisores?
-   - Indica necessidade de treinamento dos agentes?
+3. IMPACTO NA PRODUTIVIDADE
+   - Como isso afeta a eficiência geral da contabilidade?
+   - Supervisores sobrecarregados ou com capacidade ociosa?
 
-4. RECOMENDAÇÕES
-   - Ações para otimizar escalações
-   - Como melhorar autonomia dos agentes
+4. RECOMENDAÇÕES PRÁTICAS
+   - Ações para otimizar a demanda de atendimentos
+   - Como equilibrar autonomia vs suporte necessário
 
-FORMATO: Use apenas os dados fornecidos, máximo 140 palavras, foque em contabilidade.
+REGRAS: Use APENAS os números fornecidos. Máximo 120 palavras. Foque em produtividade da contabilidade.
 """
         return prompt.strip()
     
@@ -85,50 +83,55 @@ FORMATO: Use apenas os dados fornecidos, máximo 140 palavras, foque em contabil
         ranking_text = f"(#{ranking_position} no ranking)" if ranking_position else ""
         
         prompt = f"""
-Você é um gestor de operações de contabilidade analisando escalações de casos.
+Você é um gestor de contabilidade analisando produtividade individual.
 
-CONTEXTO:
-- {supervisor} é supervisor que resolve casos complexos escalados pelos agentes
-- Agentes escalam quando não conseguem resolver problemas dos clientes
-- Sistema também registra atendimentos internos (questões de funcionários)
-
-DADOS EXATOS:
-- Supervisor: {supervisor} {ranking_text}
+DADOS REAIS DO SUPERVISOR {supervisor} {ranking_text}:
 - Período: {weekly_data['metadata']['current_week']['period_label']}
-- Escalações recebidas: {current} (anterior: {previous})
-- Variação: {change:+d} ({change_percent:+.1f}%)
-- Agentes que escalaram: {agents_count}
+- Atendimentos prestados agora: {current}
+- Atendimentos prestados antes: {previous}
+- Variação real: {change:+d} atendimentos ({change_percent:+.1f}%)
+- Agentes/funcionários atendidos: {agents_count}
 
-ESCALAÇÕES POR AGENTE:
+DETALHAMENTO POR AGENTE (quem mais solicitou atendimento):
 """
         
-        # Adicionar dados dos agentes
-        for agent in agents[:5]:  # Top 5 agentes
+        # Adicionar dados dos agentes com foco em variação individual
+        for i, agent in enumerate(agents[:5], 1):
+            agent_name = agent['agent']['name']
+            current_requests = agent['current_tickets']
+            previous_requests = agent['previous_tickets']
             agent_change = agent['change']
-            prompt += f"• {agent['agent']['name']}: {agent['current_tickets']} escalações ({agent_change:+d})\n"
+            
+            # Calcular porcentagem individual
+            if previous_requests > 0:
+                agent_percent = (agent_change / previous_requests) * 100
+                prompt += f"• {agent_name}: {current_requests} atendimentos (anterior: {previous_requests}) = {agent_change:+d} ({agent_percent:+.1f}%)\n"
+            else:
+                prompt += f"• {agent_name}: {current_requests} atendimentos (anterior: {previous_requests}) = {agent_change:+d}\n"
         
         prompt += f"""
-ANÁLISE ESPECÍFICA:
+ANÁLISE INDIVIDUAL SOLICITADA:
 
-1. PERFORMANCE DO SUPERVISOR
-   - {current} escalações indica sobrecarga ou demanda normal?
-   - Variação de {change_percent:+.1f}% é preocupante?
+1. PERFORMANCE DO SUPERVISOR {supervisor}
+   - {current} atendimentos prestados representa sobrecarga ou demanda normal?
+   - Variação de {change_percent:+.1f}% indica que agentes precisaram mais/menos suporte
 
-2. ANÁLISE DOS AGENTES
-   - Quais agentes estão escalando mais casos?
-   - Indica necessidade de treinamento específico?
-   - Algum agente demonstrando evolução/autonomia?
+2. ANÁLISE POR AGENTE (foque nos números acima)
+   - Qual agente mais solicitou atendimento e por quê?
+   - Quais agentes tiveram maior variação percentual?
+   - Algum agente demonstra necessidade de treinamento urgente?
 
-3. DISTRIBUIÇÃO DE CARGA
-   - A distribuição entre agentes está equilibrada?
-   - Algum agente pode estar sobrecarregado ou ocioso?
+3. IDENTIFICAÇÃO DE PADRÕES
+   - Agentes com aumento >30%: precisam capacitação?
+   - Agentes com redução >30%: estão mais autônomos ou ociosos?
+   - Distribuição equilibrada entre a equipe?
 
-4. RECOMENDAÇÕES PRÁTICAS
-   - Como reduzir escalações desnecessárias?
-   - Quais agentes precisam de suporte adicional?
+4. RECOMENDAÇÕES ESPECÍFICAS
+   - Quais agentes treinar prioritariamente?
+   - Como redistribuir demanda entre agentes?
    - Ações para próxima semana
 
-FORMATO: Use apenas dados fornecidos, máximo 120 palavras, foque em contabilidade.
+REGRAS: Use APENAS os números reais fornecidos. Cite nomes dos agentes. Máximo 110 palavras.
 """
         return prompt.strip()
     
@@ -142,60 +145,57 @@ FORMATO: Use apenas dados fornecidos, máximo 120 palavras, foque em contabilida
         
         # Análise dos supervisores
         total_supervisors = len(supervisors)
-        high_load = [s for s in supervisors if s['comparison']['percent_change'] >= 20]
-        decreasing_load = [s for s in supervisors if s['comparison']['percent_change'] <= -20]
-        stable = [s for s in supervisors if abs(s['comparison']['percent_change']) < 20]
+        overloaded = [s for s in supervisors if s['current_week']['total_tickets'] >= 50]
+        high_demand_increase = [s for s in supervisors if s['comparison']['percent_change'] >= 25]
+        demand_decrease = [s for s in supervisors if s['comparison']['percent_change'] <= -25]
         
-        # Supervisor com mais escalações
+        # Top supervisor por volume
         top_supervisor = max(supervisors, key=lambda x: x['current_week']['total_tickets']) if supervisors else None
         
         prompt = f"""
-Você é diretor de operações de empresa de contabilidade analisando escalações.
+Você é diretor de contabilidade preparando relatório para diretoria.
 
-CONTEXTO:
-- Sistema registra casos complexos escalados pelos agentes para supervisores
-- Cada escalação indica que agente não conseguiu resolver sozinho
-- Meta: reduzir escalações melhorando autonomia dos agentes
-
-DADOS DO SISTEMA:
+DADOS EXECUTIVOS REAIS:
 - Período: {weekly_data['metadata']['current_week']['period_label']}
-- Total de escalações: {global_stats['current_week']['total_tickets']}
+- Total de atendimentos prestados por supervisores: {global_stats['current_week']['total_tickets']}
 - Variação geral: {global_stats['comparison']['absolute_change']:+d} ({global_stats['comparison']['percent_change']:+.1f}%)
-- Supervisores ativos: {total_supervisors}
+- Supervisores monitorados: {total_supervisors}
 
-DISTRIBUIÇÃO DE CARGA:
-- Supervisores com aumento de escalações (+20%): {len(high_load)}
-- Supervisores com carga estável: {len(stable)}
-- Supervisores com redução de escalações (-20%): {len(decreasing_load)}
+DISTRIBUIÇÃO DE CARGA ATUAL:
+- Supervisores com alta demanda (≥50 atendimentos): {len(overloaded)}
+- Supervisores com aumento significativo (+25%): {len(high_demand_increase)}
+- Supervisores com redução significativa (-25%): {len(demand_decrease)}
 """
         
         if top_supervisor:
-            prompt += f"• Maior volume: {top_supervisor['supervisor']['name']} ({top_supervisor['current_week']['total_tickets']} escalações)\n"
+            top_change = top_supervisor['comparison']['absolute_change']
+            top_percent = top_supervisor['comparison']['percent_change']
+            prompt += f"• Maior volume: {top_supervisor['supervisor']['name']} prestou {top_supervisor['current_week']['total_tickets']} atendimentos ({top_change:+d}, {top_percent:+.1f}%)\n"
         
         prompt += f"""
-RECOMENDAÇÕES ESTRATÉGICAS:
+RECOMENDAÇÕES ESTRATÉGICAS PARA DIRETORIA:
 
-1. REDISTRIBUIÇÃO DE CARGA
-   - Como balancear escalações entre supervisores?
-   - Realocação de agentes entre equipes?
+1. GESTÃO DE PRODUTIVIDADE
+   - Como balancear demanda de atendimentos entre supervisores?
+   - Redistribuição de agentes entre equipes sobrecarregadas?
 
-2. CAPACITAÇÃO DE AGENTES
-   - Quais agentes precisam de treinamento técnico?
-   - Temas de contabilidade que geram mais escalações?
+2. CAPACITAÇÃO URGENTE
+   - Agentes que mais demandam atendimento precisam treinamento?
+   - Temas técnicos que geram mais solicitações de suporte?
 
-3. OTIMIZAÇÃO DE PROCESSOS
-   - Como reduzir escalações desnecessárias?
-   - Ferramentas para aumentar autonomia dos agentes?
+3. OTIMIZAÇÃO OPERACIONAL
+   - Como reduzir dependência dos agentes nos supervisores?
+   - Ferramentas para aumentar autonomia dos funcionários?
 
-4. MONITORAMENTO DE PERFORMANCE
-   - Indicadores para detectar sobrecarga precocemente?
-   - Métricas de evolução dos agentes?
+4. MONITORAMENTO DE EFICIÊNCIA
+   - KPIs para detectar sobrecarga de supervisores precocemente?
+   - Métricas de evolução da autonomia dos agentes?
 
-5. GESTÃO DE COMPLEXIDADE
-   - Como identificar casos que sempre escalam?
-   - Especialização de supervisores por tipo de problema?
+5. PLANEJAMENTO DE RECURSOS
+   - Necessidade de contratação ou redistribuição?
+   - Investimento em treinamento vs contratação de pessoal?
 
-FORMATO: 5 recomendações específicas, máximo 160 palavras, foque em contabilidade.
+REGRAS: Foque em decisões executivas baseadas nos números reais. Máximo 140 palavras.
 """
         return prompt.strip()
     
@@ -215,53 +215,50 @@ FORMATO: 5 recomendações específicas, máximo 160 palavras, foque em contabil
         if supervisors_analysis:
             top_performer = max(supervisors_analysis, key=lambda x: x['key_metrics']['current_tickets'])
             high_variance = [s for s in supervisors_analysis if 
-                           abs(s['key_metrics']['change_percent']) >= 25]
+                           abs(s['key_metrics']['change_percent']) >= 30]
         else:
             top_performer = None
             high_variance = []
         
         prompt = f"""
-Você é executivo de empresa de contabilidade analisando escalações operacionais.
+Você é CEO/diretor apresentando resultados para conselho administrativo.
 
-CONTEXTO:
-- Sistema registra casos complexos que agentes escalam para supervisores
-- Escalações indicam necessidade de conhecimento especializado
-- Meta empresarial: desenvolver autonomia dos agentes
+RESUMO EXECUTIVO - PRODUTIVIDADE CONTÁBIL ({period}):
 
-DADOS EXECUTIVOS - {period}:
-- Total de escalações: {total_tickets}
-- Variação: {change:+d} ({change_percent:+.1f}%)
+NÚMEROS PRINCIPAIS:
+- Total de atendimentos prestados: {total_tickets}
+- Variação operacional: {change:+d} ({change_percent:+.1f}%)
 - Supervisores monitorados: {len(supervisors_analysis)}
-- Supervisores com variação alta: {len(high_variance)}
+- Situações que requerem atenção: {len(high_variance)}
 """
         
         if top_performer:
-            prompt += f"• Maior volume: {top_performer['supervisor_name']} ({top_performer['key_metrics']['current_tickets']} escalações)\n"
+            prompt += f"• Supervisor com maior demanda: {top_performer['supervisor_name']} ({top_performer['key_metrics']['current_tickets']} atendimentos)\n"
         
         prompt += f"""
-RESUMO EXECUTIVO:
+APRESENTAÇÃO PARA CONSELHO:
 
-1. STATUS OPERACIONAL
-   - Situação geral das escalações na contabilidade
-   - Impacto na produtividade dos supervisores
+1. SITUAÇÃO OPERACIONAL
+   - Status da produtividade na contabilidade
+   - Eficiência dos supervisores vs demanda dos agentes
 
 2. PONTOS CRÍTICOS
-   - Supervisores sobrecarregados com escalações
-   - Agentes que precisam de desenvolvimento urgente
+   - Supervisores sobrecarregados que impactam produtividade
+   - Agentes com alta dependência (precisam desenvolvimento urgente)
 
-3. TENDÊNCIAS IDENTIFICADAS
-   - Padrões nas escalações (tipos de casos, complexidade)
-   - Evolução da autonomia dos agentes
+3. TENDÊNCIAS OBSERVADAS
+   - Padrões na demanda por suporte técnico
+   - Evolução da autonomia dos funcionários
 
-4. DECISÕES NECESSÁRIAS
-   - Investimentos em treinamento
-   - Redistribuição de equipes ou especialização
+4. DECISÕES ESTRATÉGICAS
+   - Investimentos necessários em capacitação
+   - Necessidade de contratação ou redistribuição
 
-5. PRÓXIMAS AÇÕES
-   - Metas para redução de escalações
-   - Plano de capacitação dos agentes
+5. METAS PRÓXIMO PERÍODO
+   - Objetivos de redução da dependência
+   - KPIs para monitorar eficiência
 
-FORMATO: Linguagem executiva, máximo 140 palavras, foque em resultados de contabilidade.
+REGRAS: Linguagem executiva para conselho. Use apenas números reais. Máximo 120 palavras.
 """
         return prompt.strip()
     
@@ -269,56 +266,55 @@ FORMATO: Linguagem executiva, máximo 140 palavras, foque em resultados de conta
     def agent_workload_analysis(agents_data: List[Dict[str, Any]], 
                                supervisor_name: str) -> str:
         """
-        👥 Prompt para análise de carga de trabalho dos agentes
+        👥 Prompt para análise detalhada dos agentes
         """
         if not agents_data:
-            return "Nenhuma escalação de agente registrada."
+            return "Nenhum atendimento registrado para agentes."
         
         total_tickets = sum(agent['current_tickets'] for agent in agents_data)
-        avg_tickets = total_tickets / len(agents_data) if agents_data else 0
         
         prompt = f"""
-Você é gestor de equipe de contabilidade analisando escalações dos agentes.
+Você é coordenador de RH analisando produtividade individual dos agentes.
 
-CONTEXTO:
-- Agentes escalam casos complexos para supervisor {supervisor_name}
-- Escalações indicam dificuldade técnica ou casos incomuns
-- Meta: desenvolver autonomia dos agentes
+ANÁLISE DA EQUIPE DO SUPERVISOR {supervisor_name}:
+- Total de agentes: {len(agents_data)}
+- Total de atendimentos solicitados: {total_tickets}
 
-DADOS DA EQUIPE:
-- Agentes ativos: {len(agents_data)}
-- Total de escalações: {total_tickets}
-- Média por agente: {avg_tickets:.1f}
-
-ESCALAÇÕES POR AGENTE:
+PERFORMANCE INDIVIDUAL (comparação semanal):
 """
         
         for agent in agents_data:
+            name = agent['agent']['name']
             current = agent['current_tickets']
+            previous = agent['previous_tickets']
             change = agent.get('change', 0)
-            status = "🔴" if current >= avg_tickets * 1.8 else "🟡" if current >= avg_tickets * 1.2 else "🟢"
-            prompt += f"• {status} {agent['agent']['name']}: {current} escalações ({change:+d})\n"
+            
+            if previous > 0:
+                percent_change = (change / previous) * 100
+                prompt += f"• {name}: {current} atendimentos (anterior: {previous}) = {change:+d} ({percent_change:+.1f}%)\n"
+            else:
+                prompt += f"• {name}: {current} atendimentos (anterior: {previous}) = {change:+d}\n"
         
         prompt += f"""
-ANÁLISE DE DESENVOLVIMENTO:
+ANÁLISE INDIVIDUAL SOLICITADA:
 
-1. AUTONOMIA DOS AGENTES
-   - Quais agentes estão evoluindo (menos escalações)?
-   - Quais agentes precisam de mais suporte técnico?
+1. IDENTIFICAÇÃO DE NECESSIDADES
+   - Quais agentes tiveram maior aumento percentual (precisam treinamento)?
+   - Quais agentes tiveram redução significativa (mais autônomos ou ociosos)?
 
-2. DISTRIBUIÇÃO DE DIFICULDADES
-   - Carga de escalações está equilibrada?
-   - Algum agente está sobrecarregando supervisores?
+2. DISTRIBUIÇÃO DE PRODUTIVIDADE
+   - A demanda está concentrada em poucos agentes?
+   - Algum agente demonstra sobrecarga de trabalho?
 
-3. OPORTUNIDADES DE TREINAMENTO
-   - Temas de contabilidade que geram mais escalações?
-   - Agentes prontos para casos mais complexos?
+3. OPORTUNIDADES DE DESENVOLVIMENTO
+   - Agentes prontos para assumir casos mais complexos?
+   - Necessidades específicas de capacitação técnica?
 
-4. AÇÕES RECOMENDADAS
-   - Redistribuição de responsabilidades?
-   - Treinamentos específicos necessários?
+4. RECOMENDAÇÕES PRÁTICAS
+   - Redistribuição de responsabilidades entre agentes?
+   - Plano de treinamento individualizado?
 
-FORMATO: Recomendações práticas para contabilidade, máximo 100 palavras.
+REGRAS: Cite nomes dos agentes nos insights. Use números reais. Máximo 90 palavras.
 """
         return prompt.strip()
     
@@ -333,35 +329,24 @@ FORMATO: Recomendações práticas para contabilidade, máximo 100 palavras.
         current_tickets = supervisor_data['current_week']['total_tickets']
         agents = supervisor_data['current_week']['agents_performance']
         
-        # Identificar anomalias
+        # Identificar anomalias reais
         anomalies = []
         
-        if abs(change_percent) >= 50:
-            anomalies.append(f"Variação extrema de {change_percent:+.1f}% nas escalações")
+        if abs(change_percent) >= 60:
+            anomalies.append(f"Supervisor {supervisor}: variação extrema de {change_percent:+.1f}% nos atendimentos")
         
-        if current_tickets >= 40:
-            anomalies.append(f"Volume alto: {current_tickets} escalações (possível sobrecarga)")
+        if current_tickets >= 60:
+            anomalies.append(f"Supervisor {supervisor}: volume muito alto ({current_tickets} atendimentos)")
         
         for agent in agents:
-            if agent['current_tickets'] >= 15:
-                anomalies.append(f"{agent['agent']['name']}: {agent['current_tickets']} escalações (necessita treinamento?)")
-            
             agent_change_percent = (agent['change'] / agent['previous_tickets'] * 100) if agent['previous_tickets'] > 0 else 0
-            if agent_change_percent >= 100:
-                anomalies.append(f"{agent['agent']['name']}: aumento de {agent_change_percent:.0f}% nas escalações")
+            if abs(agent_change_percent) >= 100:
+                anomalies.append(f"Agente {agent['agent']['name']}: variação de {agent_change_percent:+.1f}% nos atendimentos")
+            if agent['current_tickets'] >= 25:
+                anomalies.append(f"Agente {agent['agent']['name']}: {agent['current_tickets']} atendimentos (possível sobrecarga)")
         
         prompt = f"""
-Você é analista de qualidade de empresa de contabilidade.
-
-CONTEXTO:
-- {supervisor} recebe escalações de casos complexos dos agentes
-- Anomalias podem indicar problemas de treinamento ou sobrecarga
-
-DADOS:
-- Supervisor: {supervisor}
-- Escalações atuais: {current_tickets}
-- Variação: {change_percent:+.1f}%
-- Agentes na equipe: {len(agents)}
+Você é analista de qualidade investigando padrões atípicos na produtividade.
 
 ANOMALIAS DETECTADAS: {len(anomalies)}
 """
@@ -370,26 +355,29 @@ ANOMALIAS DETECTADAS: {len(anomalies)}
             prompt += f"{i}. {anomaly}\n"
         
         prompt += f"""
-INVESTIGAÇÃO:
+INVESTIGAÇÃO NECESSÁRIA:
 
-1. CAUSAS POSSÍVEIS
-   - Casos mais complexos aparecendo?
-   - Agentes precisando de mais treinamento?
-   - Mudanças na legislação contábil?
+1. CAUSAS PROVÁVEIS
+   - Picos de demanda de clientes específicos?
+   - Agentes enfrentando dificuldades técnicas incomuns?
+   - Mudanças nos processos que afetaram produtividade?
 
 2. IMPACTO OPERACIONAL
-   - Risco de sobrecarga do supervisor?
-   - Qualidade do atendimento comprometida?
+   - Risco de burnout ou sobrecarga?
+   - Qualidade dos atendimentos comprometida?
+   - Gargalos na operação?
 
-3. AÇÕES IMEDIATAS
-   - Redistribuição temporária de casos?
-   - Suporte adicional necessário?
+3. AÇÕES CORRETIVAS IMEDIATAS
+   - Redistribuição emergencial de carga?
+   - Suporte adicional urgente?
+   - Pausar novos casos complexos?
 
-4. PREVENÇÃO
-   - Treinamentos específicos?
+4. PREVENÇÃO FUTURA
    - Monitoramento mais frequente?
+   - Ajustes nos processos de distribuição?
+   - Treinamentos preventivos?
 
-FORMATO: Análise objetiva para contabilidade, máximo 110 palavras.
+REGRAS: Foque em causas operacionais reais. Máximo 100 palavras.
 """
         return prompt.strip()
     
@@ -399,20 +387,13 @@ FORMATO: Análise objetiva para contabilidade, máximo 110 palavras.
         🎨 Prompt personalizado para insights específicos
         """
         prompt = f"""
-Você é consultor especializado em operações de contabilidade.
+Você é consultor de produtividade em contabilidade.
 
 CONTEXTO: {context}
-
 DADOS: {data_summary}
-
 PERGUNTA: {question}
 
-REGRAS:
-- Foque em escalações e desenvolvimento de agentes
-- Use apenas dados fornecidos
-- Contexto: empresa de contabilidade
-
-ANÁLISE: Resposta prática, máximo 80 palavras.
+ANÁLISE: Resposta baseada em números reais, máximo 70 palavras, foque em produtividade.
 """
         return prompt.strip()
 

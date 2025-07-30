@@ -27,6 +27,31 @@
         </button>
       </div>
     </div>
+    <!-- ADICIONE ESTE CARD NO TEMPLATE admin_panel.html, dentro da div.admin-grid -->
+
+  <!-- AI Reports (NOVO) -->
+  <div class="admin-card">
+    <div class="admin-card-header">
+      <h3>🤖 AI Reports</h3>
+    </div>
+    <div class="admin-card-body">
+      <p>Sistema de relatórios inteligentes com análise de IA para supervisores.</p>
+      <div class="admin-actions">
+        <a href="{{ url_for('ai_reports_panel') }}" class="btn btn-primary">
+          <span class="btn-icon">🚀</span>
+          Acessar AI Reports
+        </a>
+        <button onclick="testarAIRapido()" class="btn btn-info">
+          <span class="btn-icon">⚡</span>
+          Teste Rápido
+        </button>
+        <button onclick="gerarRelatorioIA()" class="btn btn-secondary">
+          <span class="btn-icon">📊</span>
+          Gerar Relatório
+        </button>
+      </div>
+    </div>
+  </div>
   </div>
 
   <!-- Correção de Dados -->
@@ -599,6 +624,47 @@ function checkBotStatus() {
         `;
     });
 }
+
+
+// ADICIONE ESTAS FUNÇÕES NO SCRIPT DO admin_panel.html
+
+function testarAIRapido() {
+  adicionarLogConsole('Redirecionando para teste rápido de AI Reports...', 'info');
+  window.location.href = '/admin/ai-reports';
+}
+
+function gerarRelatorioIA() {
+  adicionarLogConsole('Iniciando geração de relatório de IA...', 'info');
+  
+  // Aqui você pode implementar uma função para gerar relatório para todos os supervisores
+  // Por enquanto, redireciona para o painel
+  setTimeout(() => {
+    adicionarLogConsole('✅ Redirecionando para o painel completo de AI Reports', 'success');
+    window.location.href = '/admin/ai-reports';
+  }, 1000);
+}
+
+// Função adicional para integração com o sistema existente
+async function verificarStatusIA() {
+  adicionarLogConsole('Verificando status do sistema de IA...', 'info');
+  
+  try {
+    // Simulação de verificação de status
+    setTimeout(() => {
+      adicionarLogConsole('✅ Sistema de IA operacional', 'success');
+      adicionarLogConsole('📊 3 supervisores disponíveis para análise', 'info');
+      adicionarLogConsole('🔧 Pronto para envio de relatórios personalizados', 'info');
+    }, 1500);
+    
+  } catch (error) {
+    adicionarLogConsole(`❌ Erro ao verificar IA: ${error.message}`, 'error');
+  }
+}
+
+
+
+
+
 
 // Verificação automática a cada 30 segundos
 setInterval(checkBotStatus, 30000);

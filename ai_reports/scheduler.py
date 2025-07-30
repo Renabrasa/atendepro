@@ -10,7 +10,7 @@ import threading
 import logging
 from datetime import datetime, timedelta
 import pytz
-from typing import Dict, Any, Optional, Callable
+from typing import Dict, Any, Optional, Callable, List
 import signal
 import sys
 

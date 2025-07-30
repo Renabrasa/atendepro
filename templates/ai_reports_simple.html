@@ -1,0 +1,540 @@
+{% extends 'base.html' %}
+{% block title %}AI Reports - Teste Customizável{% endblock %}
+{% block content %}
+
+<div class="ai-reports-container">
+  <header class="ai-header">
+    <h1>🤖 AI Reports - Sistema de Teste</h1>
+    <p>Gere relatórios de IA para supervisores específicos</p>
+    <a href="{{ url_for('admin_panel') }}" class="btn btn-secondary">↩️ Voltar ao Admin</a>
+  </header>
+
+  <!-- Status do Sistema -->
+  <div class="status-card">
+    <h3>📊 Status do Sistema</h3>
+    <div class="status-grid">
+      <div class="status-item">
+        <span class="status-label">Supervisores:</span>
+        <span class="status-value">{{ supervisors_count or 0 }}</span>
+      </div>
+      <div class="status-item">
+        <span class="status-label">Sistema:</span>
+        <span class="status-value">
+          {% if advanced_system %}
+          🟢 Avançado
+          {% else %}
+          🟡 Básico
+          {% endif %}
+        </span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Card de Teste Customizável -->
+  <div class="test-card">
+    <div class="test-header">
+      <h2>🧪 Teste Customizável</h2>
+      <p>Selecione um supervisor e email para receber o relatório</p>
+    </div>
+
+    <form id="aiTestForm" class="test-form">
+      <!-- Seleção de Supervisor -->
+      <div class="form-group">
+        <label for="supervisor_id" class="form-label">
+          👤 Supervisor para Análise
+          <span class="required">*</span>
+        </label>
+        <select id="supervisor_id" name="supervisor_id" required class="form-select">
+          <option value="">Selecione um supervisor...</option>
+          {% for supervisor in supervisores %}
+          <option value="{{ supervisor.id }}">
+            {{ supervisor.nome }} 
+            {% if supervisor.tipo == 'coordenadora' %}(Coordenadora){% endif %}
+          </option>
+          {% endfor %}
+        </select>
+        <div class="help-text">Escolha o supervisor cujos dados serão analisados</div>
+        <div class="error-message" id="supervisor-error">Selecione um supervisor</div>
+      </div>
+
+      <!-- Email de Teste -->
+      <div class="form-group">
+        <label for="email_teste" class="form-label">
+          📧 Email para Teste
+          <span class="required">*</span>
+        </label>
+        <input type="email" id="email_teste" name="email_teste" required class="form-input"
+               placeholder="renato@servidornanuvem.com.br">
+        <div class="help-text">Email que receberá o relatório de teste</div>
+        <div class="error-message" id="email-error">Email válido é obrigatório</div>
+      </div>
+
+      <!-- Botões de Ação -->
+      <div class="action-buttons">
+        <button type="button" id="previewBtn" class="btn btn-info">
+          👀 Preview dos Dados
+        </button>
+        <button type="submit" id="sendBtn" class="btn btn-primary">
+          🚀 Enviar Relatório
+        </button>
+      </div>
+    </form>
+  </div>
+
+  <!-- Preview Card -->
+  <div class="preview-card" id="previewCard" style="display: none;">
+    <div class="preview-header">
+      <h3>📊 Preview dos Dados</h3>
+      <button type="button" onclick="hidePreview()" class="btn-close">✕</button>
+    </div>
+    <div class="preview-content" id="previewContent">
+      <!-- Conteúdo será inserido via JavaScript -->
+    </div>
+  </div>
+
+  <!-- Console de Resultados -->
+  <div class="console-card">
+    <div class="console-header">
+      <h3>💻 Console de Resultados</h3>
+      <button onclick="clearConsole()" class="btn btn-sm btn-secondary">🧹 Limpar</button>
+    </div>
+    <div class="console-content" id="aiConsole">
+      <div class="console-line">Sistema AI Reports pronto para testes...</div>
+    </div>
+  </div>
+</div>
+
+<style>
+/* Estilos limpos para AI Reports */
+.ai-reports-container {
+  max-width: 1000px;
+  margin: 0 auto;
+  padding: 20px;
+}
+
+.ai-header {
+  text-align: center;
+  margin-bottom: 30px;
+  padding: 20px;
+  background: linear-gradient(135deg, #667eea, #764ba2);
+  color: white;
+  border-radius: 12px;
+}
+
+.ai-header h1 {
+  margin: 0 0 8px 0;
+  font-size: 1.8em;
+}
+
+.ai-header p {
+  margin: 0 0 16px 0;
+  opacity: 0.9;
+}
+
+/* Cards */
+.status-card, .test-card, .preview-card, .console-card {
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  border: 1px solid #e1e5e9;
+  margin-bottom: 24px;
+  overflow: hidden;
+}
+
+.status-card {
+  padding: 20px;
+  background: #f8f9fa;
+}
+
+.status-card h3 {
+  margin: 0 0 16px 0;
+  color: #2c3e50;
+}
+
+.status-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 16px;
+}
+
+.status-item {
+  display: flex;
+  justify-content: space-between;
+  padding: 12px;
+  background: white;
+  border-radius: 8px;
+  border: 1px solid #e1e5e9;
+}
+
+.status-label {
+  font-weight: 600;
+  color: #6c757d;
+}
+
+.status-value {
+  font-weight: bold;
+  color: #2c3e50;
+}
+
+.test-header {
+  background: linear-gradient(135deg, #36d1dc, #5b86e5);
+  color: white;
+  padding: 20px;
+}
+
+.test-header h2 {
+  margin: 0 0 8px 0;
+}
+
+.test-header p {
+  margin: 0;
+  opacity: 0.9;
+}
+
+.test-form {
+  padding: 24px;
+}
+
+.form-group {
+  margin-bottom: 24px;
+}
+
+.form-label {
+  display: block;
+  font-weight: 600;
+  color: #2c3e50;
+  margin-bottom: 8px;
+}
+
+.required {
+  color: #e74c3c;
+}
+
+.form-select, .form-input {
+  width: 100%;
+  padding: 12px 16px;
+  border: 2px solid #e1e5e9;
+  border-radius: 8px;
+  font-size: 0.95em;
+  transition: border-color 0.3s ease;
+}
+
+.form-select:focus, .form-input:focus {
+  outline: none;
+  border-color: #667eea;
+  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+}
+
+.form-group.error .form-select,
+.form-group.error .form-input {
+  border-color: #e74c3c;
+}
+
+.help-text {
+  font-size: 0.85em;
+  color: #6c757d;
+  margin-top: 6px;
+}
+
+.error-message {
+  display: none;
+  color: #e74c3c;
+  font-size: 0.85em;
+  margin-top: 6px;
+}
+
+.form-group.error .error-message {
+  display: block;
+}
+
+.action-buttons {
+  display: flex;
+  gap: 12px;
+  justify-content: flex-end;
+  margin-top: 32px;
+}
+
+.btn {
+  padding: 12px 24px;
+  border: none;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.btn-primary {
+  background: linear-gradient(135deg, #667eea, #764ba2);
+  color: white;
+}
+
+.btn-primary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(102, 126, 234, 0.3);
+}
+
+.btn-info {
+  background: linear-gradient(135deg, #36d1dc, #5b86e5);
+  color: white;
+}
+
+.btn-info:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(54, 209, 220, 0.3);
+}
+
+.btn-secondary {
+  background: #6c757d;
+  color: white;
+  text-decoration: none;
+}
+
+.btn-secondary:hover {
+  background: #545b62;
+  text-decoration: none;
+  color: white;
+}
+
+.btn.loading {
+  opacity: 0.7;
+  cursor: not-allowed;
+  transform: none !important;
+}
+
+/* Preview */
+.preview-header {
+  background: linear-gradient(135deg, #f093fb, #f5576c);
+  color: white;
+  padding: 16px 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.btn-close {
+  background: rgba(255, 255, 255, 0.2);
+  border: none;
+  color: white;
+  padding: 8px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.preview-content {
+  padding: 20px;
+  background: #f8f9fa;
+}
+
+/* Console */
+.console-header {
+  background: linear-gradient(135deg, #2c3e50, #34495e);
+  color: white;
+  padding: 16px 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.console-content {
+  background: #1e1e1e;
+  color: #00ff00;
+  font-family: 'Courier New', monospace;
+  padding: 16px;
+  height: 200px;
+  overflow-y: auto;
+  font-size: 0.85em;
+}
+
+.console-line {
+  margin-bottom: 4px;
+}
+
+.console-line.success {
+  color: #00ff00;
+}
+
+.console-line.error {
+  color: #ff6b6b;
+}
+
+.console-line.info {
+  color: #74b9ff;
+}
+
+/* Responsividade */
+@media (max-width: 768px) {
+  .action-buttons {
+    flex-direction: column;
+  }
+  
+  .status-grid {
+    grid-template-columns: 1fr;
+  }
+}
+</style>
+
+<script>
+// JavaScript para AI Reports
+document.addEventListener('DOMContentLoaded', function() {
+  const form = document.getElementById('aiTestForm');
+  const supervisorSelect = document.getElementById('supervisor_id');
+  const emailInput = document.getElementById('email_teste');
+  const previewBtn = document.getElementById('previewBtn');
+  const sendBtn = document.getElementById('sendBtn');
+
+  // Validação
+  function validateField(field, errorId, condition, message) {
+    const errorElement = document.getElementById(errorId);
+    const formGroup = field.closest('.form-group');
+    
+    if (condition) {
+      formGroup.classList.remove('error');
+      return true;
+    } else {
+      formGroup.classList.add('error');
+      errorElement.textContent = message;
+      return false;
+    }
+  }
+
+  // Preview
+  previewBtn.addEventListener('click', async function() {
+    if (!supervisorSelect.value) {
+      alert('Selecione um supervisor primeiro');
+      return;
+    }
+
+    addConsoleLog('Gerando preview...', 'info');
+    previewBtn.classList.add('loading');
+    previewBtn.textContent = '⏳ Gerando...';
+
+    try {
+      const response = await fetch(`/admin/ai-reports/preview/${supervisorSelect.value}`);
+      const data = await response.json();
+
+      if (data.success) {
+        showPreview(data.data);
+        addConsoleLog('✅ Preview gerado', 'success');
+      } else {
+        addConsoleLog(`❌ Erro: ${data.error}`, 'error');
+      }
+    } catch (error) {
+      addConsoleLog(`❌ Erro: ${error.message}`, 'error');
+    } finally {
+      previewBtn.classList.remove('loading');
+      previewBtn.textContent = '👀 Preview dos Dados';
+    }
+  });
+
+  // Envio
+  form.addEventListener('submit', async function(e) {
+    e.preventDefault();
+
+    // Validações
+    let isValid = true;
+    
+    if (!validateField(supervisorSelect, 'supervisor-error', supervisorSelect.value !== '', 'Selecione um supervisor')) {
+      isValid = false;
+    }
+    
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!validateField(emailInput, 'email-error', emailRegex.test(emailInput.value), 'Digite um email válido')) {
+      isValid = false;
+    }
+
+    if (!isValid) return;
+
+    addConsoleLog('Enviando teste...', 'info');
+    sendBtn.classList.add('loading');
+    sendBtn.textContent = '📤 Enviando...';
+
+    try {
+      const response = await fetch('/admin/ai-reports/custom-test', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          supervisor_id: supervisorSelect.value,
+          email_teste: emailInput.value
+        })
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        addConsoleLog(data.message, 'success');
+        form.reset();
+      } else {
+        addConsoleLog(`❌ Erro: ${data.error}`, 'error');
+      }
+    } catch (error) {
+      addConsoleLog(`❌ Erro: ${error.message}`, 'error');
+    } finally {
+      sendBtn.classList.remove('loading');
+      sendBtn.textContent = '🚀 Enviar Relatório';
+    }
+  });
+});
+
+// Funções utilitárias
+function showPreview(data) {
+  const previewCard = document.getElementById('previewCard');
+  const previewContent = document.getElementById('previewContent');
+  
+  previewContent.innerHTML = `
+    <h4>📊 ${data.supervisor_nome}</h4>
+    <p><strong>Análise:</strong> ${data.data_analise}</p>
+    <p><strong>Sistema:</strong> ${data.sistema || 'básico'}</p>
+    
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; margin: 16px 0;">
+      <div style="background: white; padding: 12px; border-radius: 6px; text-align: center;">
+        <div style="font-size: 1.5em; font-weight: bold; color: #667eea;">${data.total_atendimentos || 0}</div>
+        <div style="font-size: 0.85em; color: #6c757d;">Total</div>
+      </div>
+      <div style="background: white; padding: 12px; border-radius: 6px; text-align: center;">
+        <div style="font-size: 1.5em; font-weight: bold; color: #36d1dc;">${data.atendimentos_semana || 0}</div>
+        <div style="font-size: 0.85em; color: #6c757d;">7 dias</div>
+      </div>
+      <div style="background: white; padding: 12px; border-radius: 6px; text-align: center;">
+        <div style="font-size: 1.5em; font-weight: bold; color: #f093fb;">${data.agentes_ativos || 0}</div>
+        <div style="font-size: 0.85em; color: #6c757d;">Agentes</div>
+      </div>
+    </div>
+    
+    <div style="background: white; padding: 16px; border-radius: 8px;">
+      <h5>🤖 Insights:</h5>
+      <ul style="margin: 0; padding-left: 20px;">
+        ${(data.insights_ia || []).map(insight => `<li style="margin-bottom: 4px;">${insight}</li>`).join('')}
+      </ul>
+    </div>
+  `;
+  
+  previewCard.style.display = 'block';
+  previewCard.scrollIntoView({ behavior: 'smooth' });
+}
+
+function hidePreview() {
+  document.getElementById('previewCard').style.display = 'none';
+}
+
+function addConsoleLog(message, type = 'info') {
+  const console = document.getElementById('aiConsole');
+  const timestamp = new Date().toLocaleTimeString();
+  const line = document.createElement('div');
+  line.className = `console-line ${type}`;
+  line.textContent = `[${timestamp}] ${message}`;
+  console.appendChild(line);
+  console.scrollTop = console.scrollHeight;
+}
+
+function clearConsole() {
+  document.getElementById('aiConsole').innerHTML = 
+    '<div class="console-line">Console limpo...</div>';
+}
+</script>
+
+{% endblock %}

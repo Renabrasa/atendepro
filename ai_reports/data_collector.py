@@ -136,34 +136,62 @@ class DataCollector:
         return current_period_start, current_period_end, previous_period_start, previous_period_end
         
     def _collect_supervisors_data(self, current_start: datetime, current_end: datetime,
-                                 previous_start: datetime, previous_end: datetime) -> List[Dict[str, Any]]:
+                             previous_start: datetime, previous_end: datetime) -> List[Dict[str, Any]]:
         """
-        👥 Coleta dados de todos os supervisores
-        
-        Returns:
-            Lista com dados de cada supervisor
+        📊 Coleta dados de performance de todos os supervisores E coordenadores
         """
-        supervisors_data = []
-        
-        # Buscar todos os supervisores ativos
-        supervisors = User.query.filter_by(tipo='supervisor').all()
-        
-        for supervisor in supervisors:
-            try:
-                supervisor_data = self._collect_single_supervisor_data(
-                    supervisor, current_start, current_end, previous_start, previous_end
-                )
+        try:
+            if self.debug:
+                logger.info("📊 Coletando dados dos supervisores e coordenadores...")
+            
+            # CORREÇÃO: Incluir coordenadores além de supervisores
+            # ANTES: supervisors = User.query.filter_by(tipo='supervisor').all()
+            # DEPOIS:
+            supervisors = User.query.filter(User.tipo.in_(['supervisor', 'coordenadora'])).all()
+            
+            supervisors_data = []
+            
+            for supervisor in supervisors:
+                # Coletar dados do período atual
+                current_data = self._collect_supervisor_period_data(supervisor, current_start, current_end)
+                
+                # Coletar dados do período anterior
+                previous_data = self._collect_supervisor_period_data(supervisor, previous_start, previous_end)
+                
+                # Calcular comparações
+                comparison = self._calculate_comparison(current_data, previous_data)
+                
+                # Estruturar dados do supervisor
+                supervisor_data = {
+                    'supervisor': {
+                        'id': supervisor.id,
+                        'name': supervisor.nome,
+                        'email': supervisor.email,
+                        'tipo': supervisor.tipo  # Incluir tipo para identificar coordenadores
+                    },
+                    'current_week': current_data,
+                    'previous_week': previous_data,
+                    'comparison': comparison
+                }
+                
                 supervisors_data.append(supervisor_data)
                 
-            except Exception as e:
-                logger.error(f"❌ Erro ao coletar dados do supervisor {supervisor.nome}: {e}")
-                # Continuar com outros supervisores mesmo se um falhar
-                continue
-        
-        # Ordenar por total de atendimentos (decrescente)
-        supervisors_data.sort(key=lambda x: x['current_week']['total_tickets'], reverse=True)
-        
-        return supervisors_data
+                if self.debug:
+                    logger.info(f"✅ Dados coletados para {supervisor.nome} ({supervisor.tipo}): {current_data['total_tickets']} atendimentos")
+            
+            # Ordenar por total de atendimentos (maior primeiro)
+            supervisors_data.sort(key=lambda x: x['current_week']['total_tickets'], reverse=True)
+            
+            if self.debug:
+                total_supervisors = len([s for s in supervisors_data if s['supervisor']['tipo'] == 'supervisor'])
+                total_coordinators = len([s for s in supervisors_data if s['supervisor']['tipo'] == 'coordenadora'])
+                logger.info(f"📊 Coletados: {total_supervisors} supervisores + {total_coordinators} coordenadores = {len(supervisors_data)} total")
+            
+            return supervisors_data
+            
+        except Exception as e:
+            logger.error(f"❌ Erro na coleta de dados dos supervisores: {e}")
+            return []
     
     def _collect_single_supervisor_data(self, supervisor: User, current_start: datetime, current_end: datetime,
                                        previous_start: datetime, previous_end: datetime) -> Dict[str, Any]:
@@ -371,73 +399,75 @@ class DataCollector:
         return insights
     
     def _collect_global_stats(self, current_start: datetime, current_end: datetime,
-                             previous_start: datetime, previous_end: datetime) -> Dict[str, Any]:
+                         previous_start: datetime, previous_end: datetime) -> Dict[str, Any]:
         """
-        🌍 Coleta estatísticas globais do sistema para os últimos 15 dias
-        
-        Returns:
-            Dict com estatísticas gerais
+        🌍 Coleta estatísticas globais incluindo coordenadores
         """
-        # Atendimentos globais
-        current_total = Atendimento.query.filter(
-            and_(
+        try:
+            if self.debug:
+                logger.info("🌍 Coletando estatísticas globais...")
+            
+            # Contar supervisores E coordenadores ativos
+            # CORREÇÃO: Incluir coordenadores na contagem
+            active_supervisors_current = User.query.filter(
+                User.tipo.in_(['supervisor', 'coordenadora'])
+            ).count()
+            
+            # Período atual
+            current_tickets = Atendimento.query.filter(
                 Atendimento.data_hora >= current_start,
                 Atendimento.data_hora <= current_end
-            )
-        ).count()
-        
-        previous_total = Atendimento.query.filter(
-            and_(
+            ).count()
+            
+            # Período anterior  
+            previous_tickets = Atendimento.query.filter(
                 Atendimento.data_hora >= previous_start,
                 Atendimento.data_hora <= previous_end
-            )
-        ).count()
-        
-        # Supervisores ativos
-        active_supervisors = User.query.filter_by(tipo='supervisor').count()
-        
-        # Agentes ativos
-        active_agents = Agente.query.filter_by(ativo=True).count()
-        
-        # Top supervisor do período atual
-        top_supervisor_data = db.session.query(
-            User.nome,
-            func.count(Atendimento.id).label('ticket_count')
-        ).join(
-            Atendimento, User.id == Atendimento.supervisor_id
-        ).filter(
-            and_(
-                Atendimento.data_hora >= current_start,
-                Atendimento.data_hora <= current_end
-            )
-        ).group_by(User.id, User.nome).order_by(desc('ticket_count')).first()
-        
-        top_supervisor = {
-            'name': top_supervisor_data.nome if top_supervisor_data else 'N/A',
-            'tickets': top_supervisor_data.ticket_count if top_supervisor_data else 0
-        }
-        
-        global_change = current_total - previous_total
-        global_change_percent = ((global_change / previous_total) * 100) if previous_total > 0 else 0
-        
-        return {
-            'current_week': {
-                'total_tickets': current_total,
-                'active_supervisors': active_supervisors,
-                'active_agents': active_agents,
-                'top_supervisor': top_supervisor,
-                'period_label': f"{current_start.strftime('%d/%m')} a {current_end.strftime('%d/%m')}"
-            },
-            'previous_week': {
-                'total_tickets': previous_total,
-                'period_label': f"{previous_start.strftime('%d/%m')} a {previous_end.strftime('%d/%m')}"
-            },
-            'comparison': {
-                'absolute_change': global_change,
-                'percent_change': round(global_change_percent, 1),
-                'trend': 'increase' if global_change > 0 else 'decrease' if global_change < 0 else 'stable'
+            ).count()
+            
+            # Calcular mudanças
+            absolute_change = current_tickets - previous_tickets
+            percent_change = ((current_tickets - previous_tickets) / previous_tickets * 100) if previous_tickets > 0 else 0
+            
+            # Determinar tendência
+            if percent_change > 5:
+                trend = 'crescimento'
+            elif percent_change < -5:
+                trend = 'queda'
+            else:
+                trend = 'estável'
+            
+            global_stats = {
+                'current_week': {
+                    'total_tickets': current_tickets,
+                    'active_supervisors': active_supervisors_current,  # Inclui coordenadores
+                    'start_date': current_start.isoformat(),
+                    'end_date': current_end.isoformat()
+                },
+                'previous_week': {
+                    'total_tickets': previous_tickets,
+                    'start_date': previous_start.isoformat(),
+                    'end_date': previous_end.isoformat()
+                },
+                'comparison': {
+                    'absolute_change': absolute_change,
+                    'percent_change': round(percent_change, 2),
+                    'trend': trend
+                }
             }
-        }
+            
+            if self.debug:
+                logger.info(f"🌍 Stats globais: {current_tickets} atendimentos, {active_supervisors_current} supervisores+coordenadores")
+            
+            return global_stats
+            
+        except Exception as e:
+            logger.error(f"❌ Erro nas estatísticas globais: {e}")
+            return {
+                'current_week': {'total_tickets': 0, 'active_supervisors': 0},
+                'previous_week': {'total_tickets': 0},
+                'comparison': {'absolute_change': 0, 'percent_change': 0, 'trend': 'indisponível'}
+            }
     
     def test_data_collection(self) -> Dict[str, Any]:
         """

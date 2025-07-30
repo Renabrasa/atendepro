@@ -154,37 +154,58 @@ RECOMENDAÇÕES OBRIGATÓRIAS (template fixo):
         return prompt.strip()
     
     @staticmethod
-    def executive_summary(weekly_data: Dict[str, Any], 
-                         global_analysis: Dict[str, Any],
-                         supervisors_analysis: List[Dict[str, Any]]) -> str:
+    def executive_summary_simple(weekly_data: Dict[str, Any], 
+                                supervisors_analysis: List[Dict[str, Any]]) -> str:
         """
-        📋 Prompt para resumo executivo
+        📋 Prompt para resumo executivo simplificado (sem global_analysis)
         """
         period = weekly_data['metadata']['current_week']['period_label']
         total_tickets = weekly_data['global_stats']['current_week']['total_tickets']
         change = weekly_data['global_stats']['comparison']['absolute_change']
         change_percent = weekly_data['global_stats']['comparison']['percent_change']
         
+        # Usar intelligent_insights se disponível
+        intelligent_insights = weekly_data.get('intelligent_insights', {})
+        alerts_count = len(intelligent_insights.get('performance_alerts', []))
+        patterns_count = len(intelligent_insights.get('concentration_patterns', []))
+        
         prompt = f"""
-INSTRUÇÕES EXECUTIVAS:
-- Máximo 80 palavras
-- Use APENAS números fornecidos
-- NÃO mencione férias, escola, sazonalidade
-- Linguagem para diretoria
+    INSTRUÇÕES EXECUTIVAS:
+    - Máximo 80 palavras
+    - Use APENAS números fornecidos
+    - NÃO mencione férias, escola, sazonalidade
+    - Linguagem para diretoria
+    - Base-se em insights automáticos do sistema
 
-RESUMO EXECUTIVO - {period}:
+    RESUMO EXECUTIVO - {period}:
 
-PRODUTIVIDADE: {total_tickets} atendimentos prestados por supervisores ({change:+d}, {change_percent:+.1f}%).
+    PRODUTIVIDADE: {total_tickets} atendimentos prestados por supervisores ({change:+d}, {change_percent:+.1f}%).
 
-SITUAÇÃO: {"Supervisores com mais demanda" if change > 0 else "Supervisores com menos demanda"}.
+    SITUAÇÃO: {"Supervisores com mais demanda" if change > 0 else "Supervisores com menos demanda"}.
 
-CAUSA: {"Agentes precisando mais suporte" if change > 0 else "Agentes mais autônomos"}.
+    INSIGHTS AUTOMÁTICOS: {alerts_count} alertas de performance, {patterns_count} padrões identificados.
 
-AÇÃO: {"Investir em treinamento dos agentes" if change > 0 else "Monitorar produtividade dos agentes"}.
+    CAUSA: {"Agentes precisando mais suporte" if change > 0 else "Agentes mais autônomos"}.
 
-STATUS: {"Atenção para sobrecarga" if total_tickets > 200 else "Operação normal"}.
-"""
+    AÇÃO: {"Investir em treinamento dos agentes" if change > 0 else "Monitorar produtividade dos agentes"}.
+
+    STATUS: {"Atenção para sobrecarga" if total_tickets > 200 else "Operação normal"}.
+    """
         return prompt.strip()
+    
+    
+     #MANTER A FUNÇÃO ORIGINAL COMENTADA PARA COMPATIBILIDADE
+    '''@staticmethod
+    def executive_summary(weekly_data: Dict[str, Any], 
+                        global_analysis: Dict[str, Any],
+                        supervisors_analysis: List[Dict[str, Any]]) -> str:
+        """
+        📋 Prompt para resumo executivo - FUNÇÃO OBSOLETA
+        MANTIDA APENAS PARA COMPATIBILIDADE - USE executive_summary_simple()
+        """
+        # Redirecionar para nova função
+        return PromptBuilder.executive_summary_simple(weekly_data, supervisors_analysis)'''
+
     
     @staticmethod
     def agent_workload_analysis(agents_data: List[Dict[str, Any]], 

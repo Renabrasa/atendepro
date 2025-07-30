@@ -204,8 +204,12 @@ class ReportScheduler:
             logger.info("🧠 Executando análise IA...")
             ai_analysis = analyze_weekly_data(weekly_data)
             
-            insights_count = len(ai_analysis['global_analysis'].get('insights', []))
-            logger.info(f"✅ Análise IA concluída: {insights_count} insights gerados")
+            # CORRIGIDO: Usar intelligent_insights ao invés de global_analysis
+            intelligent_insights = ai_analysis.get('intelligent_insights', {})
+            insights_count = len(intelligent_insights.get('performance_alerts', [])) + len(intelligent_insights.get('concentration_patterns', []))
+            
+            logger.info(f"✅ Análise IA concluída: {insights_count} insights automáticos gerados")
+            logger.info(f"📊 Detalhes: {len(intelligent_insights.get('performance_alerts', []))} alertas, {len(intelligent_insights.get('concentration_patterns', []))} padrões")
             
             # Passo 3: Envio de emails
             logger.info("📧 Enviando relatórios por email...")
@@ -224,6 +228,8 @@ class ReportScheduler:
                 'supervisors_analyzed': supervisors_count,
                 'total_tickets': total_tickets,
                 'insights_generated': insights_count,
+                'alerts_detected': len(intelligent_insights.get('performance_alerts', [])),
+                'patterns_identified': len(intelligent_insights.get('concentration_patterns', [])),
                 'emails_sent': successful_sends,
                 'email_failures': failed_sends,
                 'duration_seconds': None  # Será calculado no callback

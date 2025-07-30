@@ -667,18 +667,18 @@ Seja específico, prático e focado em resultados mensuráveis.
         
         
         
-        
     # Função helper para facilitar uso
-    def analyze_autonomy_data(autonomy_data: Dict[str, Any], ollama_url: str = "http://localhost:11434") -> Dict[str, Any]:
-        """
-        Função helper para análise de dados de autonomia
+def analyze_autonomy_data(autonomy_data: Dict[str, Any], ollama_url: str = "http://localhost:11434") -> Dict[str, Any]:
+      """
+      Função helper para análise de dados de autonomia
         
-        Usage:
-            from ai_reports.ai_analyzer import analyze_autonomy_data
-            analysis = analyze_autonomy_data(data)
-        """
-        analyzer = AutonomyAIAnalyzer(ollama_url)
-        return analyzer.analyze_weekly_data(autonomy_data)
+      Usage:
+          from ai_reports.ai_analyzer import analyze_autonomy_data
+          analysis = analyze_autonomy_data(data)
+      """
+      analyzer = AutonomyAIAnalyzer(ollama_url)
+      return analyzer.analyze_weekly_data(autonomy_data)        
+
 
 if __name__ == "__main__":
     # Teste rápido

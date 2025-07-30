@@ -80,6 +80,7 @@ class AIAnalyzer:
                 'timestamp': datetime.now().isoformat()
             }
     
+    
     def analyze_weekly_data(self, weekly_data: Dict[str, Any]) -> Dict[str, Any]:
         """
         📊 Analisa dados semanais completos com IA
@@ -94,8 +95,8 @@ class AIAnalyzer:
             if self.debug:
                 logger.info("🧠 Iniciando análise IA dos dados semanais...")
             
-            # Gerar análise global
-            #global_analysis = self._analyze_global_trends(weekly_data)
+            # REMOVIDO: Análise global problemática
+            # global_analysis = self._analyze_global_trends(weekly_data)
             
             # Gerar análise por supervisor
             supervisors_analysis = []
@@ -113,7 +114,7 @@ class AIAnalyzer:
                     'ai_model': self.model,
                     'analysis_period': weekly_data['metadata']['current_week']['period_label']
                 },
-                # REMOVER: 'global_analysis': global_analysis,
+                # NOVO: Dashboard executivo substitui análise global problemática
                 'executive_dashboard': weekly_data.get('executive_dashboard', {}),
                 'intelligent_insights': weekly_data.get('intelligent_insights', {}),
                 'supervisors_analysis': supervisors_analysis,
@@ -123,6 +124,8 @@ class AIAnalyzer:
             
             if self.debug:
                 logger.info(f"✅ Análise IA concluída - {len(supervisors_analysis)} supervisores analisados")
+                logger.info(f"📊 Dashboard: {len(weekly_data.get('executive_dashboard', {}).get('ranking', []))} supervisores no ranking")
+                logger.info(f"🧠 Insights: {len(weekly_data.get('intelligent_insights', {}).get('performance_alerts', []))} alertas gerados")
             
             return ai_analysis
             
@@ -239,49 +242,104 @@ class AIAnalyzer:
         return recommendations
     
     def _generate_executive_summary(self, weekly_data: Dict[str, Any], 
-                                   global_analysis: Dict[str, Any],
-                                   supervisors_analysis: List[Dict[str, Any]]) -> Dict[str, Any]:
+                                    supervisors_analysis: List[Dict[str, Any]]) -> Dict[str, Any]:
         """
-        📋 Gera resumo executivo para coordenação usando prompt especializado
+        📋 Gera resumo executivo para coordenação usando dados inteligentes
+        
+        Args:
+            weekly_data: Dados coletados pelo DataCollector
+            supervisors_analysis: Análises dos supervisores pela IA
+            
+        Returns:
+            Dict com resumo executivo completo
         """
         try:
-            from .ai_prompts import PromptBuilder
+            # Usar intelligent_insights ao invés de global_analysis
+            intelligent_insights = weekly_data.get('intelligent_insights', {})
+            executive_dashboard = weekly_data.get('executive_dashboard', {})
             
-            # Gerar prompt para resumo executivo
-            executive_prompt = PromptBuilder.executive_summary(weekly_data, global_analysis, supervisors_analysis)
+            # Gerar resumo IA apenas se necessário
+            ai_summary = "Resumo executivo baseado em dados automáticos"
+            try:
+                from .ai_prompts import PromptBuilder
+                
+                # Usar apenas dados dos supervisores para prompt (sem análise global problemática)
+                if supervisors_analysis:
+                    executive_prompt = PromptBuilder.executive_summary_simple(weekly_data, supervisors_analysis)
+                    ai_summary = self._query_ollama(executive_prompt, "executive_summary")
+            except (ImportError, Exception) as e:
+                if self.debug:
+                    logger.warning(f"⚠️ Prompt Builder indisponível, usando resumo automático: {e}")
             
-            # Solicitar análise da IA
-            ai_summary = self._query_ollama(executive_prompt, "executive_summary")
-        except ImportError:
-            # Fallback se ai_prompts não estiver disponível
-            ai_summary = "Resumo executivo indisponível"
-        
-        total_tickets = weekly_data['global_stats']['current_week']['total_tickets']
-        total_change = weekly_data['global_stats']['comparison']['absolute_change']
-        
-        # Top performer
-        top_supervisor = max(supervisors_analysis, key=lambda x: x['key_metrics']['current_tickets']) if supervisors_analysis else None
-        
-        # Supervisores que precisam de atenção
-        attention_needed = [
-            s for s in supervisors_analysis 
-            if abs(s['key_metrics']['change_percent']) >= 30 or any(agent.get('needs_attention', False) for agent in s.get('agents_insights', []))
-        ]
-        
-        return {
-            'total_tickets': total_tickets,
-            'weekly_change': total_change,
-            'change_percent': weekly_data['global_stats']['comparison']['percent_change'],
-            'top_supervisor': {
-                'name': top_supervisor['supervisor_name'] if top_supervisor else 'N/A',
-                'tickets': top_supervisor['key_metrics']['current_tickets'] if top_supervisor else 0
-            },
-            'supervisors_needing_attention': len(attention_needed),
-            'overall_trend': weekly_data['global_stats']['comparison']['trend'],
-            'ai_generated_summary': ai_summary,
-            'key_insights': global_analysis.get('insights', [])[:3],  # Top 3 insights
-            'priority_actions': len([s for s in supervisors_analysis if s['key_metrics']['change_percent'] >= 50])
-        }
+            # Dados básicos do dashboard executivo
+            total_tickets = executive_dashboard.get('total_tickets', 0)
+            total_change = executive_dashboard.get('variation', 0)
+            change_percent = executive_dashboard.get('variation_percent', 0)
+            
+            # Top performer baseado no ranking automático
+            ranking = executive_dashboard.get('ranking', [])
+            top_supervisor_info = {'name': 'N/A', 'tickets': 0}
+            if ranking:
+                # Parse do primeiro item do ranking: "1º Nome: 58 (-10)"
+                top_entry = ranking[0]
+                try:
+                    parts = top_entry.split(': ')
+                    if len(parts) >= 2:
+                        name_part = parts[0].split(' ', 1)[1]  # Remove "1º "
+                        tickets_part = parts[1].split(' ')[0]  # Pega só o número
+                        top_supervisor_info = {
+                            'name': name_part,
+                            'tickets': int(tickets_part)
+                        }
+                except (ValueError, IndexError):
+                    pass
+            
+            # Supervisores que precisam de atenção baseado em insights automáticos
+            alerts = intelligent_insights.get('performance_alerts', [])
+            attention_needed_count = len(alerts)
+            
+            # Determinar tendência
+            if change_percent > 5:
+                trend = 'crescimento'
+            elif change_percent < -5:
+                trend = 'queda'
+            else:
+                trend = 'estável'
+            
+            # Ações prioritárias baseadas em alertas
+            priority_actions = len([alert for alert in alerts if 'requer atenção' in alert])
+            
+            return {
+                'total_tickets': total_tickets,
+                'weekly_change': total_change,
+                'change_percent': change_percent,
+                'top_supervisor': top_supervisor_info,
+                'supervisors_needing_attention': attention_needed_count,
+                'overall_trend': trend,
+                'ai_generated_summary': ai_summary,
+                'key_insights': intelligent_insights.get('concentration_patterns', [])[:3],  # Top 3 padrões
+                'priority_actions': priority_actions,
+                'ranking_summary': ranking[:3],  # Top 3 do ranking
+                'alerts_summary': alerts[:3]  # Top 3 alertas
+            }
+            
+        except Exception as e:
+            logger.error(f"❌ Erro ao gerar resumo executivo: {e}")
+            
+            # Fallback com dados mínimos
+            return {
+                'total_tickets': weekly_data.get('global_stats', {}).get('current_week', {}).get('total_tickets', 0),
+                'weekly_change': 0,
+                'change_percent': 0,
+                'top_supervisor': {'name': 'N/A', 'tickets': 0},
+                'supervisors_needing_attention': 0,
+                'overall_trend': 'indisponível',
+                'ai_generated_summary': 'Resumo executivo indisponível devido a erro técnico',
+                'key_insights': [],
+                'priority_actions': 0,
+                'ranking_summary': [],
+                'alerts_summary': []
+            }
     
     def _build_global_analysis_prompt(self, global_stats: Dict[str, Any], weekly_data: Dict[str, Any]) -> str:
         """

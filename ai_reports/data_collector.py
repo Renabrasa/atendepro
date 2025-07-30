@@ -149,24 +149,46 @@ class AutonomyDataCollector:
        return atendimentos
    
    def _group_by_agent(self, atendimentos):
-       """Agrupa atendimentos por agente"""
-       agents_count = defaultdict(int)
-       agents_info = {}
-       
-       for atendimento in atendimentos:
-           if atendimento.agente:
-               agent_id = atendimento.agente.id
-               agents_count[agent_id] += 1
-               agents_info[agent_id] = {
-                   'name': atendimento.agente.nome,
-                   'discord_id': atendimento.agente.discord_id
-               }
-       
-       return {agent_id: {
-           'count': count,
-           'name': agents_info[agent_id]['name'],
-           'discord_id': agents_info[agent_id]['discord_id']
-       } for agent_id, count in agents_count.items()}
+    """Agrupa atendimentos por agente"""
+    agents_count = defaultdict(int)
+    agents_info = {}
+    
+    for atendimento in atendimentos:
+        if atendimento.agente_id:
+            agent_id = atendimento.agente_id
+            agents_count[agent_id] += 1
+            
+            # Só busca info do agente se ainda não tiver
+            if agent_id not in agents_info:
+                try:
+                    # Buscar agente diretamente pela query para evitar problema de relacionamento
+                    from models.models import Agente
+                    agente = db.session.query(Agente).filter(Agente.id == agent_id).first()
+                    
+                    if agente:
+                        agents_info[agent_id] = {
+                            'name': agente.nome,
+                            'discord_id': agente.discord_id
+                        }
+                    else:
+                        # Fallback se agente não existir
+                        agents_info[agent_id] = {
+                            'name': f'Agente {agent_id}',
+                            'discord_id': None
+                        }
+                except Exception as e:
+                    logger.warning(f"Erro ao buscar agente {agent_id}: {e}")
+                    # Fallback em caso de erro
+                    agents_info[agent_id] = {
+                        'name': f'Agente {agent_id}',
+                        'discord_id': None
+                    }
+    
+    return {agent_id: {
+        'count': count,
+        'name': agents_info[agent_id]['name'],
+        'discord_id': agents_info[agent_id]['discord_id']
+    } for agent_id, count in agents_count.items() if agent_id in agents_info}
    
    def _calculate_agents_analysis(self, agents_atual, agents_anterior):
        """Calcula análise detalhada de cada agente"""

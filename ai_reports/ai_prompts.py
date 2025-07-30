@@ -1,270 +1,598 @@
 # ai_reports/ai_prompts.py
 """
-🔤 AI Prompts - Prompts Estruturados para Análise IA
-Coleção de prompts especializados para diferentes tipos de análise
+🎯 AI Prompts - Sistema AI Reports
+Prompts especializados para cada bloco de análise
 """
 
-from typing import Dict, List, Any, Optional
-from datetime import datetime
+from typing import Dict, List, Any
 
-
-class PromptBuilder:
-    """
-    🔤 Construtor de prompts especializados para análise IA
+def autonomy_radar_prompt(data: Dict[str, Any]) -> str:
+    """Prompt para Bloco 1: Radar de Autonomia"""
     
-    Gera prompts ultra-específicos para análise de produtividade em contabilidade
-    """
+    supervisors = data.get('supervisors', [])
+    global_stats = data.get('global_stats', {})  # ← CORRIGIDO: era ] em vez de }
     
-    @staticmethod
-    def supervisor_performance_analysis(supervisor_data: Dict[str, Any], 
-                                    weekly_data: Dict[str, Any],
-                                    ranking_position: Optional[int] = None) -> str:
-        """Análise conversacional e inteligente do supervisor"""
-        
-        supervisor = supervisor_data['supervisor']['name']
-        current = supervisor_data['current_week']['total_tickets']
-        
-        # CORREÇÃO: Acessar dados do período anterior de forma segura
-        previous = supervisor_data.get('previous_week', {}).get('total_tickets', 0)
-        change = supervisor_data.get('comparison', {}).get('absolute_change', 0)
-        change_percent = supervisor_data.get('comparison', {}).get('percent_change', 0)
-        
-        agents = supervisor_data['current_week']['agents_performance']
-        
-        # Análise automática de padrões
-        top_agent = max(agents, key=lambda x: x['current_tickets']) if agents else None
-        concern_agents = [a for a in agents if a.get('change', 0) > 5]
-        improved_agents = [a for a in agents if a.get('change', 0) < -3]
-        
-        prompt = f"""
-CONTEXTO: Empresa de contabilidade onde agentes escalam casos complexos para supervisores.
-
-DADOS OBJETIVOS DE {supervisor}:
-• Atendimentos prestados: {current} (anterior: {previous}) 
-• Variação: {change:+d} ({change_percent:+.1f}%)
-• Ranking: {ranking_position if ranking_position else 'N/A'}º posição
-• Equipe: {len(agents)} agentes
-
-DESTAQUE DOS AGENTES:
-"""
-        
-        if top_agent:
-            top_change = top_agent.get('change', 0)
-            prompt += f"• {top_agent['agent']['name']}: {top_agent['current_tickets']} casos ({top_change:+d})\n"
-        
-        for agent in agents[1:3]:  # Próximos 2 agentes
-            agent_change = agent.get('change', 0)
-            prompt += f"• {agent['agent']['name']}: {agent['current_tickets']} casos ({agent_change:+d})\n"
-        
-        prompt += f"""
-INSTRUÇÕES OBRIGATÓRIAS:
-- NÃO mencione: férias, escola, sazonalidade, aulas, período escolar
-- Foque APENAS em empresa de contabilidade
-- Linguagem conversacional e profissional
-- Máximo 70 palavras
-- Insights acionáveis e específicos
-
-GERE ANÁLISE CONVERSACIONAL:
-Escreva como consultor experiente falando para {supervisor}:
-- Comente a performance ({current} casos, {change:+d})
-- Destaque agente principal e insights
-- Sugira ação específica e prática
-- Tom profissional mas humano
-
-FORMATO EXEMPLO: "{supervisor}, sua equipe processou {current} casos esta semana. Destaque para [agente] que [insight específico]. Recomendo [ação concreta] para [resultado esperado]."
-"""
-        return prompt.strip()
+    # Identifica situações críticas
+    critical_situations = []
+    for supervisor in supervisors:
+        for agent in supervisor.get('agents', []):
+            if agent.get('risk_level') == 'critical':
+                critical_situations.append(f"{agent.get('agent_name')}: {agent.get('current_requests')} casos")
     
-    @staticmethod
-    def strategic_recommendations(weekly_data: Dict[str, Any]) -> str:
-        """
-        🎯 Prompt para recomendações estratégicas - VERSÃO CORRIGIDA
-        """
-        supervisors = weekly_data['supervisors_data']
-        global_stats = weekly_data['global_stats']
-        
-        # Encontrar supervisor com mais atendimentos
-        top_supervisor = max(supervisors, key=lambda x: x['current_week']['total_tickets']) if supervisors else None
-        
-        # Contar supervisores sobrecarregados
-        overloaded_count = len([s for s in supervisors if s['current_week']['total_tickets'] >= 40])
-        
-        # CORREÇÃO: Acessar dados globais de forma segura
-        current_total = global_stats.get('current_week', {}).get('total_tickets', 0)
-        change_abs = global_stats.get('comparison', {}).get('absolute_change', 0)
-        change_pct = global_stats.get('comparison', {}).get('percent_change', 0)
-        
-        prompt = f"""
-INSTRUÇÕES CRÍTICAS:
-- Máximo 100 palavras
-- Use APENAS dados fornecidos
-- NÃO mencione férias, escola, sazonalidade
-- Foque em ações práticas
+    total_requests = global_stats.get('total_attendances_current', 0)
+    variation = global_stats.get('variation_percent', 0)
+    
+    prompt = f"""
+Você é um analista sênior de operações contábeis. Analise o RADAR DE AUTONOMIA semanal.
 
 DADOS EXECUTIVOS:
-Total atendimentos: {current_total}
-Variação: {change_abs:+d} ({change_pct:+.1f}%)
-Supervisores: {len(supervisors)}
-Sobrecarregados (≥40 atendimentos): {overloaded_count}
-"""
-        
-        if top_supervisor:
-            prompt += f"Maior volume: {top_supervisor['supervisor']['name']} ({top_supervisor['current_week']['total_tickets']} atendimentos)\n"
-        
-        prompt += f"""
-RECOMENDAÇÕES OBRIGATÓRIAS (template fixo):
+- Total de solicitações: {total_requests}
+- Variação semanal: {variation:+.1f}%
+- Supervisores analisados: {len(supervisors)}
+- Situações críticas: {', '.join(critical_situations) if critical_situations else 'Nenhuma'}
 
-1. CAPACITAÇÃO: Treinar agentes que mais demandam atendimento
-2. REDISTRIBUIÇÃO: Balancear carga entre supervisores{"s sobrecarregados" if overloaded_count > 0 else ""}  
-3. MONITORAMENTO: Acompanhar evolução semanal dos agentes
-4. EFICIÊNCIA: Criar processos para reduzir dependência
-5. RECURSOS: {"Considerar reforço para supervisores com >40 atendimentos" if overloaded_count > 0 else "Manter estrutura atual"}
+CONTEXTO OPERACIONAL:
+- Cada solicitação = pedido de socorro técnico do agente para supervisor
+- Meta: máximo 2 solicitações/agente/semana (autonomia operacional)
+- >6 solicitações/agente = deficiência grave que impede trabalho autônomo
+
+GERE DIAGNÓSTICO EXECUTIVO (máximo 2 frases):
+[Foque no impacto operacional e urgência das ações necessárias]
+
+IDENTIFIQUE ALERTAS CRÍTICOS (se houver):
+[Liste agentes que precisam intervenção imediata]
+
+DESTAQUE PONTOS POSITIVOS (se houver):
+[Reconheça melhorias e autonomia alcançada]
+
+Seja direto, específico e focado em ações.
 """
-        return prompt.strip()
     
-    @staticmethod
-    def executive_summary_simple(weekly_data: Dict[str, Any], 
-                                supervisors_analysis: List[Dict[str, Any]]) -> str:
-        """
-        📋 Prompt para resumo executivo simplificado (sem global_analysis)
-        """
-        period = weekly_data['metadata']['current_week']['period_label']
-        
-        # CORREÇÃO: Acessar dados globais de forma segura
-        global_stats = weekly_data.get('global_stats', {})
-        current_week = global_stats.get('current_week', {})
-        comparison = global_stats.get('comparison', {})
-        
-        total_tickets = current_week.get('total_tickets', 0)
-        change = comparison.get('absolute_change', 0)
-        change_percent = comparison.get('percent_change', 0)
-        
-        # Usar intelligent_insights se disponível
-        intelligent_insights = weekly_data.get('intelligent_insights', {})
-        alerts_count = len(intelligent_insights.get('performance_alerts', []))
-        patterns_count = len(intelligent_insights.get('concentration_patterns', []))
-        
-        prompt = f"""
-INSTRUÇÕES EXECUTIVAS:
-- Máximo 80 palavras
-- Use APENAS números fornecidos
-- NÃO mencione férias, escola, sazonalidade
-- Linguagem para diretoria
-- Base-se em insights automáticos do sistema
+    return prompt
 
-RESUMO EXECUTIVO - {period}:
-
-PRODUTIVIDADE: {total_tickets} atendimentos prestados por supervisores ({change:+d}, {change_percent:+.1f}%).
-
-SITUAÇÃO: {"Supervisores com mais demanda" if change > 0 else "Supervisores com menos demanda"}.
-
-INSIGHTS AUTOMÁTICOS: {alerts_count} alertas de performance, {patterns_count} padrões identificados.
-
-CAUSA: {"Agentes precisando mais suporte" if change > 0 else "Agentes mais autônomos"}.
-
-AÇÃO: {"Investir em treinamento dos agentes" if change > 0 else "Monitorar produtividade dos agentes"}.
-
-STATUS: {"Atenção para sobrecarga" if total_tickets > 200 else "Operação normal"}.
-"""
-        return prompt.strip()
+def training_matrix_prompt(data: Dict[str, Any]) -> str:
+    """Prompt para Bloco 2: Matriz de Capacitação"""
     
-    @staticmethod
-    def agent_workload_analysis(agents_data: List[Dict[str, Any]], 
-                               supervisor_name: str) -> str:
-        """
-        👥 Prompt para análise dos agentes - VERSÃO CORRIGIDA
-        """
-        if not agents_data:
-            return "Nenhum agente com atendimentos registrados."
-        
-        prompt = f"""
-INSTRUÇÕES:
-- Máximo 70 palavras
-- Cite nomes dos agentes
-- Use APENAS dados fornecidos
-
-AGENTES DO SUPERVISOR {supervisor_name}:
-"""
-        
-        for agent in agents_data[:3]:
-            name = agent['agent']['name']
-            current = agent.get('current_tickets', 0)
-            change = agent.get('change', 0)
-            
-            # CORREÇÃO: Acessar previous_tickets de forma segura
-            previous_tickets = 0
-            if 'previous_tickets' in agent:
-                previous_tickets = agent['previous_tickets']
-            elif hasattr(agent, 'previous_tickets'):
-                previous_tickets = agent.previous_tickets
-            else:
-                # Calcular baseado no change
-                previous_tickets = current - change if change != 0 else 0
-            
-            # Calcular percentual de forma segura
-            try:
-                if previous_tickets > 0:
-                    percent = (change / previous_tickets * 100)
-                    prompt += f"{name}: {current} atendimentos ({change:+d}, {percent:+.1f}%)\n"
-                else:
-                    prompt += f"{name}: {current} atendimentos ({change:+d})\n"
-            except (ZeroDivisionError, TypeError):
-                prompt += f"{name}: {current} atendimentos ({change:+d})\n"
-        
-        prompt += f"""
-RECOMENDAÇÃO: {"Treinar agentes com maior aumento" if any(a.get('change', 0) > 5 for a in agents_data) else "Monitorar evolução"}.
-"""
-        return prompt.strip()
+    supervisors = data.get('supervisors', [])
     
-    @staticmethod
-    def anomaly_detection(supervisor_data: Dict[str, Any], 
-                         historical_context: Optional[Dict] = None) -> str:
-        """
-        🔍 Prompt para detecção de anomalias - VERSÃO CORRIGIDA
-        """
-        supervisor = supervisor_data['supervisor']['name']
-        
-        # CORREÇÃO: Acessar dados de comparação de forma segura
-        comparison = supervisor_data.get('comparison', {})
-        change_percent = comparison.get('percent_change', 0)
-        current_tickets = supervisor_data['current_week']['total_tickets']
-        
-        prompt = f"""
-INSTRUÇÕES:
-- Máximo 60 palavras
-- Use APENAS dados fornecidos
-
-ANOMALIA DETECTADA:
-Supervisor {supervisor}: {current_tickets} atendimentos ({change_percent:+.1f}%).
-
-AÇÃO: {"Investigar sobrecarga urgente" if current_tickets > 50 else "Monitorar evolução normal"}.
-"""
-        return prompt.strip()
+    # Coleta gaps identificados
+    all_gaps = []
+    priority_agents = []
     
-    @staticmethod
-    def custom_insight_prompt(context: str, data_summary: str, question: str) -> str:
-        """
-        🎨 Prompt personalizado
-        """
-        prompt = f"""
-CONTEXTO: {context}
-DADOS: {data_summary}
-PERGUNTA: {question}
+    for supervisor in supervisors:
+        for agent in supervisor.get('agents', []):
+            if agent.get('risk_level') in ['critical', 'attention']:
+                priority_agents.append({
+                    'name': agent.get('agent_name'),
+                    'requests': agent.get('current_requests'),
+                    'gaps': agent.get('probable_gaps', [])
+                })
+                all_gaps.extend(agent.get('probable_gaps', []))
+    
+    # Conta gaps mais frequentes
+    gap_frequency = {}
+    for gap in all_gaps:
+        gap_frequency[gap] = gap_frequency.get(gap, 0) + 1
+    
+    most_common_gaps = sorted(gap_frequency.items(), key=lambda x: x[1], reverse=True)[:3]
+    
+    prompt = f"""
+Você é um especialista em desenvolvimento de equipes contábeis. Analise a MATRIZ DE CAPACITAÇÃO.
 
-RESPOSTA (máximo 50 palavras): Use apenas dados fornecidos.
+AGENTES PRIORITÁRIOS PARA TREINAMENTO:
+{chr(10).join([f"- {agent['name']}: {agent['requests']} casos → {', '.join(agent['gaps'][:2])}" for agent in priority_agents[:5]])}
+
+GAPS MAIS FREQUENTES IDENTIFICADOS:
+{chr(10).join([f"- {gap}: {freq} ocorrências" for gap, freq in most_common_gaps])}
+
+ÁREAS TÉCNICAS CONHECIDAS:
+- eSocial vs Alterdata (diferenças entre sistemas)
+- SPED (validação de arquivos magnéticos)
+- Report Builder (dificuldades com relatórios)
+- Rotinas específicas (processos internos)
+
+ANALISE E FORNEÇA:
+
+1. GAPS DE CONHECIMENTO PRINCIPAIS (3-4 áreas):
+[Identifique as deficiências técnicas mais críticas]
+
+2. PLANO DE CAPACITAÇÃO PRIORITÁRIO (ações específicas):
+[Sugira treinamentos focados nas deficiências identificadas]
+
+3. DISTRIBUIÇÃO RECOMENDADA DE ESFORÇOS:
+[Como o supervisor deve alocar tempo entre agentes]
+
+Foque em soluções práticas e implementáveis.
 """
-        return prompt.strip()
+    
+    return prompt
 
+def productivity_dashboard_prompt(data: Dict[str, Any]) -> str:
+    """Prompt para Bloco 3: Dashboard de Produtividade"""
+    
+    supervisors = data.get('supervisors', [])
+    global_stats = data.get('global_stats', {})
+    
+    # Analisa tendências
+    improving_agents = []
+    worsening_agents = []
+    
+    for supervisor in supervisors:
+        for agent in supervisor.get('agents', []):
+            variation = agent.get('variation_percent', 0)
+            if variation < -25:  # Melhoria significativa
+                improving_agents.append(f"{agent.get('agent_name')} ({variation:+.0f}%)")
+            elif variation > 50:  # Piora significativa
+                worsening_agents.append(f"{agent.get('agent_name')} (+{variation:.0f}%)")
+    
+    total_variation = global_stats.get('variation_percent', 0)
+    
+    prompt = f"""
+Você é um analista de produtividade especializado em equipes técnicas. Analise o DASHBOARD DE PRODUTIVIDADE.
 
-# Funções de conveniência - VERSÕES CORRIGIDAS
-def get_supervisor_analysis_prompt(supervisor_data: Dict[str, Any], weekly_data: Dict[str, Any], ranking: Optional[int] = None) -> str:
-    """Função de conveniência para análise de supervisor"""
-    return PromptBuilder.supervisor_performance_analysis(supervisor_data, weekly_data, ranking)
+EVOLUÇÃO GERAL DO PERÍODO:
+- Variação total de solicitações: {total_variation:+.1f}%
+- Agentes melhorando: {', '.join(improving_agents) if improving_agents else 'Nenhum'}
+- Agentes com piora: {', '.join(worsening_agents) if worsening_agents else 'Nenhum'}
 
-def get_strategic_prompt(weekly_data: Dict[str, Any]) -> str:
-    """Função de conveniência para recomendações estratégicas"""
-    return PromptBuilder.strategic_recommendations(weekly_data)
+SUPERVISORES ANALISADOS: {len(supervisors)}
 
-def get_executive_summary_prompt(weekly_data: Dict[str, Any], supervisors_analysis: List[Dict[str, Any]]) -> str:
-    """Função de conveniência para resumo executivo"""
-    return PromptBuilder.executive_summary_simple(weekly_data, supervisors_analysis)
+CONTEXTO DE PRODUTIVIDADE:
+- Redução de solicitações = ganho de autonomia = maior produtividade
+- Aumento súbito = novo gap técnico ou mudança de sistema
+- Estabilidade = operação madura
+
+FORNEÇA ANÁLISE DE PRODUTIVIDADE:
+
+1. TENDÊNCIA GERAL DA OPERAÇÃO:
+[Avalie se a operação está melhorando, estável ou deteriorando]
+
+2. INSIGHTS DE EVOLUÇÃO (3-4 pontos):
+[Identifique padrões significativos na evolução dos agentes]
+
+3. INDICADORES DE EFICIÊNCIA:
+[Destaque métricas que mostram ganhos ou perdas de eficiência]
+
+Seja analítico e baseado em dados.
+"""
+    
+    return prompt
+
+def strategic_conclusions_prompt(data: Dict[str, Any]) -> str:
+    """Prompt para Bloco 4: Conclusões IA & Plano de Ação"""
+    
+    supervisors = data.get('supervisors', [])
+    global_stats = data.get('global_stats', {})
+    
+    # Métricas estratégicas
+    total_agents = sum(len(sup.get('agents', [])) for sup in supervisors)
+    critical_agents = sum(1 for sup in supervisors for agent in sup.get('agents', []) 
+                         if agent.get('risk_level') == 'critical')
+    autonomous_agents = sum(1 for sup in supervisors for agent in sup.get('agents', []) 
+                           if agent.get('risk_level') == 'autonomous')
+    
+    autonomy_rate = round((autonomous_agents / total_agents * 100), 1) if total_agents > 0 else 0
+    critical_rate = round((critical_agents / total_agents * 100), 1) if total_agents > 0 else 0
+    
+    # Supervisor mais eficiente
+    most_efficient = max(supervisors, key=lambda x: x.get('autonomy_rate', 0)) if supervisors else None
+    
+    prompt = f"""
+Você é um consultor estratégico sênior em gestão operacional de contabilidade. Faça a ANÁLISE IA ESTRATÉGICA.
+
+SITUAÇÃO OPERACIONAL ATUAL:
+- Total de agentes: {total_agents}
+- Taxa de autonomia: {autonomy_rate}%
+- Agentes críticos: {critical_agents} ({critical_rate}%)
+- Agentes autônomos: {autonomous_agents}
+- Supervisor mais eficiente: {most_efficient.get('supervisor_name', 'N/A') if most_efficient else 'N/A'}
+
+METAS OPERACIONAIS:
+- Autonomia ideal: 85%+ dos agentes
+- Máximo aceitável: 2 solicitações/agente/semana
+- Tempo estratégico supervisor: 60%+
+
+CONTEXTO ESTRATÉGICO:
+- Supervisores devem atuar como mentores técnicos, não "bombeiros"
+- Autonomia = produtividade = rentabilidade
+- Investimento em treinamento = ROI através de redução de dependência
+
+FORNEÇA ANÁLISE ESTRATÉGICA COMPLETA:
+
+1. DIAGNÓSTICO ESTRATÉGICO (2-3 frases):
+[Avalie a saúde operacional geral e principais desafios]
+
+2. PADRÕES ESTRATÉGICOS IDENTIFICADOS (3-4 itens):
+[Identifique tendências que impactam objetivos de negócio]
+
+3. PLANO DE AÇÃO 7 DIAS (4 ações priorizadas):
+URGENTE: [Ação que não pode esperar - intervenção imediata]
+IMPORTANTE: [Ação estrutural para médio prazo]
+MONITORAR: [Acompanhamento necessário]
+META: [Objetivo mensurável para a semana]
+
+4. RESULTADOS ESPERADOS (3 metas específicas):
+[Defina metas numéricas alcançáveis em 7 dias]
+
+5. RECOMENDAÇÕES ESTRATÉGICAS (2-3 ações):
+[Ações que geram impacto sistêmico a médio prazo]
+
+Seja estratégico, mensurável e focado em ROI.
+"""
+    
+    return prompt
+
+def gap_analysis_prompt(gaps_data: List[str], frequency_data: Dict[str, int]) -> str:
+    """Prompt especializado para identificação de gaps técnicos"""
+    
+    # Organiza gaps por frequência
+    sorted_gaps = sorted(frequency_data.items(), key=lambda x: x[1], reverse=True)
+    
+    prompt = f"""
+Você é um especialista técnico em sistemas contábeis. Analise os GAPS DE CONHECIMENTO identificados.
+
+GAPS REPORTADOS (por frequência):
+{chr(10).join([f"- {gap}: {freq} ocorrências" for gap, freq in sorted_gaps[:5]])}
+
+SISTEMAS/ÁREAS TÉCNICAS RELEVANTES:
+- eSocial: Obrigações trabalhistas digitais
+- Alterdata: Sistema ERP contábil
+- SPED: Sistema Público de Escrituração Digital
+- Report Builder: Ferramenta de relatórios
+- Rotinas fiscais: Processos específicos da contabilidade
+
+ANALISE E IDENTIFIQUE:
+
+1. GAPS TÉCNICOS PRIORITÁRIOS (3 principais):
+[Identifique as deficiências técnicas mais críticas baseadas na frequência]
+
+2. CAUSA RAIZ PROVÁVEL:
+[Identifique possíveis causas: novo sistema, mudança de processo, falta de treinamento]
+
+3. PLANO DE CAPACITAÇÃO ESPECÍFICO:
+[Sugira treinamentos focados e práticos para cada gap identificado]
+
+4. IMPACTO OPERACIONAL:
+[Avalie como esses gaps afetam a produtividade geral]
+
+Seja técnico, específico e prático.
+"""
+    
+    return prompt
+
+def executive_summary_prompt(complete_analysis: Dict[str, Any]) -> str:
+    """Prompt para resumo executivo integrado dos 4 blocos"""
+    
+    # Extrai dados dos 4 blocos
+    radar_data = complete_analysis.get('block_1_radar', {})
+    matrix_data = complete_analysis.get('block_2_training_matrix', {})
+    productivity_data = complete_analysis.get('block_3_productivity', {})
+    conclusions_data = complete_analysis.get('block_4_conclusions', {})
+    
+    total_requests = radar_data.get('total_requests', 0)
+    critical_alerts = len(radar_data.get('critical_alerts', []))
+    positive_highlights = len(radar_data.get('positive_highlights', []))
+    
+    prompt = f"""
+Você é um CEO de empresa contábil. Crie um RESUMO EXECUTIVO integrando todos os blocos de análise.
+
+DADOS CONSOLIDADOS DOS 4 BLOCOS:
+- Total de solicitações: {total_requests}
+- Alertas críticos: {critical_alerts}
+- Destaques positivos: {positive_highlights}
+- Gaps de capacitação identificados: SIM/NÃO
+- Tendência de produtividade: ANALISAR
+- Plano de ação definido: SIM/NÃO
+
+PERSPECTIVA CEO:
+- Foco em impacto no negócio
+- ROI de investimentos em treinamento
+- Eficiência operacional
+- Competitividade no mercado
+
+FORNEÇA RESUMO EXECUTIVO (4-5 frases):
+
+1. SITUAÇÃO ATUAL:
+[Status operacional em linguagem executiva]
+
+2. PRINCIPAIS DESAFIOS:
+[2-3 desafios que impactam resultados]
+
+3. OPORTUNIDADES IDENTIFICADAS:
+[Como converter desafios em vantagem competitiva]
+
+4. PRÓXIMOS PASSOS ESTRATÉGICOS:
+[Ações de maior impacto para os próximos 7 dias]
+
+5. EXPECTATIVA DE RESULTADOS:
+[ROI esperado das ações propostas]
+
+Use linguagem executiva, objetiva e focada em resultados de negócio.
+"""
+    
+    return prompt
+
+def supervisor_performance_analysis_prompt(supervisor_data: Dict[str, Any]) -> str:
+    """Prompt para análise individual de performance de supervisor"""
+    
+    supervisor_name = supervisor_data.get('supervisor_name', 'Supervisor')
+    total_requests = supervisor_data.get('total_attendances_current', 0)
+    autonomy_rate = supervisor_data.get('autonomy_rate', 0)
+    strategic_time = supervisor_data.get('strategic_time_percent', 0)
+    agents = supervisor_data.get('agents', [])
+    
+    critical_agents = [a for a in agents if a.get('risk_level') == 'critical']
+    autonomous_agents = [a for a in agents if a.get('risk_level') == 'autonomous']
+    
+    prompt = f"""
+Você é um consultor de gestão especializado em liderança operacional. Analise a performance do SUPERVISOR.
+
+DADOS DO SUPERVISOR: {supervisor_name}
+- Total de solicitações recebidas: {total_requests}
+- Taxa de autonomia da equipe: {autonomy_rate}%
+- Tempo disponível para estratégia: {strategic_time}%
+- Total de agentes: {len(agents)}
+- Agentes críticos: {len(critical_agents)}
+- Agentes autônomos: {len(autonomous_agents)}
+
+AGENTES CRÍTICOS (se houver):
+{chr(10).join([f"- {a.get('agent_name')}: {a.get('current_requests')} solicitações" for a in critical_agents])}
+
+BENCHMARKS DE EFICIÊNCIA:
+- Supervisor eficiente: 75%+ autonomia, 60%+ tempo estratégico
+- Supervisor sobrecarregado: <50% autonomia, <30% tempo estratégico
+- Meta ideal: máximo 2 solicitações/agente/semana
+
+ANALISE E FORNEÇA:
+
+1. AVALIAÇÃO DE PERFORMANCE:
+[Classifique: EXCELENTE/BOM/REGULAR/CRÍTICO e justifique]
+
+2. PONTOS FORTES:
+[Identifique o que o supervisor está fazendo bem]
+
+3. ÁREAS DE MELHORIA:
+[Identifique gargalos e oportunidades]
+
+4. PLANO DE DESENVOLVIMENTO:
+[Ações específicas para melhorar eficiência da liderança]
+
+5. IMPACTO NO NEGÓCIO:
+[Como a melhoria deste supervisor afeta resultados gerais]
+
+Seja construtivo, específico e focado em desenvolvimento.
+"""
+    
+    return prompt
+
+def trend_analysis_prompt(historical_data: List[Dict[str, Any]]) -> str:
+    """Prompt para análise de tendências históricas (4 semanas)"""
+    
+    if len(historical_data) < 2:
+        return "Dados insuficientes para análise de tendência."
+    
+    # Calcula tendência
+    weeks_data = []
+    for i, week_data in enumerate(historical_data[-4:], 1):  # Últimas 4 semanas
+        total = week_data.get('total_attendances', 0)
+        weeks_data.append(f"Semana {i}: {total} solicitações")
+    
+    prompt = f"""
+Você é um analista de dados especializado em tendências operacionais. Analise a EVOLUÇÃO HISTÓRICA.
+
+DADOS DAS ÚLTIMAS 4 SEMANAS:
+{chr(10).join(weeks_data)}
+
+CONTEXTO ANALÍTICO:
+- Redução consistente = melhoria da autonomia
+- Aumento consistente = deterioração ou crescimento da operação
+- Oscilação = instabilidade operacional
+- Estabilidade = operação madura
+
+FORNEÇA ANÁLISE DE TENDÊNCIA:
+
+1. CLASSIFICAÇÃO DA TENDÊNCIA:
+[MELHORANDO/ESTÁVEL/DETERIORANDO/INSTÁVEL]
+
+2. PADRÕES IDENTIFICADOS:
+[Identifique ciclos, sazonalidades ou eventos específicos]
+
+3. PROJEÇÃO PARA PRÓXIMA SEMANA:
+[Estime tendência baseada no histórico]
+
+4. FATORES INFLUENCIADORES:
+[Possíveis causas das variações observadas]
+
+5. RECOMENDAÇÕES BASEADAS NA TENDÊNCIA:
+[Ações específicas baseadas no padrão identificado]
+
+Seja analítico, baseado em dados e preditivo.
+"""
+    
+    return prompt
+
+def risk_assessment_prompt(risk_data: Dict[str, Any]) -> str:
+    """Prompt para avaliação de riscos operacionais"""
+    
+    critical_agents_count = risk_data.get('critical_agents_count', 0)
+    deteriorating_agents = risk_data.get('deteriorating_agents', 0)
+    supervisors_overloaded = risk_data.get('supervisors_overloaded', 0)
+    total_variation = risk_data.get('total_variation', 0)
+    
+    prompt = f"""
+Você é um especialista em gestão de riscos operacionais. Avalie os RISCOS IDENTIFICADOS.
+
+INDICADORES DE RISCO:
+- Agentes críticos (>6 solicitações): {critical_agents_count}
+- Agentes em deterioração (>50% aumento): {deteriorating_agents}
+- Supervisores sobrecarregados (<30% tempo estratégico): {supervisors_overloaded}
+- Variação total do sistema: {total_variation:+.1f}%
+
+MATRIZ DE RISCOS:
+- ALTO: >3 agentes críticos OU >25% variação negativa
+- MÉDIO: 1-3 agentes críticos OU 10-25% variação
+- BAIXO: Operação estável com <10% variação
+
+ANALISE E CLASSIFIQUE:
+
+1. NÍVEL DE RISCO ATUAL:
+[ALTO/MÉDIO/BAIXO e justificativa]
+
+2. RISCOS IMEDIATOS (próximos 7 dias):
+[Identifique riscos que podem se materializar rapidamente]
+
+3. RISCOS SISTÊMICOS (30 dias):
+[Identifique riscos que podem afetar toda a operação]
+
+4. PLANO DE MITIGAÇÃO:
+[Ações específicas para reduzir riscos identificados]
+
+5. INDICADORES DE MONITORAMENTO:
+[Métricas para acompanhar evolução dos riscos]
+
+Seja conservador, específico e focado em prevenção.
+"""
+    
+    return prompt
+
+def performance_benchmark_prompt(comparative_data: Dict[str, Any]) -> str:
+    """Prompt para análise comparativa de performance entre supervisores"""
+    
+    supervisors_data = comparative_data.get('supervisors', [])
+    
+    # Calcula benchmarks
+    autonomy_rates = [s.get('autonomy_rate', 0) for s in supervisors_data]
+    strategic_times = [s.get('strategic_time_percent', 0) for s in supervisors_data]
+    
+    best_autonomy = max(autonomy_rates) if autonomy_rates else 0
+    worst_autonomy = min(autonomy_rates) if autonomy_rates else 0
+    avg_autonomy = sum(autonomy_rates) / len(autonomy_rates) if autonomy_rates else 0
+    
+    prompt = f"""
+Você é um consultor de benchmarking especializado em operações contábeis. Analise a PERFORMANCE COMPARATIVA.
+
+DADOS COMPARATIVOS:
+- Supervisores analisados: {len(supervisors_data)}
+- Melhor taxa de autonomia: {best_autonomy:.1f}%
+- Pior taxa de autonomia: {worst_autonomy:.1f}%
+- Média de autonomia: {avg_autonomy:.1f}%
+
+BENCHMARKS DA INDÚSTRIA:
+- Excelente: >80% autonomia
+- Bom: 60-80% autonomia
+- Regular: 40-60% autonomia
+- Crítico: <40% autonomia
+
+SUPERVISORES POR PERFORMANCE:
+{chr(10).join([f"- {s.get('supervisor_name')}: {s.get('autonomy_rate', 0):.1f}% autonomia" for s in sorted(supervisors_data, key=lambda x: x.get('autonomy_rate', 0), reverse=True)])}
+
+FORNEÇA ANÁLISE COMPARATIVA:
+
+1. CLASSIFICAÇÃO GERAL DA OPERAÇÃO:
+[Como a operação se compara aos benchmarks da indústria]
+
+2. GAPS DE PERFORMANCE:
+[Diferenças significativas entre supervisores]
+
+3. MELHORES PRÁTICAS IDENTIFICADAS:
+[O que os supervisores eficientes fazem diferente]
+
+4. PLANO DE NIVELAMENTO:
+[Como elevar performance dos supervisores menos eficientes]
+
+5. METAS DE CONVERGÊNCIA:
+[Objetivos realistas para reduzir gaps de performance]
+
+Seja comparativo, justo e focado em melhoria contínua.
+"""
+    
+    return prompt
+
+# Funções auxiliares para configuração de prompts
+
+def get_base_context() -> str:
+    """Contexto base comum a todos os prompts"""
+    return """
+CONTEXTO OPERACIONAL CONTÁBIL:
+- Agentes = profissionais técnicos de contabilidade
+- Supervisores = mentores técnicos e gestores
+- Solicitações = pedidos de ajuda técnica (não são atendimentos a clientes)
+- Autonomia = capacidade de trabalhar sem supervisão constante
+- Meta operacional = máximo 2 solicitações/agente/semana
+
+CLASSIFICAÇÃO DE AUTONOMIA:
+🟢 AUTÔNOMO (0-2 solicitações/semana): Trabalha independente
+🟡 ATENÇÃO (3-6 solicitações/semana): Gap específico de conhecimento  
+🔴 CRÍTICO (>6 solicitações/semana): Não consegue trabalhar sozinho
+
+ÁREAS TÉCNICAS COMUNS:
+- eSocial: Sistema de obrigações trabalhistas
+- SPED: Escrituração fiscal digital
+- Report Builder: Geração de relatórios
+- Alterdata: Sistema ERP contábil
+- Rotinas fiscais: Processos específicos
+"""
+
+def format_prompt_with_context(prompt: str) -> str:
+    """Adiciona contexto base a qualquer prompt"""
+    base_context = get_base_context()
+    return f"{base_context}\n\n{prompt}"
+
+# Validação de prompts
+
+def validate_prompt_data(data: Dict[str, Any], required_fields: List[str]) -> bool:
+    """Valida se os dados necessários estão presentes"""
+    for field in required_fields:
+        if field not in data:
+            return False
+    return True
+
+def get_available_prompts() -> Dict[str, str]:
+    """Retorna lista de prompts disponíveis"""
+    return {
+        'autonomy_radar': 'Análise do radar de autonomia (Bloco 1)',
+        'training_matrix': 'Matriz de capacitação (Bloco 2)', 
+        'productivity_dashboard': 'Dashboard de produtividade (Bloco 3)',
+        'strategic_conclusions': 'Conclusões estratégicas (Bloco 4)',
+        'gap_analysis': 'Análise de gaps técnicos',
+        'executive_summary': 'Resumo executivo integrado',
+        'supervisor_performance': 'Performance individual de supervisor',
+        'trend_analysis': 'Análise de tendências históricas',
+        'risk_assessment': 'Avaliação de riscos operacionais',
+        'performance_benchmark': 'Benchmarking comparativo'
+    }
+
+if __name__ == "__main__":
+    # Teste dos prompts
+    print("🧪 Testando AI Prompts...")
+    
+    # Dados de teste
+    test_data = {
+        'supervisors': [
+            {
+                'supervisor_name': 'João Silva',
+                'autonomy_rate': 75.5,
+                'total_attendances_current': 15,
+                'agents': [
+                    {'agent_name': 'Ana', 'current_requests': 8, 'risk_level': 'critical'},
+                    {'agent_name': 'Carlos', 'current_requests': 1, 'risk_level': 'autonomous'}
+                ]
+            }
+        ],
+        'global_stats': {
+            'total_attendances_current': 25,
+            'variation_percent': 15.5
+        }
+    }
+    
+    # Testa alguns prompts
+    print("\n📊 Prompt Radar de Autonomia:")
+    radar_prompt = autonomy_radar_prompt(test_data)
+    print(f"Tamanho: {len(radar_prompt)} caracteres")
+    
+    print("\n📋 Prompt Matriz de Capacitação:")
+    matrix_prompt = training_matrix_prompt(test_data)
+    print(f"Tamanho: {len(matrix_prompt)} caracteres")
+    
+    print("\n✅ Prompts carregados com sucesso!")
+    print(f"📝 Total de prompts disponíveis: {len(get_available_prompts())}")

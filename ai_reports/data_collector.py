@@ -1,716 +1,377 @@
 # ai_reports/data_collector.py
 """
-🔍 Módulo de Coleta de Dados para AI Reports
-Extrai dados do banco AtendePro para análise da IA
+📊 Data Collector - Sistema AI Reports
+Coleta e processa dados de atendimentos para análise de autonomia
 """
 
 from datetime import datetime, timedelta
-from sqlalchemy import func, and_, desc
-from typing import Dict, List, Any, Tuple, Optional
+from models.models import db, User, Agente, Atendimento
+from sqlalchemy import func, and_
+from collections import defaultdict
 import logging
 
-# Importar modelos do sistema principal
-from models.models import db, User, Agente, Atendimento, Equipe
-from config import Config
-
-# Configurar logging
 logger = logging.getLogger(__name__)
 
+class AutonomyDataCollector:
+   """Coleta dados de autonomia semanal para análise IA"""
+   
+   def __init__(self):
+       self.current_date = datetime.now()
+   
+   def get_data_for_week_analysis(self, target_date=None):
+       """
+       Coleta dados completos para análise semanal de autonomia
+       
+       Args:
+           target_date: Data específica para análise (padrão: hoje)
+           
+       Returns:
+           dict: Dados estruturados para análise IA
+       """
+       if target_date is None:
+           target_date = self.current_date
+           
+       try:
+           # Calcula períodos de 7 dias (últimos vs penúltimos)
+           periodo_atual, periodo_anterior = self._get_7_days_periods(target_date)
+           
+           # Coleta dados de todos os supervisores
+           supervisors_data = self._collect_supervisors_data(periodo_atual, periodo_anterior)
+           
+           # Estatísticas globais
+           global_stats = self._collect_global_stats(periodo_atual, periodo_anterior)
+           
+           return {
+               'periodo_atual': {
+                   'inicio': periodo_atual[0].strftime('%Y-%m-%d'),
+                   'fim': periodo_atual[1].strftime('%Y-%m-%d')
+               },
+               'periodo_anterior': {
+                   'inicio': periodo_anterior[0].strftime('%Y-%m-%d'),
+                   'fim': periodo_anterior[1].strftime('%Y-%m-%d')
+               },
+               'supervisors': supervisors_data,
+               'global_stats': global_stats,
+               'total_supervisors': len(supervisors_data),
+               'data_collection_timestamp': datetime.now().isoformat()
+           }
+           
+       except Exception as e:
+           logger.error(f"Erro ao coletar dados para análise: {e}")
+           raise
+   
+   def _get_7_days_periods(self, target_date):
+       """Calcula últimos 7 dias vs penúltimos 7 dias, excluindo o dia atual"""
+       # Últimos 7 dias (até ontem - não incluir hoje)
+       fim_atual = (target_date - timedelta(days=1)).replace(hour=23, minute=59, second=59, microsecond=999999)
+       inicio_atual = fim_atual - timedelta(days=6)
+       
+       # Penúltimos 7 dias
+       fim_anterior = inicio_atual - timedelta(days=1)
+       inicio_anterior = fim_anterior - timedelta(days=6)
+       
+       return (inicio_atual, fim_atual), (inicio_anterior, fim_anterior)
+   
+   def _collect_supervisors_data(self, periodo_atual, periodo_anterior):
+       """Coleta dados detalhados de todos os supervisores"""
+       supervisors_data = []
+       
+       # Busca todos os supervisores ativos
+       supervisors = User.query.filter(
+           User.tipo.in_(['supervisor', 'coordenadora'])
+       ).all()
+       
+       for supervisor in supervisors:
+           try:
+               supervisor_data = self._collect_supervisor_period_data(
+                   supervisor, periodo_atual, periodo_anterior
+               )
+               if supervisor_data:  # Só adiciona se houver dados
+                   supervisors_data.append(supervisor_data)
+                   
+           except Exception as e:
+               logger.error(f"Erro ao processar supervisor {supervisor.nome}: {e}")
+               continue
+       
+       return supervisors_data
+   
+   def _collect_supervisor_period_data(self, supervisor, periodo_atual, periodo_anterior):
+       """Coleta dados detalhados de um supervisor específico"""
+       
+       # Atendimentos período atual
+       atendimentos_atual = self._get_supervisor_attendances(supervisor.id, periodo_atual)
+       
+       # Atendimentos período anterior
+       atendimentos_anterior = self._get_supervisor_attendances(supervisor.id, periodo_anterior)
+       
+       # Se não há atendimentos em nenhum período, pular
+       if not atendimentos_atual and not atendimentos_anterior:
+           return None
+       
+       # Agrupa por agente
+       agents_atual = self._group_by_agent(atendimentos_atual)
+       agents_anterior = self._group_by_agent(atendimentos_anterior)
+       
+       # Calcula dados por agente
+       agents_analysis = self._calculate_agents_analysis(agents_atual, agents_anterior)
+       
+       # Calcula métricas do supervisor
+       supervisor_metrics = self._calculate_supervisor_metrics(
+           agents_analysis, len(atendimentos_atual), len(atendimentos_anterior)
+       )
+       
+       return {
+           'supervisor_id': supervisor.id,
+           'supervisor_name': supervisor.nome,
+           'supervisor_type': supervisor.tipo,
+           'total_attendances_current': len(atendimentos_atual),
+           'total_attendances_previous': len(atendimentos_anterior),
+           'variation_percent': supervisor_metrics['variation_percent'],
+           'autonomy_rate': supervisor_metrics['autonomy_rate'],
+           'strategic_time_percent': supervisor_metrics['strategic_time_percent'],
+           'agents': agents_analysis,
+           'risk_classification': supervisor_metrics['risk_classification'],
+           'evolution_trend': supervisor_metrics['evolution_trend']
+       }
+   
+   def _get_supervisor_attendances(self, supervisor_id, periodo):
+       """Busca atendimentos de um supervisor em período específico"""
+       inicio, fim = periodo
+       
+       atendimentos = db.session.query(Atendimento).filter(
+           and_(
+               Atendimento.supervisor_id == supervisor_id,
+               Atendimento.data_hora >= inicio,
+               Atendimento.data_hora <= fim
+           )
+       ).all()
+       
+       return atendimentos
+   
+   def _group_by_agent(self, atendimentos):
+       """Agrupa atendimentos por agente"""
+       agents_count = defaultdict(int)
+       agents_info = {}
+       
+       for atendimento in atendimentos:
+           if atendimento.agente:
+               agent_id = atendimento.agente.id
+               agents_count[agent_id] += 1
+               agents_info[agent_id] = {
+                   'name': atendimento.agente.nome,
+                   'discord_id': atendimento.agente.discord_id
+               }
+       
+       return {agent_id: {
+           'count': count,
+           'name': agents_info[agent_id]['name'],
+           'discord_id': agents_info[agent_id]['discord_id']
+       } for agent_id, count in agents_count.items()}
+   
+   def _calculate_agents_analysis(self, agents_atual, agents_anterior):
+       """Calcula análise detalhada de cada agente"""
+       agents_analysis = []
+       
+       # Combina agentes de ambos os períodos
+       all_agent_ids = set(agents_atual.keys()) | set(agents_anterior.keys())
+       
+       for agent_id in all_agent_ids:
+           current_count = agents_atual.get(agent_id, {}).get('count', 0)
+           previous_count = agents_anterior.get(agent_id, {}).get('count', 0)
+           
+           # Informações do agente (prioriza período atual)
+           agent_info = agents_atual.get(agent_id) or agents_anterior.get(agent_id)
+           
+           # Calcula variação
+           variation = self._calculate_variation(current_count, previous_count)
+           
+           # Classifica risco
+           risk_classification = self._classify_agent_risk(current_count, variation)
+           
+           # Identifica gaps prováveis
+           probable_gaps = self._identify_probable_gaps(current_count, variation)
+           
+           agents_analysis.append({
+               'agent_id': agent_id,
+               'agent_name': agent_info['name'],
+               'current_requests': current_count,
+               'previous_requests': previous_count,
+               'variation_percent': variation,
+               'risk_level': risk_classification['level'],
+               'risk_status': risk_classification['status'],
+               'autonomy_status': risk_classification['autonomy_status'],
+               'probable_gaps': probable_gaps,
+               'recommended_action': risk_classification['action'],
+               'is_new_agent': previous_count == 0 and current_count > 0,
+               'is_improving': current_count < previous_count and previous_count > 0
+           })
+       
+       return sorted(agents_analysis, key=lambda x: x['current_requests'], reverse=True)
+   
+   def _calculate_variation(self, current, previous):
+       """Calcula variação percentual"""
+       if previous == 0:
+           return 100.0 if current > 0 else 0.0
+       return round(((current - previous) / previous) * 100, 1)
+   
+   def _classify_agent_risk(self, current_count, variation):
+       """Classifica risco do agente baseado em volume e variação"""
+       
+       if current_count > 6:
+           return {
+               'level': 'critical',
+               'status': '🔴 CRÍTICO',
+               'autonomy_status': 'Não consegue trabalhar sozinho',
+               'action': 'Treinamento intensivo urgente'
+           }
+       elif current_count >= 3 and (variation > 50 or current_count >= 5):
+           return {
+               'level': 'attention',
+               'status': '🟡 ATENÇÃO',
+               'autonomy_status': 'Gap específico de conhecimento',
+               'action': 'Identificar padrão e treinar pontualmente'
+           }
+       elif current_count <= 2:
+           return {
+               'level': 'autonomous',
+               'status': '🟢 AUTÔNOMO',
+               'autonomy_status': 'Trabalha independente',
+               'action': 'Manter nível atual'
+           }
+       else:
+           return {
+               'level': 'monitor',
+               'status': '🟡 MONITORAR',
+               'autonomy_status': 'Situação intermediária',
+               'action': 'Acompanhamento próximo'
+           }
+   
+   def _identify_probable_gaps(self, current_count, variation):
+       """Identifica prováveis gaps técnicos baseado em padrões"""
+       gaps = []
+       
+       if current_count > 8:
+           gaps.append("Deficiência geral grave - múltiplas áreas")
+       elif current_count > 6:
+           gaps.append("Gap em área técnica específica")
+       elif variation > 100:
+           gaps.append("Nova dificuldade emergente")
+       elif 3 <= current_count <= 6:
+           gaps.append("Dificuldade pontual específica")
+       
+       # Gaps específicos baseados em volume
+       if current_count > 4:
+           probable_areas = [
+               "eSocial vs Alterdata",
+               "SPED - Validação",
+               "Report Builder",
+               "Rotinas específicas"
+           ]
+           gaps.extend(probable_areas[:2])  # Adiciona as 2 áreas mais prováveis
+       
+       return gaps if gaps else ["Funcionamento normal"]
+   
+   def _calculate_supervisor_metrics(self, agents_analysis, total_atual, total_anterior):
+       """Calcula métricas agregadas do supervisor"""
+       
+       # Taxa de autonomia (% de agentes autônomos)
+       autonomous_agents = len([a for a in agents_analysis if a['risk_level'] == 'autonomous'])
+       total_agents = len(agents_analysis)
+       autonomy_rate = round((autonomous_agents / total_agents * 100), 1) if total_agents > 0 else 0
+       
+       # Variação total
+       variation_percent = self._calculate_variation(total_atual, total_anterior)
+       
+       # Tempo estratégico (inverso do volume de atendimentos)
+       # Supervisor com muitos atendimentos tem pouco tempo estratégico
+       if total_atual <= 10:
+           strategic_time = 85
+       elif total_atual <= 20:
+           strategic_time = 70
+       elif total_atual <= 35:
+           strategic_time = 50
+       else:
+           strategic_time = 25
+       
+       # Classificação de risco do supervisor
+       critical_agents = len([a for a in agents_analysis if a['risk_level'] == 'critical'])
+       if critical_agents >= 3:
+           risk_classification = '🔴 CRÍTICO'
+       elif critical_agents >= 1 or autonomy_rate < 60:
+           risk_classification = '🟡 ATENÇÃO'
+       else:
+           risk_classification = '🟢 EFICIENTE'
+       
+       # Tendência de evolução
+       if variation_percent < -15:
+           evolution_trend = '📉 MELHORANDO'
+       elif variation_percent > 25:
+           evolution_trend = '📈 DETERIORANDO'
+       else:
+           evolution_trend = '📊 ESTÁVEL'
+       
+       return {
+           'variation_percent': variation_percent,
+           'autonomy_rate': autonomy_rate,
+           'strategic_time_percent': strategic_time,
+           'risk_classification': risk_classification,
+           'evolution_trend': evolution_trend
+       }
+   
+   def _collect_global_stats(self, periodo_atual, periodo_anterior):
+       """Coleta estatísticas globais do sistema"""
+       
+       # Total de atendimentos
+       total_atual = db.session.query(func.count(Atendimento.id)).filter(
+           and_(
+               Atendimento.data_hora >= periodo_atual[0],
+               Atendimento.data_hora <= periodo_atual[1]
+           )
+       ).scalar() or 0
+       
+       total_anterior = db.session.query(func.count(Atendimento.id)).filter(
+           and_(
+               Atendimento.data_hora >= periodo_anterior[0],
+               Atendimento.data_hora <= periodo_anterior[1]
+           )
+       ).scalar() or 0
+       
+       # Agentes únicos ativos
+       agentes_ativos = db.session.query(func.count(func.distinct(Atendimento.agente_id))).filter(
+           and_(
+               Atendimento.data_hora >= periodo_atual[0],
+               Atendimento.data_hora <= periodo_atual[1]
+           )
+       ).scalar() or 0
+       
+       return {
+           'total_attendances_current': total_atual,
+           'total_attendances_previous': total_anterior,
+           'variation_percent': self._calculate_variation(total_atual, total_anterior),
+           'active_agents': agentes_ativos,
+           'average_requests_per_agent': round(total_atual / agentes_ativos, 1) if agentes_ativos > 0 else 0
+       }
 
-class DataCollector:
-    """
-    🔍 Coletor de dados para relatórios AI
-    
-    Responsável por extrair dados estruturados do banco de dados
-    para alimentar a análise da IA com base nos últimos 15 dias
-    """
-    
-    def __init__(self):
-        """Inicializa o coletor de dados"""
-        self.debug = Config.AI_REPORTS_DEBUG
-        if self.debug:
-            logger.info("🔍 DataCollector inicializado em modo DEBUG")
-    
-    def get_data_for_week_analysis(self, target_date: datetime = None) -> Dict[str, Any]:
-        """
-        📊 Coleta dados completos para análise dos últimos 15 dias
-        
-        Args:
-            target_date: Data de referência (padrão: hoje)
-            
-        Returns:
-            Dict com dados estruturados para análise IA
-        """
-        if target_date is None:
-            target_date = datetime.now()
-        
-        try:
-            # Nova lógica: últimos 15 dias divididos em 2 períodos de 7 dias cada
-            current_period_start, current_period_end, previous_period_start, previous_period_end = self._get_15_days_periods(target_date)
-            
-            if self.debug:
-                logger.info(f"📅 Período atual: {current_period_start.strftime('%d/%m')} até {current_period_end.strftime('%d/%m')}")
-                logger.info(f"📅 Período anterior: {previous_period_start.strftime('%d/%m')} até {previous_period_end.strftime('%d/%m')}")
-                logger.info(f"📅 Total: 15 dias de análise completa")
-            
-            # Coletar dados por supervisor
-            supervisors_data = self._collect_supervisors_data(
-                current_period_start, current_period_end,
-                previous_period_start, previous_period_end
-            )
-            
-            # Coletar dados globais
-            global_stats = self._collect_global_stats(
-                current_period_start, current_period_end,
-                previous_period_start, previous_period_end
-            )
-            
-            # NOVO: Gerar insights inteligentes baseados nos dados coletados
-            intelligent_insights = self._generate_intelligent_insights(supervisors_data)
-            
-            # NOVO: Criar dashboard executivo para substituir análise IA problemática
-            executive_dashboard = self._create_executive_dashboard(global_stats, intelligent_insights)
-            
-            # Estruturar dados finais
-            analysis_data = {
-                'metadata': {
-                    'generated_at': datetime.now().isoformat(),
-                    'target_date': target_date.isoformat(),
-                    'analysis_type': '15_days_comparison',
-                    'current_week': {
-                        'start': current_period_start.isoformat(),
-                        'end': current_period_end.isoformat(),
-                        'period_label': f"{current_period_start.strftime('%d/%m')} a {current_period_end.strftime('%d/%m')}"
-                    },
-                    'previous_week': {
-                        'start': previous_period_start.isoformat(),
-                        'end': previous_period_end.isoformat(),
-                        'period_label': f"{previous_period_start.strftime('%d/%m')} a {previous_period_end.strftime('%d/%m')}"
-                    },
-                    'total_analysis_period': {
-                        'start': previous_period_start.isoformat(),
-                        'end': current_period_end.isoformat(),
-                        'period_label': f"Análise: {previous_period_start.strftime('%d/%m')} a {current_period_end.strftime('%d/%m')} (15 dias)",
-                        'days_analyzed': 15
-                    }
-                },
-                'supervisors_data': supervisors_data,
-                'global_stats': global_stats,
-                # NOVOS: Campos adicionados conforme o plano de implementação
-                'intelligent_insights': intelligent_insights,
-                'executive_dashboard': executive_dashboard
-            }
-            
-            if self.debug:
-                logger.info(f"✅ Dados coletados: {len(supervisors_data)} supervisores, {global_stats['current_week']['total_tickets']} atendimentos no período atual")
-                logger.info(f"🧠 Insights gerados: {len(intelligent_insights['performance_alerts'])} alertas, {len(intelligent_insights['concentration_patterns'])} padrões")
-                logger.info(f"📊 Dashboard executivo: {executive_dashboard['total_tickets']} atendimentos, {executive_dashboard['supervisor_count']} supervisores")
-            
-            return analysis_data
-            
-        except Exception as e:
-            logger.error(f"❌ Erro na coleta de dados: {e}")
-            raise
-    
-    def _get_15_days_periods(self, target_date: datetime) -> Tuple[datetime, datetime, datetime, datetime]:
-        """
-        📅 Calcula os últimos 15 dias divididos em 2 períodos para comparação
-        
-        Args:
-            target_date: Data de referência (hoje)
-            
-        Returns:
-            Tuple com (atual_inicio, atual_fim, anterior_inicio, anterior_fim)
-        """
-        reference_date = target_date - timedelta(days=1)
-        end_date = reference_date.replace(hour=23, minute=59, second=59, microsecond=999999)
-        
-        # Período atual: 7 dias até ontem
-        current_period_end = end_date
-        current_period_start = (end_date - timedelta(days=6)).replace(hour=0, minute=0, second=0, microsecond=0)
-        
-        # Período anterior: 7 dias antes do período atual
-        previous_period_end = (current_period_start - timedelta(seconds=1))
-        previous_period_start = (previous_period_end - timedelta(days=6)).replace(hour=0, minute=0, second=0, microsecond=0)
-        
-        return current_period_start, current_period_end, previous_period_start, previous_period_end
-    
-    def _collect_supervisors_data(self, current_start: datetime, current_end: datetime,
-                             previous_start: datetime, previous_end: datetime) -> List[Dict[str, Any]]:
-        """
-        📊 Coleta dados de performance de todos os supervisores E coordenadores
-        """
-        try:
-            if self.debug:
-                logger.info("📊 Coletando dados dos supervisores e coordenadores...")
-            
-            # CORREÇÃO: Incluir coordenadores além de supervisores
-            supervisors = User.query.filter(User.tipo.in_(['supervisor', 'coordenadora'])).all()
-            
-            supervisors_data = []
-            
-            for supervisor in supervisors:
-                # Coletar dados do período atual
-                current_data = self._collect_supervisor_period_data(supervisor, current_start, current_end)
-                
-                # Coletar dados do período anterior
-                previous_data = self._collect_supervisor_period_data(supervisor, previous_start, previous_end)
-                
-                # Calcular comparações
-                comparison = self._calculate_comparison(current_data, previous_data)
-                
-                # Estruturar dados do supervisor
-                supervisor_data = {
-                    'supervisor': {
-                        'id': supervisor.id,
-                        'name': supervisor.nome,
-                        'email': supervisor.email,
-                        'tipo': supervisor.tipo  # Incluir tipo para identificar coordenadores
-                    },
-                    'current_week': current_data,
-                    'previous_week': previous_data,
-                    'comparison': comparison
-                }
-                
-                supervisors_data.append(supervisor_data)
-                
-                if self.debug:
-                    logger.info(f"✅ Dados coletados para {supervisor.nome} ({supervisor.tipo}): {current_data['total_tickets']} atendimentos")
-            
-            # Ordenar por total de atendimentos (maior primeiro)
-            supervisors_data.sort(key=lambda x: x['current_week']['total_tickets'], reverse=True)
-            
-            if self.debug:
-                total_supervisors = len([s for s in supervisors_data if s['supervisor']['tipo'] == 'supervisor'])
-                total_coordinators = len([s for s in supervisors_data if s['supervisor']['tipo'] == 'coordenadora'])
-                logger.info(f"📊 Coletados: {total_supervisors} supervisores + {total_coordinators} coordenadores = {len(supervisors_data)} total")
-            
-            return supervisors_data
-            
-        except Exception as e:
-            logger.error(f"❌ Erro na coleta de dados dos supervisores: {e}")
-            return []
-    
-    def _collect_supervisor_period_data(self, supervisor: User, start_date: datetime, end_date: datetime) -> Dict[str, Any]:
-        """
-        📊 Coleta dados de um supervisor específico em um período - VERSÃO CORRIGIDA
-        """
-        try:
-            if self.debug:
-                logger.info(f"📊 Coletando dados de {supervisor.nome} ({supervisor.tipo}) para período {start_date.strftime('%d/%m')} a {end_date.strftime('%d/%m')}")
-            
-            # Buscar todos os atendimentos do supervisor no período
-            atendimentos = Atendimento.query.filter(
-                Atendimento.supervisor_id == supervisor.id,
-                Atendimento.data_hora >= start_date,
-                Atendimento.data_hora <= end_date
-            ).all()
-            
-            total_tickets = len(atendimentos)
-            
-            if self.debug:
-                logger.info(f"📊 Encontrados {total_tickets} atendimentos para {supervisor.nome}")
-            
-            # Agrupar atendimentos por agente
-            agents_performance = {}
-            
-            for atendimento in atendimentos:
-                try:
-                    if hasattr(atendimento, 'agente_id') and atendimento.agente_id:
-                        agente = Agente.query.get(atendimento.agente_id)
-                        if agente and agente.nome:
-                            agent_name = str(agente.nome)
-                            if agent_name not in agents_performance:
-                                agents_performance[agent_name] = {
-                                    'agent': {'name': agent_name, 'id': agente.id},
-                                    'current_tickets': 0
-                                }
-                            agents_performance[agent_name]['current_tickets'] += 1
-                except Exception as agent_error:
-                    logger.error(f"❌ Erro ao processar atendimento {atendimento.id}: {agent_error}")
-                    continue
-            
-            # Converter para lista ordenada por número de tickets
-            agents_list = []
-            for agent_name, agent_data in agents_performance.items():
-                agents_list.append({
-                    'agent': agent_data['agent'],
-                    'current_tickets': agent_data['current_tickets'],
-                    'change': 0,  # Será calculado na comparação
-                    'change_percent': 0,  # Será calculado na comparação
-                    'performance_level': 'stable',
-                    'status': 'neutral',
-                    'needs_attention': False
-                })
-            
-            # Ordenar por número de tickets (maior primeiro)
-            agents_list.sort(key=lambda x: x.get('current_tickets', 0), reverse=True)
-            
-            period_data = {
-                'total_tickets': total_tickets,
-                'agents_performance': agents_list,
-                'start_date': start_date.isoformat(),
-                'end_date': end_date.isoformat()
-            }
-            
-            if self.debug:
-                logger.info(f"✅ {supervisor.nome}: {total_tickets} atendimentos, {len(agents_list)} agentes")
-            
-            return period_data
-            
-        except Exception as e:
-            logger.error(f"❌ Erro ao coletar dados do supervisor {supervisor.nome}: {e}")
-            import traceback
-            logger.error(f"❌ Traceback: {traceback.format_exc()}")
-            
-            # Retorno seguro em caso de erro
-            return {
-                'total_tickets': 0,
-                'agents_performance': [],
-                'start_date': start_date.isoformat(),
-                'end_date': end_date.isoformat()
-            }
+# Função auxiliar para facilitar uso
+def collect_autonomy_data(target_date=None):
+   """
+   Função helper para coletar dados de autonomia
+   
+   Usage:
+       from ai_reports.data_collector import collect_autonomy_data
+       data = collect_autonomy_data()
+   """
+   collector = AutonomyDataCollector()
+   return collector.get_data_for_week_analysis(target_date)
 
-    def _calculate_comparison(self, current_data: Dict[str, Any], previous_data: Dict[str, Any]) -> Dict[str, Any]:
-        """
-        📊 Calcula comparações entre período atual e anterior - VERSÃO CORRIGIDA
-        """
-        try:
-            # CORREÇÃO: Validar se os dados existem antes de acessar
-            current_tickets = current_data.get('total_tickets', 0) if current_data else 0
-            previous_tickets = previous_data.get('total_tickets', 0) if previous_data else 0
-            
-            if self.debug:
-                logger.info(f"📊 Comparando: atual={current_tickets}, anterior={previous_tickets}")
-            
-            # Calcular mudanças
-            absolute_change = current_tickets - previous_tickets
-            
-            if previous_tickets > 0:
-                percent_change = (absolute_change / previous_tickets) * 100
-            else:
-                percent_change = 100 if current_tickets > 0 else 0
-            
-            # Determinar tendência
-            if percent_change > 5:
-                trend = 'crescimento'
-            elif percent_change < -5:
-                trend = 'queda'
-            else:
-                trend = 'estável'
-            
-            # CORREÇÃO: Verificar se existem dados de agentes antes de processar
-            current_agents_list = current_data.get('agents_performance', []) if current_data else []
-            previous_agents_list = previous_data.get('agents_performance', []) if previous_data else []
-            
-            # Criar dicionários para comparação rápida
-            current_agents = {agent['agent']['name']: agent for agent in current_agents_list}
-            previous_agents = {agent['agent']['name']: agent for agent in previous_agents_list}
-            
-            # Calcular mudanças por agente
-            for agent_name, agent_data in current_agents.items():
-                try:
-                    previous_tickets_agent = 0
-                    if agent_name in previous_agents:
-                        previous_tickets_agent = previous_agents[agent_name].get('current_tickets', 0)
-                    
-                    current_tickets_agent = agent_data.get('current_tickets', 0)
-                    change = current_tickets_agent - previous_tickets_agent
-                    
-                    if previous_tickets_agent > 0:
-                        change_percent = (change / previous_tickets_agent) * 100
-                    else:
-                        change_percent = 100 if current_tickets_agent > 0 else 0
-                    
-                    # Atualizar dados do agente
-                    agent_data['change'] = change
-                    agent_data['change_percent'] = round(change_percent, 1)
-                    
-                    # Determinar status e necessidade de atenção
-                    if abs(change_percent) >= 50:
-                        agent_data['needs_attention'] = True
-                        agent_data['status'] = 'warning'
-                        agent_data['performance_level'] = 'Mudança significativa'
-                    elif change_percent > 25:
-                        agent_data['status'] = 'success'
-                        agent_data['performance_level'] = 'Crescimento forte'
-                    elif change_percent > 10:
-                        agent_data['status'] = 'info'
-                        agent_data['performance_level'] = 'Crescimento estável'
-                    elif change_percent < -25:
-                        agent_data['status'] = 'warning'
-                        agent_data['performance_level'] = 'Redução significativa'
-                    else:
-                        agent_data['status'] = 'neutral'
-                        agent_data['performance_level'] = 'Estável'
-                    
-                except Exception as agent_error:
-                    logger.error(f"❌ Erro ao processar agente {agent_name}: {agent_error}")
-                    # Valores padrão em caso de erro
-                    agent_data['change'] = 0
-                    agent_data['change_percent'] = 0
-                    agent_data['status'] = 'neutral'
-                    agent_data['performance_level'] = 'Indisponível'
-                    agent_data['needs_attention'] = False
-            
-            comparison = {
-                'absolute_change': absolute_change,
-                'percent_change': round(percent_change, 2),
-                'trend': trend
-            }
-            
-            if self.debug:
-                logger.info(f"📊 Comparação calculada: {absolute_change:+d} ({percent_change:+.1f}%) - {trend}")
-            
-            return comparison
-            
-        except Exception as e:
-            logger.error(f"❌ Erro no cálculo de comparação: {e}")
-            # Retorno seguro em caso de erro
-            return {
-                'absolute_change': 0,
-                'percent_change': 0,
-                'trend': 'indisponível'
-            }
-    
-    def _analyze_supervisor_agents(self, supervisor: User, tickets: List[Atendimento], 
-                                  previous_start: datetime, previous_end: datetime) -> List[Dict[str, Any]]:
-        """
-        🧑‍💼 Analisa performance dos agentes de um supervisor - VERSÃO CORRIGIDA
-        """
-        # Agrupar atendimentos por agente
-        agents_tickets = {}
-        for ticket in tickets:
-            agent_id = ticket.agente_id
-            if agent_id not in agents_tickets:
-                agents_tickets[agent_id] = []
-            agents_tickets[agent_id].append(ticket)
-        
-        # Buscar dados dos agentes
-        agents_analysis = []
-        
-        for agent_id, agent_tickets in agents_tickets.items():
-            agent = Agente.query.get(agent_id)
-            if not agent:
-                continue
-            
-            # CORREÇÃO: Buscar atendimentos do período anterior de forma mais segura
-            try:
-                previous_count = Atendimento.query.filter(
-                    and_(
-                        Atendimento.agente_id == agent_id,
-                        Atendimento.supervisor_id == supervisor.id,
-                        Atendimento.data_hora >= previous_start,
-                        Atendimento.data_hora <= previous_end
-                    )
-                ).count()
-            except Exception as e:
-                logger.error(f"❌ Erro ao buscar dados do período anterior para agente {agent.nome}: {e}")
-                previous_count = 0
-            
-            current_count = len(agent_tickets)
-            change = current_count - previous_count
-            
-            agent_data = {
-                'agent': {
-                    'id': agent.id,
-                    'name': agent.nome,
-                    'discord_id': agent.discord_id,
-                    'active': agent.ativo
-                },
-                'current_tickets': current_count,
-                'previous_tickets': previous_count,
-                'change': change,
-                'tickets_by_day': self._group_by_day(agent_tickets)
-            }
-            
-            agents_analysis.append(agent_data)
-        
-        # Ordenar por número de atendimentos (decrescente)
-        agents_analysis.sort(key=lambda x: x['current_tickets'], reverse=True)
-        
-        return agents_analysis
-    
-    def _group_by_day(self, tickets: List[Atendimento]) -> Dict[str, int]:
-        """
-        📊 Agrupa atendimentos por dia da semana
-        """
-        days_count = {
-            'Monday': 0, 'Tuesday': 0, 'Wednesday': 0, 'Thursday': 0,
-            'Friday': 0, 'Saturday': 0, 'Sunday': 0
-        }
-        
-        for ticket in tickets:
-            day_name = ticket.data_hora.strftime('%A')
-            if day_name in days_count:
-                days_count[day_name] += 1
-        
-        return days_count
-    
-    def _identify_patterns(self, current_tickets: List[Atendimento], previous_count: int,
-                          agents_analysis: List[Dict]) -> List[str]:
-        """
-        🔍 Identifica padrões interessantes nos dados dos últimos 15 dias - VERSÃO CORRIGIDA
-        """
-        insights = []
-        current_count = len(current_tickets)
-        
-        # CORREÇÃO: Validar previous_count antes de usar
-        if previous_count is None:
-            previous_count = 0
-        
-        # Variação significativa entre períodos
-        if previous_count > 0:
-            change_percent = ((current_count - previous_count) / previous_count) * 100
-            if abs(change_percent) >= 25:
-                if change_percent > 0:
-                    insights.append(f"Crescimento de {change_percent:.1f}% nos últimos 7 dias comparado aos 7 anteriores")
-                else:
-                    insights.append(f"Redução de {abs(change_percent):.1f}% nos últimos 7 dias comparado aos 7 anteriores")
-        
-        # Concentração em poucos agentes
-        if len(agents_analysis) > 1:
-            total_tickets = sum(agent.get('current_tickets', 0) for agent in agents_analysis)
-            if total_tickets > 0:
-                top_agent_percent = (agents_analysis[0].get('current_tickets', 0) / total_tickets) * 100
-                if top_agent_percent >= 50:
-                    agent_name = agents_analysis[0].get('agent', {}).get('name', 'N/A')
-                    insights.append(f"Concentração: {agent_name} responsável por {top_agent_percent:.1f}% dos atendimentos")
-        
-        # Agentes com mudanças atípicas
-        for agent in agents_analysis:
-            previous_tickets_agent = agent.get('previous_tickets', 0)
-            if previous_tickets_agent > 0:
-                change_agent = agent.get('change', 0)
-                agent_change_percent = ((change_agent / previous_tickets_agent) * 100)
-                agent_name = agent.get('agent', {}).get('name', 'N/A')
-                
-                if agent_change_percent >= 40:
-                    insights.append(f"{agent_name}: aumento de {agent_change_percent:.1f}% nos últimos 7 dias")
-                elif agent_change_percent <= -40:
-                    insights.append(f"{agent_name}: redução de {abs(agent_change_percent):.1f}% nos últimos 7 dias")
-        
-        # Insights sobre volume total
-        if current_count >= 50:
-            insights.append(f"Alto volume: {current_count} atendimentos nos últimos 7 dias")
-        elif current_count <= 5 and previous_count > 10:
-            insights.append(f"Volume baixo: apenas {current_count} atendimentos nos últimos 7 dias")
-        
-        return insights
-    
-    def _collect_global_stats(self, current_start: datetime, current_end: datetime,
-                         previous_start: datetime, previous_end: datetime) -> Dict[str, Any]:
-        """
-        🌍 Coleta estatísticas globais incluindo coordenadores
-        """
-        try:
-            if self.debug:
-                logger.info("🌍 Coletando estatísticas globais...")
-            
-            # Contar supervisores E coordenadores ativos
-            active_supervisors_current = User.query.filter(
-                User.tipo.in_(['supervisor', 'coordenadora'])
-            ).count()
-            
-            # Período atual
-            current_tickets = Atendimento.query.filter(
-                Atendimento.data_hora >= current_start,
-                Atendimento.data_hora <= current_end
-            ).count()
-            
-            # Período anterior  
-            previous_tickets = Atendimento.query.filter(
-                Atendimento.data_hora >= previous_start,
-                Atendimento.data_hora <= previous_end
-            ).count()
-            
-            # Calcular mudanças
-            absolute_change = current_tickets - previous_tickets
-            percent_change = ((current_tickets - previous_tickets) / previous_tickets * 100) if previous_tickets > 0 else 0
-            
-            # Determinar tendência
-            if percent_change > 5:
-                trend = 'crescimento'
-            elif percent_change < -5:
-                trend = 'queda'
-            else:
-                trend = 'estável'
-            
-            global_stats = {
-                'current_week': {
-                    'total_tickets': current_tickets,
-                    'active_supervisors': active_supervisors_current,  # Inclui coordenadores
-                    'start_date': current_start.isoformat(),
-                    'end_date': current_end.isoformat()
-                },
-                'previous_week': {
-                    'total_tickets': previous_tickets,
-                    'start_date': previous_start.isoformat(),
-                    'end_date': previous_end.isoformat()
-                },
-                'comparison': {
-                    'absolute_change': absolute_change,
-                    'percent_change': round(percent_change, 2),
-                    'trend': trend
-                }
-            }
-            
-            if self.debug:
-                logger.info(f"🌍 Stats globais: {current_tickets} atendimentos, {active_supervisors_current} supervisores+coordenadores")
-            
-            return global_stats
-            
-        except Exception as e:
-            logger.error(f"❌ Erro nas estatísticas globais: {e}")
-            return {
-                'current_week': {'total_tickets': 0, 'active_supervisors': 0},
-                'previous_week': {'total_tickets': 0},
-                'comparison': {'absolute_change': 0, 'percent_change': 0, 'trend': 'indisponível'}
-            }
-
-    def _generate_intelligent_insights(self, supervisors_data: List[Dict]) -> Dict[str, Any]:
-        """Gera insights automáticos baseados em padrões reais"""
-        insights = {
-            'performance_alerts': [],
-            'concentration_patterns': [],
-            'recommendations': [],
-            'ranking_summary': []
-        }
-        
-        # Detectar supervisores com variação significativa
-        for sup_data in supervisors_data:
-            name = sup_data['supervisor']['name']
-            change_percent = sup_data['comparison']['percent_change']
-            current_tickets = sup_data['current_week']['total_tickets']
-            
-            if abs(change_percent) >= 25:
-                insights['performance_alerts'].append(
-                    f"{name}: {change_percent:+.1f}% - requer atenção"
-                )
-            
-            # Analisar concentração de agentes
-            agents = sup_data['current_week']['agents_performance']
-            if agents and current_tickets > 0:
-                top_agent = max(agents, key=lambda x: x['current_tickets'])
-                concentration = (top_agent['current_tickets'] / current_tickets) * 100
-                
-                if concentration >= 35:
-                    insights['concentration_patterns'].append(
-                        f"{name}: {top_agent['agent']['name']} concentra {concentration:.0f}% dos casos"
-                    )
-        
-        # Gerar ranking automaticamente
-        sorted_supervisors = sorted(supervisors_data, 
-                               key=lambda x: x['current_week']['total_tickets'], 
-                               reverse=True)
-        
-        for i, sup in enumerate(sorted_supervisors[:3], 1):
-            change = sup['comparison']['absolute_change']
-            insights['ranking_summary'].append(
-                f"{i}º {sup['supervisor']['name']}: {sup['current_week']['total_tickets']} ({change:+d})"
-            )
-        
-        return insights
-
-    def _create_executive_dashboard(self, global_stats: Dict, insights: Dict) -> Dict[str, Any]:
-        """Cria dashboard executivo para substituir análise IA"""
-        return {
-            'total_tickets': global_stats['current_week']['total_tickets'],
-            'variation': global_stats['comparison']['absolute_change'],
-            'variation_percent': global_stats['comparison']['percent_change'],
-            'supervisor_count': global_stats['current_week']['active_supervisors'],
-            'ranking': insights['ranking_summary'],
-            'alerts': insights['performance_alerts'],
-            'patterns': insights['concentration_patterns'],
-            'recommendations': insights['recommendations']
-        }
-    
-    def test_data_collection(self) -> Dict[str, Any]:
-        """
-        🧪 Testa a coleta de dados com informações básicas
-        """
-        try:
-            logger.info("🧪 Iniciando teste de coleta de dados (15 dias)...")
-            
-            # Contar registros básicos
-            total_users = User.query.count()
-            total_agents = Agente.query.count()
-            total_tickets = Atendimento.query.count()
-            supervisors = User.query.filter(User.tipo.in_(['supervisor', 'coordenadora'])).count()
-            
-            # Teste de coleta dos últimos 15 dias
-            current_start, current_end, previous_start, previous_end = self._get_15_days_periods(datetime.now())
-            
-            current_tickets = Atendimento.query.filter(
-                and_(
-                    Atendimento.data_hora >= current_start,
-                    Atendimento.data_hora <= current_end
-                )
-            ).count()
-            
-            previous_tickets = Atendimento.query.filter(
-                and_(
-                    Atendimento.data_hora >= previous_start,
-                    Atendimento.data_hora <= previous_end
-                )
-            ).count()
-            
-            test_result = {
-                'success': True,
-                'timestamp': datetime.now().isoformat(),
-                'basic_counts': {
-                    'total_users': total_users,
-                    'total_agents': total_agents,
-                    'total_tickets': total_tickets,
-                    'supervisors': supervisors
-                },
-                'analysis_periods': {
-                    'current_period': {
-                        'period': f"{current_start.strftime('%d/%m')} a {current_end.strftime('%d/%m')}",
-                        'tickets': current_tickets
-                    },
-                    'previous_period': {
-                        'period': f"{previous_start.strftime('%d/%m')} a {previous_end.strftime('%d/%m')}",
-                        'tickets': previous_tickets
-                    },
-                    'total_days_analyzed': 15
-                },
-                'database_status': 'Connected and accessible'
-            }
-            
-            logger.info(f"✅ Teste concluído: {supervisors} supervisores, {current_tickets + previous_tickets} atendimentos nos últimos 15 dias")
-            return test_result
-            
-        except Exception as e:
-            logger.error(f"❌ Erro no teste de coleta: {e}")
-            return {
-                'success': False,
-                'error': str(e),
-                'timestamp': datetime.now().isoformat()
-            }
-
-
-# Função de conveniência para uso externo
-def collect_weekly_data(target_date: datetime = None) -> Dict[str, Any]:
-    """
-    🔧 Função utilitária para coletar dados dos últimos 15 dias
-    
-    Args:
-        target_date: Data de referência (padrão: hoje)
-        
-    Returns:
-        Dados estruturados para análise IA
-    """
-    collector = DataCollector()
-    return collector.get_data_for_week_analysis(target_date)
-
-
-def test_data_collection() -> Dict[str, Any]:
-    """
-    🧪 Função utilitária para testar coleta de dados
-    
-    Returns:
-        Resultado do teste
-    """
-    collector = DataCollector()
-    return collector.test_data_collection()
+if __name__ == "__main__":
+   # Teste rápido
+   print("🧪 Testando Data Collector...")
+   try:
+       data = collect_autonomy_data()
+       print(f"✅ Dados coletados: {len(data['supervisors'])} supervisores")
+       print(f"📊 Total atendimentos: {data['global_stats']['total_attendances_current']}")
+       print(f"📅 Período atual: {data['periodo_atual']['inicio']} - {data['periodo_atual']['fim']}")
+       print(f"📅 Período anterior: {data['periodo_anterior']['inicio']} - {data['periodo_anterior']['fim']}")
+   except Exception as e:
+       print(f"❌ Erro: {e}")

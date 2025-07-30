@@ -5,10 +5,33 @@ from config import Config
 from werkzeug.security import generate_password_hash, check_password_hash
 from collections import defaultdict
 import pytz
-from datetime import datetime, timedelta,date
+from datetime import datetime, timedelta, date
 from collections import defaultdict
 from typing import Dict, List, Any, Optional
+import os
 
+# ===================================================================
+# 🤖 IMPORTAÇÕES PARA O SISTEMA AI REPORTS
+# ===================================================================
+# Importações específicas para AI Reports
+try:
+    from ai_reports import (
+        collect_autonomy_data,
+        analyze_autonomy_data, 
+        send_autonomy_report,
+        get_system_status,
+        quick_test,
+        DEFAULT_CONFIG
+    )
+    AI_REPORTS_AVAILABLE = True
+    print("✅ Sistema AI Reports carregado com sucesso")
+except ImportError as e:
+    AI_REPORTS_AVAILABLE = False
+    print(f"⚠️ AI Reports não disponível: {e}")
+
+# ===================================================================
+# 🔧 CONFIGURAÇÃO FLASK (seu código original continua igual)
+# ===================================================================
 
 app = Flask(__name__)
 app.config.from_object(Config)
@@ -23,7 +46,6 @@ br_tz = pytz.timezone('America/Sao_Paulo')
 
 from flask import redirect, url_for, flash
 from flask_login import LoginManager
-
 
 @login_manager.unauthorized_handler
 def unauthorized_callback():
@@ -45,6 +67,12 @@ with app.app_context():
         )
         db.session.add(admin)
         db.session.commit()
+    
+    # Log status do AI Reports após inicialização
+    if AI_REPORTS_AVAILABLE:
+        app.logger.info("✅ Sistema AI Reports disponível e pronto")
+    else:
+        app.logger.warning("⚠️ Sistema AI Reports não configurado")
 
 @app.route('/')
 def home():
@@ -2358,811 +2386,585 @@ def debug_bulk_classification():
     return jsonify(debug_info)
 
 ########################## FIM DA ROTA DE CLASSIFICAÇÃO EM LOTE ##########################
+# ===================================================================
+# 🎯 ROTAS DO SISTEMA AI REPORTS
+# ===================================================================
+# Adicione estas rotas ANTES da linha "if __name__ == '__main__':"
 
-# ========================================
-# 🤖 AI REPORTS - SISTEMA COMPLETO E LIMPO
-# ========================================
-# Cole este código no final do seu app.py, antes da linha "if __name__ == '__main__':"
+
+# ===================================================================
+# 🔧 SUBSTITUA COMPLETAMENTE a rota admin_ai_reports() no seu app.py
+# ===================================================================
 
 @app.route('/admin/ai-reports')
 @login_required
 def admin_ai_reports():
-    """Painel principal AI Reports - versão simplificada"""
+    """Painel principal AI Reports - VERSÃO FINAL CORRIGIDA"""
     if not current_user.pode_acessar_admin():
-        flash('Acesso negado. Apenas administradores podem acessar este painel.', 'danger')
+        flash('Acesso negado. Apenas administradores podem acessar AI Reports.', 'danger')
         return redirect(url_for('dashboard'))
     
+    if not AI_REPORTS_AVAILABLE:
+        flash('❌ Sistema AI Reports não está disponível. Configure os módulos necessários.', 'danger')
+        return redirect(url_for('admin_panel'))
+    
     try:
-        # Buscar supervisores para teste customizável
-        supervisores = User.query.filter(User.tipo.in_(['supervisor', 'coordenadora'])).all()
-        supervisors_count = len(supervisores)
+        # ===================================================================
+        # 📊 SYSTEM STATUS
+        # ===================================================================
+        system_status = get_system_status()
         
-        # Status básico sempre disponível
-        basic_status = {
-            'status': 'basic_system',
-            'message': 'Sistema básico ativo'
+        # ===================================================================
+        # ⏰ SCHEDULER STATUS (com fallback seguro)
+        # ===================================================================
+        scheduler_status = {
+            'enabled': True,
+            'running': False,
+            'status': 'configured',
+            'message': 'Scheduler configurado para segunda-feira às 9h',
+            'next_execution_formatted': 'Próxima segunda-feira às 09:00',
+            'day_of_week': 0,  # Segunda-feira
+            'hour': 9,
+            'timezone': 'America/Sao_Paulo'
         }
         
-        # Tentar usar sistema avançado se existir
-        try:
-            from ai_reports.scheduler import get_scheduler_status
-            from ai_reports.ai_analyzer import test_ai_connection
-            from ai_reports.email_sender import test_email_connection
-            
-            scheduler_status = get_scheduler_status()
-            ollama_status = test_ai_connection()
-            smtp_status = test_email_connection()
-            advanced_system = True
-        except ImportError:
-            # Fallback para sistema básico
-            scheduler_status = basic_status
-            ollama_status = basic_status
-            smtp_status = basic_status
-            advanced_system = False
+        # ===================================================================
+        # 🤖 OLLAMA STATUS (com fallback seguro)
+        # ===================================================================
+        ollama_status = {
+            'status': 'not_configured',
+            'message': 'Ollama não configurado',
+            'available': False,
+            'url': os.getenv('OLLAMA_URL', 'http://localhost:11434'),
+            'model': os.getenv('OLLAMA_MODEL', 'llama3.2:3b')
+        }
         
-        # Usar template simples que sempre funciona
-        return render_template('ai_reports_simple.html',
+        # Tentar verificar Ollama se disponível
+        try:
+            from ai_reports.ai_analyzer import AutonomyAIAnalyzer
+            analyzer = AutonomyAIAnalyzer()
+            connection_test = analyzer.test_connection()
+            if connection_test['success']:
+                ollama_status = {
+                    'status': 'connected',
+                    'message': 'Ollama conectado e funcionando',
+                    'available': True,
+                    'url': analyzer.ollama_url,
+                    'model': analyzer.model,
+                    'models_available': connection_test.get('available_models', [])
+                }
+            else:
+                ollama_status['message'] = f"Ollama indisponível: {connection_test.get('error', 'Erro desconhecido')}"
+        except Exception as e:
+            ollama_status['message'] = f"Erro ao conectar Ollama: {str(e)}"
+        
+        # ===================================================================
+        # 📧 SMTP STATUS (com fallback seguro)
+        # ===================================================================
+        smtp_status = {
+            'configured': bool(os.getenv('SMTP_EMAIL')),
+            'server': os.getenv('SMTP_SERVER', 'smtp.gmail.com'),
+            'email': os.getenv('SMTP_EMAIL', 'Não configurado'),
+            'status': 'configured' if os.getenv('SMTP_EMAIL') else 'not_configured'
+        }
+        
+        # ===================================================================
+        # 📊 BASIC STATS
+        # ===================================================================
+        basic_stats = {
+            'total_supervisors': User.query.filter(User.tipo.in_(['supervisor', 'coordenadora'])).count(),
+            'total_agents': Agente.query.filter_by(ativo=True).count(),
+            'recent_attendances': Atendimento.query.filter(
+                Atendimento.data_hora >= datetime.now() - timedelta(days=7)
+            ).count(),
+            'ai_reports_version': '1.0.0'
+        }
+        
+        # ===================================================================
+        # 👥 SUPERVISORS LIST
+        # ===================================================================
+        supervisors = User.query.filter(
+            User.tipo.in_(['supervisor', 'coordenadora'])
+        ).order_by(User.nome).all()
+        
+        # ===================================================================
+        # ⚙️ CURRENT CONFIG
+        # ===================================================================
+        current_config = {
+            'ollama_url': ollama_status['url'],
+            'ollama_model': ollama_status['model'],
+            'smtp_configured': smtp_status['configured'],
+            'system_ready': 'ok' in str(system_status.get('data_collector', ''))
+        }
+        
+        # ===================================================================
+        # 🎯 RENDER TEMPLATE COM TODAS AS VARIÁVEIS
+        # ===================================================================
+        return render_template('admin_ai_reports.html',
+                             # Status do sistema
+                             system_status=system_status,
                              scheduler_status=scheduler_status,
-                             ollama_status=ollama_status,
-                             smtp_status=smtp_status,
-                             supervisors_count=supervisors_count,
-                             supervisores=supervisores,
-                             advanced_system=advanced_system)
+                             ollama_status=ollama_status,  # ← ADICIONADO
+                             smtp_status=smtp_status,      # ← ADICIONADO
+                             
+                             # Dados básicos
+                             basic_stats=basic_stats,
+                             current_config=current_config,
+                             supervisors=supervisors)
         
     except Exception as e:
+        flash(f'❌ Erro ao carregar painel AI Reports: {str(e)}', 'danger')
         app.logger.error(f'Erro no painel AI Reports: {e}')
-        flash(f'Erro ao carregar painel AI Reports: {str(e)}', 'danger')
         return redirect(url_for('admin_panel'))
 
-
-@app.route('/admin/ai-reports/test-execution', methods=['GET', 'POST'])
+@app.route('/admin/ai-reports/test')
 @login_required
-def admin_test_ai_reports():
-    """Teste completo do sistema AI Reports avançado - MÉTODO POST EXPLÍCITO"""
-    if not current_user.pode_executar_funcoes_destrutivas():
-        return jsonify({'error': 'Acesso negado'}), 403
-    
-    try:
-        app.logger.info(f'Teste AI Reports completo iniciado por {current_user.nome}')
-        
-        # Tentar usar sistema avançado
-        from ai_reports.data_collector import collect_weekly_data
-        from ai_reports.ai_analyzer import analyze_weekly_data
-        from ai_reports.email_sender import send_weekly_reports
-        
-        # Passo 1: Coletar dados
-        app.logger.info('Coletando dados semanais...')
-        weekly_data = collect_weekly_data()
-        
-        supervisors_count = len(weekly_data['supervisors_data'])
-        total_tickets = weekly_data['global_stats']['current_week']['total_tickets']
-        
-        if supervisors_count == 0:
-            return jsonify({
-                'success': False,
-                'error': 'Nenhum supervisor encontrado no sistema'
-            })
-        
-        # Passo 2: Análise IA
-        app.logger.info('Executando análise IA...')
-        ai_analysis = analyze_weekly_data(weekly_data)
-        
-        # CORRIGIDO: Usar intelligent_insights ao invés de global_analysis
-        intelligent_insights = ai_analysis.get('intelligent_insights', {})
-        insights_count = len(intelligent_insights.get('performance_alerts', [])) + len(intelligent_insights.get('concentration_patterns', []))
-        
-        # Passo 3: Envio de emails
-        send_emails = request.json.get('send_emails', False) if request.is_json else request.form.get('send_emails') == 'true'
-        
-        if send_emails:
-            app.logger.info('Enviando emails reais para supervisores...')
-            email_results = send_weekly_reports(weekly_data, ai_analysis)
-            
-            result = {
-                'success': True,
-                'action': 'test_with_emails',
-                'supervisors_analyzed': supervisors_count,
-                'total_tickets': total_tickets,
-                'insights_generated': insights_count,
-                'emails_sent': email_results['successful_sends'],
-                'email_failures': email_results['failed_sends'],
-                'period': weekly_data['metadata']['current_week']['period_label'],
-                'alerts_detected': len(intelligent_insights.get('performance_alerts', [])),
-                'patterns_identified': len(intelligent_insights.get('concentration_patterns', []))
-            }
-        else:
-            # Apenas preparar emails sem enviar
-            app.logger.info('Preparando emails (sem enviar)...')
-            result = {
-                'success': True,
-                'action': 'test_simulation',
-                'supervisors_analyzed': supervisors_count,
-                'total_tickets': total_tickets,
-                'insights_generated': insights_count,
-                'emails_prepared': supervisors_count,
-                'period': weekly_data['metadata']['current_week']['period_label'],
-                'alerts_detected': len(intelligent_insights.get('performance_alerts', [])),
-                'patterns_identified': len(intelligent_insights.get('concentration_patterns', []))
-            }
-        
-        app.logger.info(f'Teste AI Reports concluído: {result}')
-        return jsonify(result)
-        
-    except ImportError:
-        return jsonify({
-            'success': False,
-            'error': 'Sistema avançado AI Reports não configurado. Use o teste customizável.'
-        }), 500
-    except Exception as e:
-        error_msg = f'Erro no teste AI Reports: {e}'
-        app.logger.error(error_msg)
-        return jsonify({
-            'success': False,
-            'error': error_msg
-        }), 500
-
-
-# ========================================
-# 📧 AI REPORTS - TESTE CUSTOMIZÁVEL COM EMAIL REAL
-# ========================================
-
-@app.route('/admin/ai-reports/custom-test', methods=['POST'])
-@login_required
-def ai_reports_custom_test():
-   """TESTE CUSTOMIZÁVEL - Supervisor específico + Email real usando sua infraestrutura"""
-   if not current_user.pode_acessar_admin():
-       return jsonify({'error': 'Acesso negado'}), 403
-   
-   try:
-       # Obter dados
-       supervisor_id = request.json.get('supervisor_id')
-       email_teste = request.json.get('email_teste')
-       
-       # Validações
-       if not supervisor_id or not email_teste:
-           return jsonify({'error': 'Supervisor e email são obrigatórios'}), 400
-       
-       # Validar email
-       import re
-       if not re.match(r'^[^\s@]+@[^\s@]+\.[^\s@]+$', email_teste):
-           return jsonify({'error': 'Email inválido'}), 400
-       
-       # Buscar supervisor
-       supervisor = User.query.get(int(supervisor_id))
-       if not supervisor:
-           return jsonify({'error': 'Supervisor não encontrado'}), 404
-       
-       app.logger.info(f'Teste customizado AI - Supervisor: {supervisor.nome}, Email: {email_teste}')
-       
-       # Usar sua infraestrutura de IA existente
-       from ai_reports.data_collector import collect_weekly_data
-       from ai_reports.ai_analyzer import analyze_weekly_data
-       from ai_reports.email_sender import EmailSender
-       
-       # Coletar dados semanais (seu sistema)
-       weekly_data = collect_weekly_data()
-       
-       # Encontrar dados do supervisor específico
-       supervisor_data = None
-       for sup_data in weekly_data['supervisors_data']:
-           if sup_data['supervisor']['id'] == int(supervisor_id):
-               supervisor_data = sup_data
-               break
-       
-       if not supervisor_data:
-           return jsonify({'error': 'Dados do supervisor não encontrados'}), 404
-       
-       # Análise IA (seu sistema)
-       ai_analysis = analyze_weekly_data(weekly_data)
-       
-       # Encontrar análise específica do supervisor
-       supervisor_ai_analysis = None
-       for analysis in ai_analysis['supervisors_analysis']:
-           if analysis['supervisor_id'] == int(supervisor_id):
-               supervisor_ai_analysis = analysis
-               break
-       
-       # Calcular próxima segunda-feira
-       from datetime import timedelta
-       hoje = datetime.now()
-       dias_ate_segunda = 7 - hoje.weekday()
-       if dias_ate_segunda <= 0:
-           dias_ate_segunda += 7
-       proxima_segunda = hoje + timedelta(days=dias_ate_segunda)
-       
-       # Calcular ranking do supervisor
-       ranking_position = 1
-       for i, analysis in enumerate(sorted(ai_analysis['supervisors_analysis'], 
-                                         key=lambda x: x['key_metrics']['current_tickets'], reverse=True), 1):
-           if analysis['supervisor_id'] == int(supervisor_id):
-               ranking_position = i
-               break
-       
-       # Preparar dados completos para email
-       template_data = {
-            'supervisor_name': supervisor.nome,
-            'period_label': weekly_data['metadata']['current_week']['period_label'],
-            'generated_at': datetime.now().strftime('%d/%m/%Y às %H:%M'),
-            'next_report_date': proxima_segunda.strftime('%d/%m/%Y'),
-            'total_tickets': supervisor_data['current_week']['total_tickets'],
-            'change_text': f"{supervisor_data['comparison']['absolute_change']:+d} ({supervisor_data['comparison']['percent_change']:+.1f}%)",
-            'trend_class': 'positive' if supervisor_data['comparison']['absolute_change'] > 0 else 'negative' if supervisor_data['comparison']['absolute_change'] < 0 else 'neutral',
-            'agents_count': len(supervisor_data['current_week']['agents_performance']),
-            'ranking_text': f"#{ranking_position} no ranking",
-            
-            # REMOVER: 'global_analysis': ai_analysis['global_analysis']['trend_analysis'],
-            # ADICIONAR:
-            'executive_dashboard': ai_analysis.get('executive_dashboard', {}),
-            'intelligent_insights': ai_analysis.get('intelligent_insights', {}),
-            
-            'supervisor_analysis': supervisor_ai_analysis['performance_analysis'] if supervisor_ai_analysis else 'Análise específica indisponível',
-            'recommendations': supervisor_ai_analysis['recommendations'] if supervisor_ai_analysis else ['Monitorar performance manualmente'],
-            'agents_performance': supervisor_data['current_week']['agents_performance'][:5],
-            'data_source_info': f"{len(weekly_data['supervisors_data'])} supervisores, {ai_analysis['summary']['total_tickets']} atendimentos totais",
-            'ai_model': ai_analysis['metadata']['ai_model']
-       }
-       
-       # Enviar email usando seu EmailSender
-       sender = EmailSender()
-       
-       # Criar email customizado
-       subject = f"🧪 TESTE - Relatório AI - {supervisor.nome} - {template_data['period_label']}"
-       
-       html_content = create_custom_email_html(template_data)
-       text_content = create_custom_email_text(template_data)
-       
-       # Enviar usando seu SMTP
-       email_result = send_custom_email(sender, email_teste, subject, html_content, text_content, template_data)
-       
-       if email_result['success']:
-           return jsonify({
-               'success': True,
-               'message': f'✅ EMAIL REAL ENVIADO COM SUCESSO!\n\n📧 Para: {email_teste}\n👤 Supervisor: {supervisor.nome}\n📊 Atendimentos analisados: {supervisor_data["current_week"]["total_tickets"]}\n🤖 Insights IA: {len(supervisor_ai_analysis["recommendations"]) if supervisor_ai_analysis else 0}\n🚀 Enviado via SMTP\n📤 Período: {template_data["period_label"]}'
-           })
-       else:
-           return jsonify({
-               'error': f'Falha no envio: {email_result["error"]}',
-               'debug': email_result.get('debug', {})
-           }), 500
-           
-   except ImportError as e:
-       return jsonify({
-           'error': f'Módulos AI Reports não encontrados: {str(e)}. Verifique se o sistema está configurado.'
-       }), 500
-   except Exception as e:
-       app.logger.error(f'Erro no teste customizado: {e}')
-       return jsonify({'error': f'Erro interno: {str(e)}'}), 500
-
-
-def send_custom_email(sender, email_destino, subject, html_content, text_content, template_data):
-   """Envia email usando EmailSender existente com dados completos"""
-   try:
-       from email.mime.text import MIMEText
-       from email.mime.multipart import MIMEMultipart
-       import smtplib
-       import ssl
-       
-       # Criar mensagem
-       msg = MIMEMultipart('alternative')
-       msg['Subject'] = subject
-       msg['From'] = f"{sender.from_name} <{sender.from_email}>"
-       msg['To'] = email_destino
-       
-       # Adicionar cabeçalhos extras
-       msg['X-Mailer'] = 'AtendePro AI Reports v1.0'
-       msg['X-Priority'] = '3'  # Normal priority
-       
-       # Adicionar versão texto simples
-       text_part = MIMEText(text_content, 'plain', 'utf-8')
-       
-       # Adicionar versão HTML
-       html_part = MIMEText(html_content, 'html', 'utf-8')
-       
-       # Anexar ambas as versões
-       msg.attach(text_part)
-       msg.attach(html_part)
-       
-       # Estabelecer conexão e enviar
-       if sender.smtp_use_ssl:
-           context = ssl.create_default_context()
-           server = smtplib.SMTP_SSL(sender.smtp_server, sender.smtp_port, context=context)
-       else:
-           server = smtplib.SMTP(sender.smtp_server, sender.smtp_port)
-           if sender.smtp_use_tls:
-               context = ssl.create_default_context()
-               server.starttls(context=context)
-       
-       # Autenticar e enviar
-       server.login(sender.smtp_username, sender.smtp_password)
-       server.send_message(msg)
-       server.quit()
-       
-       result = {
-           'success': True,
-           'to_email': email_destino,
-           'subject': subject,
-           'timestamp': datetime.now().isoformat(),
-           'html_size': len(html_content),
-           'text_size': len(text_content)
-       }
-       
-       return result
-       
-   except Exception as e:
-       error_msg = f"Erro no envio SMTP: {e}"
-       return {
-           'success': False,
-           'error': error_msg,
-           'to_email': email_destino,
-           'timestamp': datetime.now().isoformat()
-       }
-
-
-def create_custom_email_html(data):
-    """Cria HTML do email usando dados reais"""
-    insights_html = ''.join([f'<li style="margin-bottom: 8px; color: #444;">{rec}</li>' 
-                            for rec in data['recommendations']])
-    
-    agents_html = ''.join([
-        f'<div style="background: white; padding: 12px; margin: 6px 0; border-radius: 6px; border-left: 4px solid #667eea;">'
-        f'<strong>{agent["agent"]["name"]}</strong>: {agent["current_tickets"]} atendimentos '
-        f'({agent["change"]:+d})</div>'
-        for agent in data['agents_performance']
-    ])
-    
-    # CORRIGIDO: Usar executive_dashboard ao invés de global_analysis
-    executive_dashboard = data.get('executive_dashboard', {})
-    dashboard_summary = f"Dashboard mostra {executive_dashboard.get('total_tickets', 0)} atendimentos totais no sistema"
-    
-    # Adicionar alertas se disponíveis
-    alerts_html = ''
-    alerts = executive_dashboard.get('alerts', [])
-    if alerts:
-        alerts_list = ''.join([f'<li style="color: #e74c3c; margin-bottom: 5px;">⚠️ {alert}</li>' for alert in alerts[:3]])
-        alerts_html = f'<h4 style="color: #e74c3c; margin: 15px 0 5px 0;">Alertas:</h4><ul style="margin: 0; padding-left: 20px;">{alerts_list}</ul>'
-    
-    # Adicionar ranking se disponível
-    ranking_html = ''
-    ranking = executive_dashboard.get('ranking', [])
-    if ranking:
-        ranking_list = ''.join([f'<li style="color: #27ae60; margin-bottom: 5px;">🏆 {rank}</li>' for rank in ranking[:3]])
-        ranking_html = f'<h4 style="color: #27ae60; margin: 15px 0 5px 0;">Top Supervisores:</h4><ul style="margin: 0; padding-left: 20px;">{ranking_list}</ul>'
-    
-    return f"""
-    <!DOCTYPE html>
-    <html>
-    <head>
-        <meta charset="UTF-8">
-        <title>Relatório AI - {data['supervisor_name']}</title>
-    </head>
-    <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
-        
-        <div style="background: linear-gradient(135deg, #667eea, #764ba2); color: white; padding: 30px; border-radius: 12px; text-align: center; margin-bottom: 30px;">
-            <h1 style="margin: 0; font-size: 24px;">🤖 Relatório AI - TESTE</h1>
-            <p style="margin: 10px 0 0 0; opacity: 0.9;">Análise Personalizada de Performance</p>
-        </div>
-        
-        <div style="background: #f8f9fa; padding: 20px; border-radius: 8px; margin-bottom: 20px;">
-            <h2 style="color: #2c3e50; margin-top: 0;">👤 {data['supervisor_name']}</h2>
-            <p style="color: #6c757d; margin: 0;">Período: {data['period_label']} | Gerado: {data['generated_at']}</p>
-        </div>
-        
-        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 15px; margin-bottom: 30px;">
-            <div style="background: white; padding: 20px; border-radius: 8px; text-align: center; border: 2px solid #e1e5e9;">
-                <div style="font-size: 32px; font-weight: bold; color: #667eea; margin-bottom: 5px;">{data['total_tickets']}</div>
-                <div style="color: #6c757d; font-size: 14px;">Atendimentos</div>
-            </div>
-            <div style="background: white; padding: 20px; border-radius: 8px; text-align: center; border: 2px solid #e1e5e9;">
-                <div style="font-size: 20px; font-weight: bold; color: #36d1dc; margin-bottom: 5px;">{data['change_text']}</div>
-                <div style="color: #6c757d; font-size: 14px;">Variação</div>
-            </div>
-            <div style="background: white; padding: 20px; border-radius: 8px; text-align: center; border: 2px solid #e1e5e9;">
-                <div style="font-size: 32px; font-weight: bold; color: #f093fb; margin-bottom: 5px;">{data['agents_count']}</div>
-                <div style="color: #6c757d; font-size: 14px;">Agentes</div>
-            </div>
-        </div>
-        
-        <div style="background: white; padding: 25px; border-radius: 8px; border: 2px solid #e1e5e9; margin-bottom: 20px;">
-            <h3 style="color: #2c3e50; margin-top: 0;">📊 Dashboard Executivo</h3>
-            <p style="color: #555; margin-bottom: 15px;">{dashboard_summary}</p>
-            {ranking_html}
-            {alerts_html}
-            
-            <h3 style="color: #2c3e50; margin-top: 25px;">👤 Análise Conversacional</h3>
-            <div style="background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%); border: 1px solid #7dd3fc; border-radius: 8px; padding: 20px; margin: 15px 0;">
-                <p style="color: #0c4a6e; margin: 0; font-style: italic; font-size: 16px; line-height: 1.6;">{data['supervisor_analysis']}</p>
-            </div>
-            
-            <h3 style="color: #2c3e50; margin-top: 20px;">🎯 Recomendações IA</h3>
-            <ul style="padding-left: 20px; margin: 15px 0;">
-                {insights_html}
-            </ul>
-        </div>
-        
-        <div style="background: white; padding: 25px; border-radius: 8px; border: 2px solid #e1e5e9; margin-bottom: 20px;">
-            <h3 style="color: #2c3e50; margin-top: 0;">👥 Equipe</h3>
-            {agents_html}
-        </div>
-        
-        <div style="background: #2c3e50; color: white; padding: 20px; border-radius: 8px; text-align: center;">
-            <p style="margin: 0; font-size: 14px; opacity: 0.8;">
-                🧪 EMAIL DE TESTE - Relatório gerado pela IA {data['ai_model']}<br>
-                AtendePro - Sistema AI Reports
-            </p>
-        </div>
-        
-    </body>
-    </html>
-    """
-
-
-def create_custom_email_text(data):
-    """Cria versão texto do email"""
-    recommendations_text = '\n'.join([f'• {rec}' for rec in data['recommendations']])
-    agents_text = '\n'.join([f'• {agent["agent"]["name"]}: {agent["current_tickets"]} atendimentos ({agent["change"]:+d})' 
-                            for agent in data['agents_performance']])
-    
-    # CORRIGIDO: Usar executive_dashboard ao invés de global_analysis
-    executive_dashboard = data.get('executive_dashboard', {})
-    dashboard_text = f"Dashboard Executivo: {executive_dashboard.get('total_tickets', 0)} atendimentos totais no sistema"
-    
-    # Adicionar ranking se disponível
-    ranking_text = ""
-    ranking = executive_dashboard.get('ranking', [])
-    if ranking:
-        ranking_list = '\n'.join([f'• {rank}' for rank in ranking[:3]])
-        ranking_text = f"\n\n🏆 TOP SUPERVISORES:\n{ranking_list}"
-    
-    # Adicionar alertas se disponíveis  
-    alerts_text = ""
-    alerts = executive_dashboard.get('alerts', [])
-    if alerts:
-        alerts_list = '\n'.join([f'• ⚠️ {alert}' for alert in alerts[:3]])
-        alerts_text = f"\n\n⚠️ ALERTAS DE PERFORMANCE:\n{alerts_list}"
-    
-    # Adicionar padrões identificados se disponíveis
-    patterns_text = ""
-    patterns = executive_dashboard.get('patterns', [])
-    if patterns:
-        patterns_list = '\n'.join([f'• 🎯 {pattern}' for pattern in patterns[:3]])
-        patterns_text = f"\n\n🎯 PADRÕES IDENTIFICADOS:\n{patterns_list}"
-    
-    return f"""
-🧪 TESTE - RELATÓRIO AI - {data['supervisor_name']}
-Período: {data['period_label']} | Gerado: {data['generated_at']}
-
-📊 MÉTRICAS:
-- Atendimentos: {data['total_tickets']}
-- Variação: {data['change_text']}
-- Agentes na equipe: {data['agents_count']}
-
-📈 DASHBOARD EXECUTIVO:
-{dashboard_text}{ranking_text}{alerts_text}{patterns_text}
-
-💬 ANÁLISE CONVERSACIONAL:
-{data['supervisor_analysis']}
-
-🎯 RECOMENDAÇÕES:
-{recommendations_text}
-
-👥 EQUIPE:
-{agents_text}
-
----
-🧪 Este é um email de teste do sistema AI Reports
-Modelo IA: {data['ai_model']}
-AtendePro - Gestão Inteligente com IA
-"""
-
-
-@app.route('/admin/ai-reports/preview/<int:supervisor_id>', methods=['GET'])
-@login_required
-def ai_reports_preview(supervisor_id):
-    """Preview dos dados do supervisor - MÉTODO GET EXPLÍCITO"""
+def ai_reports_test():
+    """Teste rápido do sistema AI Reports"""
     if not current_user.pode_acessar_admin():
         return jsonify({'error': 'Acesso negado'}), 403
+    
+    if not AI_REPORTS_AVAILABLE:
+        return jsonify({
+            'success': False,
+            'error': 'Sistema AI Reports não disponível'
+        }), 500
+    
+    try:
+        # Executa teste rápido
+        test_result = quick_test()
+        
+        # Coleta dados de amostra
+        sample_data = collect_autonomy_data()
+        
+        return jsonify({
+            'success': True,
+            'test_passed': test_result,
+            'system_status': get_system_status(),
+            'sample_data': {
+                'supervisors_analyzed': len(sample_data['supervisors']),
+                'total_agents': sum(len(sup['agents']) for sup in sample_data['supervisors']),
+                'period_analyzed': f"{sample_data['periodo_atual']['inicio']} - {sample_data['periodo_atual']['fim']}",
+                'total_requests': sample_data['global_stats']['total_attendances_current']
+            },
+            'timestamp': datetime.now().isoformat()
+        })
+        
+    except Exception as e:
+        app.logger.error(f'Erro no teste AI Reports: {e}')
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
+
+@app.route('/admin/ai-reports/generate', methods=['POST'])
+@login_required
+def ai_reports_generate():
+    """Gera relatório de autonomia completo"""
+    if not current_user.pode_acessar_admin():
+        return jsonify({'error': 'Acesso negado'}), 403
+    
+    if not AI_REPORTS_AVAILABLE:
+        return jsonify({
+            'success': False,
+            'error': 'Sistema AI Reports não disponível'
+        }), 500
+    
+    try:
+        # Parâmetros da requisição
+        data = request.get_json() or {}
+        supervisor_filter = data.get('supervisor_id')
+        send_email = data.get('send_email', False)
+        recipients = data.get('recipients', [])
+        
+        # Configuração SMTP se necessário
+        smtp_config = None
+        if send_email and recipients:
+            try:
+                from config import Config
+                smtp_config = {
+                    'server': getattr(Config, 'SMTP_SERVER', 'smtp.gmail.com'),
+                    'port': getattr(Config, 'SMTP_PORT', 587),
+                    'email': getattr(Config, 'SMTP_EMAIL', ''),
+                    'password': getattr(Config, 'SMTP_PASSWORD', ''),
+                    'sender_name': getattr(Config, 'SMTP_SENDER_NAME', 'AI Reports')
+                }
+            except ImportError:
+                smtp_config = {
+                    'server': os.getenv('SMTP_SERVER', 'smtp.gmail.com'),
+                    'port': int(os.getenv('SMTP_PORT', 587)),
+                    'email': os.getenv('SMTP_EMAIL', ''),
+                    'password': os.getenv('SMTP_PASSWORD', ''),
+                    'sender_name': os.getenv('SMTP_SENDER_NAME', 'AI Reports')
+                }
+            
+            if not smtp_config['email'] or not smtp_config['password']:
+                return jsonify({
+                    'success': False,
+                    'error': 'Configuração SMTP incompleta. Configure SMTP_EMAIL e SMTP_PASSWORD.'
+                }), 400
+        
+        # Coleta dados
+        app.logger.info('Coletando dados de autonomia...')
+        autonomy_data = collect_autonomy_data()
+        
+        # Filtra supervisor específico se solicitado
+        if supervisor_filter:
+            autonomy_data['supervisors'] = [
+                sup for sup in autonomy_data['supervisors'] 
+                if sup['supervisor_id'] == int(supervisor_filter)
+            ]
+        
+        # Análise IA
+        app.logger.info('Executando análise IA...')
+        ollama_url = os.getenv('OLLAMA_URL', DEFAULT_CONFIG['ollama_url'])
+        ai_analysis = analyze_autonomy_data(autonomy_data, ollama_url)
+        
+        # Envio de email se solicitado
+        email_result = None
+        if smtp_config and recipients:
+            app.logger.info('Enviando relatório por email...')
+            email_result = send_autonomy_report(
+                ai_analysis, 
+                smtp_config, 
+                recipients,
+                supervisor_name=None
+            )
+        
+        return jsonify({
+            'success': True,
+            'analysis_completed': ai_analysis['success'],
+            'supervisors_analyzed': len(autonomy_data['supervisors']),
+            'total_agents': sum(len(sup['agents']) for sup in autonomy_data['supervisors']),
+            'email_sent': email_result['success'] if email_result else False,
+            'period': f"{autonomy_data['periodo_atual']['inicio']} - {autonomy_data['periodo_atual']['fim']}",
+            'ai_diagnosis': ai_analysis.get('analysis', {}).get('block_4_conclusions', {}).get('ai_diagnosis', 'Análise concluída'),
+            'timestamp': datetime.now().isoformat()
+        })
+        
+    except Exception as e:
+        app.logger.error(f'Erro na geração de relatório: {e}')
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
+
+@app.route('/admin/ai-reports/send-test-email', methods=['POST'])
+@login_required
+def ai_reports_send_test_email():
+    """Envia email de teste do sistema AI Reports"""
+    if not current_user.pode_acessar_admin():
+        return jsonify({'error': 'Acesso negado'}), 403
+    
+    if not AI_REPORTS_AVAILABLE:
+        return jsonify({
+            'success': False,
+            'error': 'Sistema AI Reports não disponível'
+        }), 500
+    
+    try:
+        data = request.get_json() or {}
+        recipient = data.get('recipient', current_user.email)
+        
+        if not recipient:
+            return jsonify({
+                'success': False,
+                'error': 'Email destinatário é obrigatório'
+            }), 400
+        
+        # Configuração SMTP
+        try:
+            from config import Config
+            smtp_config = {
+                'server': getattr(Config, 'SMTP_SERVER', 'smtp.gmail.com'),
+                'port': getattr(Config, 'SMTP_PORT', 587),
+                'email': getattr(Config, 'SMTP_EMAIL', ''),
+                'password': getattr(Config, 'SMTP_PASSWORD', ''),
+                'sender_name': getattr(Config, 'SMTP_SENDER_NAME', 'AI Reports Test')
+            }
+        except ImportError:
+            smtp_config = {
+                'server': os.getenv('SMTP_SERVER', 'smtp.gmail.com'),
+                'port': int(os.getenv('SMTP_PORT', 587)),
+                'email': os.getenv('SMTP_EMAIL', ''),
+                'password': os.getenv('SMTP_PASSWORD', ''),
+                'sender_name': os.getenv('SMTP_SENDER_NAME', 'AI Reports Test')
+            }
+        
+        if not smtp_config['email'] or not smtp_config['password']:
+            return jsonify({
+                'success': False,
+                'error': 'SMTP não configurado. Configure SMTP_EMAIL e SMTP_PASSWORD no config.py ou variáveis de ambiente.'
+            }), 400
+        
+        # Gera dados de teste e envia
+        from ai_reports.email_sender import AutonomyEmailSender
+        
+        sender = AutonomyEmailSender(smtp_config)
+        result = sender.send_test_email(recipient)
+        
+        return jsonify(result)
+        
+    except Exception as e:
+        app.logger.error(f'Erro no teste de email: {e}')
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
+
+@app.route('/admin/ai-reports/preview/<int:supervisor_id>')
+@login_required
+def ai_reports_preview(supervisor_id):
+    """Preview dos dados de um supervisor específico"""
+    if not current_user.pode_acessar_admin():
+        return jsonify({'error': 'Acesso negado'}), 403
+    
+    if not AI_REPORTS_AVAILABLE:
+        return jsonify({
+            'success': False,
+            'error': 'Sistema AI Reports não disponível'
+        }), 500
     
     try:
         supervisor = User.query.get(supervisor_id)
         if not supervisor:
             return jsonify({'error': 'Supervisor não encontrado'}), 404
         
-        # Tentar sistema avançado primeiro
-        try:
-            from ai_reports.data_collector import collect_supervisor_data
-            from ai_reports.ai_analyzer import analyze_supervisor_data
-            
-            supervisor_data = collect_supervisor_data(supervisor_id)
-            ai_analysis = analyze_supervisor_data(supervisor_data)
-            
-            return jsonify({
-                'success': True,
-                'data': {
-                    'supervisor_nome': supervisor_data['supervisor']['nome'],
-                    'data_analise': datetime.now().strftime('%d/%m/%Y às %H:%M'),
-                    'total_atendimentos': supervisor_data['current_week']['total_tickets'],
-                    'tickets_resolvidos': supervisor_data['current_week']['resolved_tickets'],
-                    'agentes_ativos': len([a for a in supervisor_data['agents'] if a['ativo']]),
-                    'crescimento_percentual': supervisor_data['comparison']['growth_percentage'],
-                    'insights_ia': ai_analysis['insights'],
-                    'sistema': 'avançado'
-                }
-            })
-            
-        except ImportError:
-            # Fallback para sistema básico
-            supervisor_data = collect_supervisor_data_basic(supervisor_id)
-            ai_analysis = analyze_supervisor_data_basic(supervisor_data)
-            
-            return jsonify({
-                'success': True,
-                'data': {
-                    'supervisor_nome': supervisor.nome,
-                    'data_analise': datetime.now().strftime('%d/%m/%Y às %H:%M'),
-                    'total_atendimentos': supervisor_data['total_atendimentos'],
-                    'atendimentos_semana': supervisor_data['atendimentos_semana'],
-                    'agentes_ativos': supervisor_data['agentes_ativos'],
-                    'crescimento_percentual': supervisor_data['crescimento_percentual'],
-                    'insights_ia': ai_analysis['insights'],
-                    'sistema': 'básico'
-                }
-            })
+        # Coleta dados básicos do supervisor
+        hoje = datetime.now()
+        uma_semana_atras = hoje - timedelta(days=7)
+        
+        # Atendimentos recentes
+        atendimentos_recentes = Atendimento.query.filter(
+            Atendimento.supervisor_id == supervisor_id,
+            Atendimento.data_hora >= uma_semana_atras
+        ).count()
+        
+        # Agentes da equipe
+        agentes_equipe = Agente.query.filter_by(
+            supervisor_id=supervisor_id,
+            ativo=True
+        ).count()
+        
+        # Total histórico
+        total_atendimentos = Atendimento.query.filter_by(
+            supervisor_id=supervisor_id
+        ).count()
+        
+        return jsonify({
+            'success': True,
+            'supervisor': {
+                'id': supervisor.id,
+                'nome': supervisor.nome,
+                'tipo': supervisor.tipo
+            },
+            'preview_data': {
+                'atendimentos_ultima_semana': atendimentos_recentes,
+                'agentes_ativos': agentes_equipe,
+                'total_historico': total_atendimentos,
+                'data_preview': hoje.strftime('%d/%m/%Y às %H:%M'),
+                'periodo_analisado': f"{uma_semana_atras.strftime('%d/%m')} - {hoje.strftime('%d/%m/%Y')}"
+            }
+        })
         
     except Exception as e:
         app.logger.error(f'Erro no preview: {e}')
-        return jsonify({'error': f'Erro ao gerar preview: {str(e)}'}, 500)
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
 
-
-# SUBSTITUA APENAS a rota toggle-scheduler no seu app.py por esta versão:
-
-@app.route('/admin/ai-reports/toggle-scheduler', methods=['GET', 'POST'])
+@app.route('/api/ai-reports/status')
 @login_required
-def admin_toggle_scheduler():
-    """Habilitar/desabilitar scheduler - AMBOS GET E POST"""
-    if not current_user.pode_executar_funcoes_destrutivas():
-        if request.method == 'POST':
-            return jsonify({'error': 'Acesso negado'}), 403
-        else:
-            return jsonify({'error': 'Acesso negado', 'method': 'GET'}), 403
+def ai_reports_status_api():
+    """API para verificar status do sistema AI Reports"""
+    if not current_user.pode_acessar_admin():
+        return jsonify({'error': 'Acesso negado'}), 403
     
-    # Se for GET, retornar status atual
-    if request.method == 'GET':
-        try:
-            from ai_reports.scheduler import get_scheduler_status
-            status = get_scheduler_status()
-            return jsonify({
-                'success': True,
-                'current_status': status,
-                'message': 'Status atual do scheduler',
-                'available_actions': ['start', 'stop']
-            })
-        except ImportError:
-            return jsonify({
-                'success': False,
-                'error': 'Sistema avançado não configurado',
-                'current_status': {'status': 'not_configured'}
-            })
-        except Exception as e:
-            return jsonify({
-                'success': False,
-                'error': f'Erro ao obter status: {e}'
-            })
-    
-    # POST - Executar ação
     try:
-        # Tentar pegar action de diferentes formas
-        action = None
-        
-        if request.is_json and request.json:
-            action = request.json.get('action')
-        elif request.form:
-            action = request.form.get('action')
-        elif request.args:
-            action = request.args.get('action')
-        
-        if not action:
+        if not AI_REPORTS_AVAILABLE:
             return jsonify({
-                'error': 'Parâmetro "action" obrigatório (start/stop)',
-                'received_data': {
-                    'json': request.json if request.is_json else None,
-                    'form': dict(request.form) if request.form else None,
-                    'args': dict(request.args) if request.args else None
-                }
-            }), 400
+                'available': False,
+                'error': 'Módulo AI Reports não carregado',
+                'status': 'not_available'
+            })
         
-        from ai_reports.scheduler import start_scheduler, stop_scheduler
-        
-        if action == 'start':
-            success = start_scheduler()
-            message = 'Scheduler iniciado com sucesso' if success else 'Falha ao iniciar scheduler'
-        elif action == 'stop':
-            stop_scheduler()
-            success = True
-            message = 'Scheduler parado com sucesso'
-        else:
-            return jsonify({'error': f'Ação inválida: {action}. Use "start" ou "stop"'}), 400
+        # Status detalhado
+        system_status = get_system_status()
         
         return jsonify({
-            'success': success,
-            'message': message,
-            'action_executed': action
+            'available': True,
+            'status': 'available',
+            'components': system_status,
+            'last_check': datetime.now().isoformat(),
+            'version': '1.0.0'
+        })
+        
+    except Exception as e:
+        return jsonify({
+            'available': False,
+            'error': str(e),
+            'status': 'error'
+        }), 500
+
+# ===================================================================
+# 📧 MODIFICAÇÃO NO PAINEL ADMIN EXISTENTE
+# ===================================================================
+# SUBSTITUA o conteúdo da função admin_panel() existente por:
+
+def admin_panel_with_ai_reports():
+    """Painel de administração COM link para AI Reports"""
+    if not current_user.pode_acessar_admin():
+        flash('Acesso negado. Apenas administradores podem acessar este painel.', 'danger')
+        return redirect(url_for('dashboard'))
+    
+    # Estatísticas básicas (mantém o código existente)
+    stats = {
+        'total_usuarios': User.query.count(),
+        'total_agentes': Agente.query.count(),
+        'total_atendimentos': Atendimento.query.count(),
+        'atendimentos_mes': Atendimento.query.filter(
+            Atendimento.data_hora >= datetime.now().replace(day=1, hour=0, minute=0, second=0)
+        ).count(),
+        # NOVO: Status AI Reports
+        'ai_reports_available': AI_REPORTS_AVAILABLE,
+        'ai_reports_status': 'available' if AI_REPORTS_AVAILABLE else 'not_configured'
+    }
+    
+    return render_template('admin_panel.html', stats=stats)
+
+
+@app.route('/admin/ai-reports/scheduler/start', methods=['POST'])
+@login_required
+def ai_reports_start_scheduler():
+    """Inicia o scheduler de relatórios"""
+    if not current_user.pode_acessar_admin():
+        return jsonify({'error': 'Acesso negado'}), 403
+    
+    if not AI_REPORTS_AVAILABLE:
+        return jsonify({
+            'success': False,
+            'error': 'Sistema AI Reports não disponível'
+        }), 500
+    
+    try:
+        from ai_reports.scheduler import start_scheduler
+        
+        success = start_scheduler()
+        
+        if success:
+            return jsonify({
+                'success': True,
+                'message': 'Scheduler iniciado com sucesso',
+                'status': 'running'
+            })
+        else:
+            return jsonify({
+                'success': False,
+                'error': 'Falha ao iniciar scheduler'
+            }), 500
+            
+    except ImportError:
+        return jsonify({
+            'success': False,
+            'error': 'Módulo scheduler não disponível'
+        }), 500
+    except Exception as e:
+        app.logger.error(f'Erro ao iniciar scheduler: {e}')
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
+
+@app.route('/admin/ai-reports/scheduler/stop', methods=['POST'])
+@login_required
+def ai_reports_stop_scheduler():
+    """Para o scheduler de relatórios"""
+    if not current_user.pode_acessar_admin():
+        return jsonify({'error': 'Acesso negado'}), 403
+    
+    try:
+        from ai_reports.scheduler import stop_scheduler
+        
+        stop_scheduler()
+        
+        return jsonify({
+            'success': True,
+            'message': 'Scheduler parado com sucesso',
+            'status': 'stopped'
         })
         
     except ImportError:
         return jsonify({
             'success': False,
-            'error': 'Sistema avançado não configurado'
+            'error': 'Módulo scheduler não disponível'
         }), 500
     except Exception as e:
-        error_msg = f'Erro ao controlar scheduler: {e}'
-        app.logger.error(error_msg)
+        app.logger.error(f'Erro ao parar scheduler: {e}')
         return jsonify({
             'success': False,
-            'error': error_msg
+            'error': str(e)
         }), 500
 
-
-@app.route('/admin/ai-reports/system-status')
+@app.route('/admin/ai-reports/scheduler/status')
 @login_required
-def admin_ai_reports_status():
-    """Status atual do sistema AI Reports"""
+def ai_reports_scheduler_status():
+    """Retorna status atual do scheduler"""
     if not current_user.pode_acessar_admin():
         return jsonify({'error': 'Acesso negado'}), 403
     
     try:
-        # Tentar sistema avançado
-        try:
-            from ai_reports.scheduler import get_scheduler_status
-            from ai_reports.ai_analyzer import test_ai_connection
-            from ai_reports.email_sender import test_email_connection
-            
-            status = {
-                'scheduler': get_scheduler_status(),
-                'ollama': test_ai_connection(),
-                'smtp': test_email_connection(),
-                'supervisors_count': User.query.filter_by(tipo='supervisor').count(),
-                'timestamp': datetime.now().isoformat(),
-                'system_type': 'avançado'
-            }
-        except ImportError:
-            # Sistema básico
-            status = {
-                'scheduler': {'status': 'not_configured'},
-                'ollama': {'status': 'not_configured'},
-                'smtp': {'status': 'not_configured'},
-                'supervisors_count': User.query.filter_by(tipo='supervisor').count(),
-                'timestamp': datetime.now().isoformat(),
-                'system_type': 'básico'
-            }
+        from ai_reports.scheduler import get_scheduler_status
         
-        return jsonify(status)
+        status = get_scheduler_status()
         
-    except Exception as e:
         return jsonify({
-            'error': f'Erro ao obter status: {e}'
+            'success': True,
+            'scheduler': status
+        })
+        
+    except ImportError:
+        return jsonify({
+            'success': False,
+            'error': 'Módulo scheduler não disponível',
+            'scheduler': {
+                'enabled': False,
+                'running': False,
+                'status': 'not_configured'
+            }
+        })
+    except Exception as e:
+        app.logger.error(f'Erro ao obter status do scheduler: {e}')
+        return jsonify({
+            'success': False,
+            'error': str(e)
         }), 500
 
-
-# ========== FUNÇÕES AUXILIARES - SISTEMA BÁSICO ==========
-
-def collect_supervisor_data_basic(supervisor_id):
-    """Coleta dados básicos com tratamento de erros melhorado"""
+@app.route('/admin/ai-reports/scheduler/execute-now', methods=['POST'])
+@login_required
+def ai_reports_execute_now():
+    """Executa relatórios imediatamente (para testes)"""
+    if not current_user.pode_acessar_admin():
+        return jsonify({'error': 'Acesso negado'}), 403
+    
     try:
-        app.logger.info(f'Coletando dados básicos para supervisor {supervisor_id}')
+        from ai_reports.scheduler import execute_reports_now
         
-        supervisor = User.query.get(supervisor_id)
-        if not supervisor:
-            raise ValueError(f"Supervisor com ID {supervisor_id} não encontrado")
+        result = execute_reports_now()
         
-        # Períodos
-        hoje = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
-        ultimos_7_dias = hoje - timedelta(days=7)
-        ultimos_30_dias = hoje - timedelta(days=30)
-        mes_anterior = ultimos_30_dias - timedelta(days=30)
+        return jsonify(result)
         
-        app.logger.info(f'Períodos calculados - Hoje: {hoje}, 7 dias: {ultimos_7_dias}')
-        
-        # Contagem de atendimentos
-        total_atendimentos = Atendimento.query.filter_by(supervisor_id=supervisor_id).count()
-        app.logger.info(f'Total atendimentos: {total_atendimentos}')
-        
-        atendimentos_semana = Atendimento.query.filter(
-            Atendimento.supervisor_id == supervisor_id,
-            Atendimento.data_hora >= ultimos_7_dias
-        ).count()
-        app.logger.info(f'Atendimentos semana: {atendimentos_semana}')
-        
-        atendimentos_mes = Atendimento.query.filter(
-            Atendimento.supervisor_id == supervisor_id,
-            Atendimento.data_hora >= ultimos_30_dias
-        ).count()
-        
-        atendimentos_mes_anterior = Atendimento.query.filter(
-            Atendimento.supervisor_id == supervisor_id,
-            Atendimento.data_hora.between(mes_anterior, ultimos_30_dias)
-        ).count()
-        
-        # Agentes
-        agentes = Agente.query.filter_by(supervisor_id=supervisor_id).all()
-        agentes_ativos = len([a for a in agentes if a.ativo])
-        
-        app.logger.info(f'Agentes: {len(agentes)} total, {agentes_ativos} ativos')
-        
-        # Crescimento
-        if atendimentos_mes_anterior > 0:
-            crescimento = ((atendimentos_mes - atendimentos_mes_anterior) / atendimentos_mes_anterior) * 100
-        else:
-            crescimento = 100 if atendimentos_mes > 0 else 0
-        
-        resultado = {
-            'supervisor_id': supervisor_id,
-            'supervisor_nome': supervisor.nome,
-            'total_atendimentos': total_atendimentos,
-            'atendimentos_semana': atendimentos_semana,
-            'atendimentos_mes': atendimentos_mes,
-            'agentes_total': len(agentes),
-            'agentes_ativos': agentes_ativos,
-            'crescimento_percentual': round(crescimento, 1)
-        }
-        
-        app.logger.info(f'Dados coletados com sucesso: {resultado}')
-        return resultado
-        
+    except ImportError:
+        return jsonify({
+            'success': False,
+            'error': 'Módulo scheduler não disponível'
+        }), 500
     except Exception as e:
-        app.logger.error(f'Erro na coleta de dados básicos: {e}')
-        raise
-
-def analyze_supervisor_data_basic(supervisor_data):
-    """Gera insights básicos usando lógica simples"""
-    insights = []
-    
-    total = supervisor_data['total_atendimentos']
-    semana = supervisor_data['atendimentos_semana']
-    agentes_ativos = supervisor_data['agentes_ativos']
-    crescimento = supervisor_data['crescimento_percentual']
-    
-    # Análise de volume semanal
-    if semana > 20:
-        insights.append("🔥 Alto volume de atendimentos esta semana - excelente engajamento da equipe!")
-    elif semana > 10:
-        insights.append("📈 Volume moderado de atendimentos - performance consistente")
-    elif semana > 0:
-        insights.append("📉 Volume baixo esta semana - verificar se há oportunidades de melhoria")
-    else:
-        insights.append("⚠️ Nenhum atendimento registrado esta semana - atenção necessária")
-    
-    # Análise de produtividade
-    if agentes_ativos > 0:
-        produtividade = semana / agentes_ativos
-        if produtividade > 8:
-            insights.append(f"⚡ Excelente produtividade: {produtividade:.1f} atendimentos por agente ativo")
-        elif produtividade > 3:
-            insights.append(f"👍 Boa produtividade: {produtividade:.1f} atendimentos por agente ativo")
-        else:
-            insights.append(f"🎯 Oportunidade de melhoria: {produtividade:.1f} atendimentos por agente ativo")
-    
-    # Análise de crescimento
-    if crescimento > 25:
-        insights.append(f"🚀 Crescimento excepcional de {crescimento:.1f}% no último mês!")
-    elif crescimento > 10:
-        insights.append(f"📈 Bom crescimento de {crescimento:.1f}% no último mês")
-    elif crescimento > -10:
-        insights.append(f"📊 Performance estável (variação: {crescimento:.1f}%)")
-    else:
-        insights.append(f"📉 Redução de {abs(crescimento):.1f}% - revisar estratégias")
-    
-    # Insight geral
-    if total > 100:
-        insights.append("🏆 Supervisor experiente com histórico sólido de atendimentos")
-    elif total > 20:
-        insights.append("👥 Supervisor ativo com boa base de atendimentos")
-    
-    return {
-        'insights': insights,
-        'supervisor_id': supervisor_data['supervisor_id'],
-        'analysis_date': datetime.now().isoformat()
-    }
-
+        app.logger.error(f'Erro na execução manual: {e}')
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
 
 # ========================================
 # 🤖 FIM DO SISTEMA AI REPORTS COMPLETO

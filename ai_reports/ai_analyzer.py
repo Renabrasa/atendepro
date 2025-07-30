@@ -1,602 +1,643 @@
 # ai_reports/ai_analyzer.py
 """
-🤖 AI Analyzer - Integração com Ollama/Qwen 2.5
-Processa dados coletados e gera insights inteligentes para relatórios
+🤖 AI Analyzer - Sistema AI Reports
+Análise inteligente de dados de autonomia usando Ollama
 """
 
-import json
 import requests
+import json
 import logging
 from datetime import datetime
 from typing import Dict, List, Any, Optional
-from config import Config
 
-# Configurar logging
 logger = logging.getLogger(__name__)
 
-
-class AIAnalyzer:
-    """
-    🤖 Analisador IA para dados de atendimento
+class AutonomyAIAnalyzer:
+    """Analisa dados de autonomia usando IA local (Ollama)"""
     
-    Conecta com Ollama (Qwen 2.5:3b) para gerar insights automáticos
-    sobre performance de supervisores e agentes
-    """
-    
-    def __init__(self):
-        """Inicializa o analisador IA"""
-        self.ollama_url = Config.OLLAMA_BASE_URL
-        self.model = Config.OLLAMA_MODEL
-        self.timeout = Config.OLLAMA_TIMEOUT
-        self.debug = Config.AI_REPORTS_DEBUG
+    def __init__(self, ollama_url: str = "http://localhost:11434"):
+        self.ollama_url = ollama_url
+        self.model = "llama3.2:3b"  # Modelo padrão (pode ser configurado)
         
-        if self.debug:
-            logger.info(f"🤖 AIAnalyzer inicializado - {self.model} @ {self.ollama_url}")
-    
     def test_connection(self) -> Dict[str, Any]:
-        """
-        🔌 Testa conexão com Ollama
-        
-        Returns:
-            Dict com resultado do teste
-        """
+        """Testa conexão com Ollama"""
         try:
-            # Testar endpoint de health check
-            response = requests.get(f"{self.ollama_url}/api/tags", timeout=10)
-            
+            response = requests.get(f"{self.ollama_url}/api/tags", timeout=5)
             if response.status_code == 200:
-                models_data = response.json()
-                available_models = [model['name'] for model in models_data.get('models', [])]
-                
-                model_available = any(self.model in model for model in available_models)
-                
-                result = {
+                models = response.json().get('models', [])
+                return {
                     'success': True,
-                    'status': 'Connected',
-                    'ollama_url': self.ollama_url,
-                    'available_models': available_models,
-                    'target_model': self.model,
-                    'model_available': model_available,
-                    'timestamp': datetime.now().isoformat()
+                    'available_models': [m['name'] for m in models],
+                    'status': 'Ollama conectado com sucesso'
                 }
-                
-                if model_available:
-                    logger.info(f"✅ Ollama conectado - Modelo {self.model} disponível")
-                else:
-                    logger.warning(f"⚠️ Ollama conectado - Modelo {self.model} NÃO disponível")
-                
-                return result
             else:
-                raise Exception(f"HTTP {response.status_code}")
-                
+                return {
+                    'success': False,
+                    'error': f'HTTP {response.status_code}',
+                    'status': 'Erro na conexão'
+                }
         except Exception as e:
-            error_msg = f"Erro na conexão com Ollama: {e}"
-            logger.error(f"❌ {error_msg}")
-            
             return {
                 'success': False,
-                'error': error_msg,
-                'ollama_url': self.ollama_url,
-                'timestamp': datetime.now().isoformat()
+                'error': str(e),
+                'status': 'Ollama indisponível'
             }
     
-    def analyze_weekly_data(self, weekly_data: Dict[str, Any]) -> Dict[str, Any]:
+    def analyze_weekly_data(self, autonomy_data: Dict[str, Any]) -> Dict[str, Any]:
         """
-        📊 Analisa dados semanais completos com IA
-        
-        Args:
-            weekly_data: Dados coletados pelo DataCollector
-            
-        Returns:
-            Dict com análise completa da IA
+        Análise completa dos dados semanais de autonomia
+        Gera os 4 blocos integrados do relatório
         """
         try:
-            if self.debug:
-                logger.info("🧠 Iniciando análise IA dos dados semanais...")
+            # Verifica se há dados para analisar
+            if not autonomy_data.get('supervisors'):
+                return self._generate_empty_analysis()
             
-            # REMOVIDO: Análise global problemática
-            # global_analysis = self._analyze_global_trends(weekly_data)
-            
-            # Gerar análise por supervisor
-            supervisors_analysis = []
-            for supervisor_data in weekly_data['supervisors_data']:
-                analysis = self._analyze_supervisor_performance(supervisor_data, weekly_data)
-                supervisors_analysis.append(analysis)
-            
-            # Gerar recomendações estratégicas
-            strategic_recommendations = self._generate_strategic_recommendations(weekly_data)
-            
-            # Compilar análise final
-            ai_analysis = {
-                'metadata': {
-                    'generated_at': datetime.now().isoformat(),
-                    'ai_model': self.model,
-                    'analysis_period': weekly_data['metadata']['current_week']['period_label']
-                },
-                # NOVO: Dashboard executivo substitui análise global problemática
-                'executive_dashboard': weekly_data.get('executive_dashboard', {}),
-                'intelligent_insights': weekly_data.get('intelligent_insights', {}),
-                'supervisors_analysis': supervisors_analysis,
-                'strategic_recommendations': strategic_recommendations,
-                'summary': self._generate_executive_summary(weekly_data, supervisors_analysis)
+            # Gera análise dos 4 blocos
+            analysis_result = {
+                'block_1_radar': self._analyze_autonomy_radar(autonomy_data),
+                'block_2_training_matrix': self._analyze_training_matrix(autonomy_data),
+                'block_3_productivity': self._analyze_productivity_evolution(autonomy_data),
+                'block_4_conclusions': self._analyze_strategic_conclusions(autonomy_data),
+                'executive_summary': self._generate_executive_summary(autonomy_data),
+                'analysis_timestamp': datetime.now().isoformat(),
+                'ai_model_used': self.model
             }
             
-            if self.debug:
-                logger.info(f"✅ Análise IA concluída - {len(supervisors_analysis)} supervisores analisados")
-                logger.info(f"📊 Dashboard: {len(weekly_data.get('executive_dashboard', {}).get('ranking', []))} supervisores no ranking")
-                logger.info(f"🧠 Insights: {len(weekly_data.get('intelligent_insights', {}).get('performance_alerts', []))} alertas gerados")
-            
-            return ai_analysis
+            return {
+                'success': True,
+                'analysis': analysis_result,
+                'data_quality': self._assess_data_quality(autonomy_data)
+            }
             
         except Exception as e:
-            logger.error(f"❌ Erro na análise IA: {e}")
-            raise
+            logger.error(f"Erro na análise IA: {e}")
+            return {
+                'success': False,
+                'error': str(e),
+                'analysis': self._generate_fallback_analysis(autonomy_data)
+            }
     
-    def _analyze_supervisor_performance(self, supervisor_data: Dict[str, Any], 
-                                       weekly_data: Dict[str, Any]) -> Dict[str, Any]:
-        """
-        👤 Analisa performance individual de um supervisor
-        """
-        supervisor_name = supervisor_data['supervisor']['name']
+    def _analyze_autonomy_radar(self, data: Dict[str, Any]) -> Dict[str, Any]:
+        """Bloco 1: Radar de Autonomia - Dashboard Executivo"""
         
-        # Preparar dados para IA
-        analysis_prompt = self._build_supervisor_analysis_prompt(supervisor_data, weekly_data)
+        # Prepara dados para análise
+        supervisors = data.get('supervisors', [])
+        global_stats = data.get('global_stats', {})
         
-        # Solicitar análise da IA
-        ai_response = self._query_ollama(analysis_prompt, f"supervisor_{supervisor_name}")
+        # Identifica alertas críticos e destaques
+        critical_agents = []
+        positive_highlights = []
+        
+        for supervisor in supervisors:
+            for agent in supervisor.get('agents', []):
+                if agent.get('risk_level') == 'critical':
+                    critical_agents.append({
+                        'supervisor': supervisor.get('supervisor_name'),
+                        'agent': agent.get('agent_name'),
+                        'requests': agent.get('current_requests'),
+                        'variation': agent.get('variation_percent'),
+                        'diagnosis': self._generate_diagnosis(agent)
+                    })
+                elif agent.get('is_improving') and agent.get('current_requests') <= 2:
+                    positive_highlights.append({
+                        'supervisor': supervisor.get('supervisor_name'),
+                        'agent': agent.get('agent_name'),
+                        'requests': agent.get('current_requests'),
+                        'variation': agent.get('variation_percent'),
+                        'recognition': "Evoluiu para autonomia"
+                    })
+        
+        # Ranking de supervisores por eficiência
+        supervisors_ranking = sorted(
+            supervisors,
+            key=lambda x: (x.get('autonomy_rate', 0), -x.get('total_attendances_current', 999)),
+            reverse=True
+        )
         
         return {
-            'supervisor_id': supervisor_data['supervisor']['id'],
-            'supervisor_name': supervisor_name,
-            'performance_analysis': ai_response,
-            'key_metrics': {
-                'current_tickets': supervisor_data['current_week']['total_tickets'],
-                'change_percent': supervisor_data['comparison']['percent_change'],
-                'agents_count': len(supervisor_data['current_week']['agents_performance']),
-                'trend': supervisor_data['comparison']['trend']
-            },
-            'agents_insights': self._analyze_agents_performance(supervisor_data['current_week']['agents_performance']),
-            'recommendations': self._extract_recommendations_from_ai_response(ai_response)
+            'total_requests': global_stats.get('total_attendances_current', 0),
+            'variation_requests': global_stats.get('variation_percent', 0),
+            'general_autonomy': self._calculate_general_autonomy(supervisors),
+            'supervisor_ranking': len(supervisors_ranking),
+            'critical_alerts': critical_agents[:3],  # Top 3 críticos
+            'positive_highlights': positive_highlights[:2],  # Top 2 positivos
+            'executive_diagnosis': self._generate_executive_diagnosis(global_stats, critical_agents)
         }
     
-    def _analyze_agents_performance(self, agents_data: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
-        """
-        👥 Analisa performance dos agentes - VERSÃO CORRIGIDA
-        """
-        agents_insights = []
+    def _analyze_training_matrix(self, data: Dict[str, Any]) -> Dict[str, Any]:
+        """Bloco 2: Matriz de Capacitação - Gaps Identificados"""
         
-        for agent in agents_data:
-            agent_name = agent['agent']['name']
-            current_tickets = agent.get('current_tickets', 0)
-            change = agent.get('change', 0)
+        supervisors = data.get('supervisors', [])
+        
+        # Identifica agentes prioritários para treinamento
+        priority_agents = []
+        
+        for supervisor in supervisors:
+            for agent in supervisor.get('agents', []):
+                if agent.get('risk_level') in ['critical', 'attention']:
+                    priority_agents.append({
+                        'supervisor': supervisor.get('supervisor_name'),
+                        'agent': agent.get('agent_name'),
+                        'requests': agent.get('current_requests'),
+                        'gaps': agent.get('probable_gaps', []),
+                        'risk_level': agent.get('risk_level'),
+                        'action': agent.get('recommended_action')
+                    })
+        
+        # Ordena por prioridade (críticos primeiro, depois por volume)
+        priority_agents.sort(key=lambda x: (
+            0 if x['risk_level'] == 'critical' else 1,
+            -x['requests']
+        ))
+        
+        # Calcula distribuição de tempo por supervisor
+        time_distribution = []
+        for supervisor in supervisors:
+            agents_time = []
+            total_requests = supervisor.get('total_attendances_current', 0)
             
-            # CORREÇÃO: Acessar previous_tickets de forma segura
-            previous_tickets = 0
-            if 'previous_tickets' in agent:
-                previous_tickets = agent['previous_tickets']
-            elif hasattr(agent, 'previous_tickets'):
-                previous_tickets = agent.previous_tickets
-            else:
-                # Tentar calcular baseado no change
-                previous_tickets = current_tickets - change if change != 0 else 0
+            for agent in supervisor.get('agents', []):
+                agent_requests = agent.get('current_requests', 0)
+                time_percent = round((agent_requests / total_requests * 100), 1) if total_requests > 0 else 0
+                
+                agents_time.append({
+                    'agent': agent.get('agent_name'),
+                    'time_percent': time_percent,
+                    'status': agent.get('autonomy_status', 'Normal')
+                })
             
-            # Classificar performance
-            if change > 0:
-                if change >= 10:
-                    performance_level = "Alta demanda"
-                    status = "warning"
-                else:
-                    performance_level = "Crescimento estável"
-                    status = "success"
-            elif change < 0:
-                performance_level = "Redução"
-                status = "info"
-            else:
-                performance_level = "Estável"
-                status = "neutral"
-            
-            # CORREÇÃO: Calcular change_percent de forma segura
-            try:
-                if previous_tickets > 0:
-                    change_percent = (change / previous_tickets) * 100
-                else:
-                    change_percent = 100 if current_tickets > 0 else 0
-            except (ZeroDivisionError, TypeError):
-                change_percent = 0
-            
-            # Detectar padrões atípicos
-            is_atypical = abs(change_percent) >= 50
-            
-            agents_insights.append({
-                'agent_name': agent_name,
-                'current_tickets': current_tickets,
-                'change': change,
-                'change_percent': round(change_percent, 1),
-                'performance_level': performance_level,
-                'status': status,
-                'is_atypical': is_atypical,
-                'needs_attention': is_atypical or current_tickets >= 50  # Mais de 50 tickets pode indicar sobrecarga
+            time_distribution.append({
+                'supervisor': supervisor.get('supervisor_name'),
+                'strategic_time': supervisor.get('strategic_time_percent', 0),
+                'agents_time': sorted(agents_time, key=lambda x: x['time_percent'], reverse=True)[:3]
             })
         
-        return agents_insights
+        return {
+            'priority_agents': priority_agents[:5],  # Top 5 prioritários
+            'time_distribution': time_distribution,
+            'identified_gaps': self._aggregate_identified_gaps(priority_agents),
+            'training_recommendations': self._generate_training_recommendations(priority_agents)
+        }
     
-    def _generate_strategic_recommendations(self, weekly_data: Dict[str, Any]) -> List[str]:
-        """
-        🎯 Gera recomendações estratégicas baseadas nos dados
-        """
-        # Preparar dados para IA
-        strategy_prompt = self._build_strategy_prompt(weekly_data)
+    def _analyze_productivity_evolution(self, data: Dict[str, Any]) -> Dict[str, Any]:
+        """Bloco 3: Dashboard de Produtividade - Evolução Visual"""
         
-        # Solicitar recomendações da IA
-        ai_response = self._query_ollama(strategy_prompt, "strategic_recommendations")
+        supervisors = data.get('supervisors', [])
         
-        # Extrair recomendações específicas
-        recommendations = self._extract_recommendations_from_ai_response(ai_response)
+        evolution_analysis = []
         
-        return recommendations
-    
-    def _generate_executive_summary(self, weekly_data: Dict[str, Any], 
-                                    supervisors_analysis: List[Dict[str, Any]]) -> Dict[str, Any]:
-        """
-        📋 Gera resumo executivo para coordenação usando dados inteligentes
-        
-        Args:
-            weekly_data: Dados coletados pelo DataCollector
-            supervisors_analysis: Análises dos supervisores pela IA
+        for supervisor in supervisors:
+            # Análise de tendência do supervisor
+            trend = supervisor.get('evolution_trend', '📊 ESTÁVEL')
+            current_total = supervisor.get('total_attendances_current', 0)
+            previous_total = supervisor.get('total_attendances_previous', 0)
             
-        Returns:
-            Dict com resumo executivo completo
-        """
-        try:
-            # Usar intelligent_insights ao invés de global_analysis
-            intelligent_insights = weekly_data.get('intelligent_insights', {})
-            executive_dashboard = weekly_data.get('executive_dashboard', {})
-            
-            # Gerar resumo IA apenas se necessário
-            ai_summary = "Resumo executivo baseado em dados automáticos"
-            try:
-                from .ai_prompts import PromptBuilder
+            # Análise por agente com barras visuais
+            agents_evolution = []
+            for agent in supervisor.get('agents', []):
+                current_req = agent.get('current_requests', 0)
+                previous_req = agent.get('previous_requests', 0)
+                variation = agent.get('variation_percent', 0)
                 
-                # Usar apenas dados dos supervisores para prompt (sem análise global problemática)
-                if supervisors_analysis:
-                    executive_prompt = PromptBuilder.executive_summary_simple(weekly_data, supervisors_analysis)
-                    ai_summary = self._query_ollama(executive_prompt, "executive_summary")
-            except (ImportError, Exception) as e:
-                if self.debug:
-                    logger.warning(f"⚠️ Prompt Builder indisponível, usando resumo automático: {e}")
+                # Gera barra visual baseada no volume
+                visual_bar = self._generate_visual_bar(current_req)
+                
+                # Status baseado em risco e variação
+                if agent.get('risk_level') == 'critical':
+                    status = '🔴 CRÍTICO'
+                elif agent.get('risk_level') == 'attention':
+                    status = '🟡 ATENÇÃO'
+                else:
+                    status = '🟢 AUTÔNOMO'
+                
+                agents_evolution.append({
+                    'agent_name': agent.get('agent_name'),
+                    'current_requests': current_req,
+                    'variation': variation,
+                    'visual_bar': visual_bar,
+                    'status': status,
+                    'status_description': self._get_status_description(agent)
+                })
             
-            # Dados básicos do dashboard executivo
-            total_tickets = executive_dashboard.get('total_tickets', 0)
-            total_change = executive_dashboard.get('variation', 0)
-            change_percent = executive_dashboard.get('variation_percent', 0)
-            
-            # Top performer baseado no ranking automático
-            ranking = executive_dashboard.get('ranking', [])
-            top_supervisor_info = {'name': 'N/A', 'tickets': 0}
-            if ranking:
-                # Parse do primeiro item do ranking: "1º Nome: 58 (-10)"
-                top_entry = ranking[0]
-                try:
-                    parts = top_entry.split(': ')
-                    if len(parts) >= 2:
-                        name_part = parts[0].split(' ', 1)[1]  # Remove "1º "
-                        tickets_part = parts[1].split(' ')[0]  # Pega só o número
-                        top_supervisor_info = {
-                            'name': name_part,
-                            'tickets': int(tickets_part)
-                        }
-                except (ValueError, IndexError):
-                    pass
-            
-            # Supervisores que precisam de atenção baseado em insights automáticos
-            alerts = intelligent_insights.get('performance_alerts', [])
-            attention_needed_count = len(alerts)
-            
-            # Determinar tendência
-            if change_percent > 5:
-                trend = 'crescimento'
-            elif change_percent < -5:
-                trend = 'queda'
-            else:
-                trend = 'estável'
-            
-            # Ações prioritárias baseadas em alertas
-            priority_actions = len([alert for alert in alerts if 'requer atenção' in alert])
-            
-            return {
-                'total_tickets': total_tickets,
-                'weekly_change': total_change,
-                'change_percent': change_percent,
-                'top_supervisor': top_supervisor_info,
-                'supervisors_needing_attention': attention_needed_count,
-                'overall_trend': trend,
-                'ai_generated_summary': ai_summary,
-                'key_insights': intelligent_insights.get('concentration_patterns', [])[:3],  # Top 3 padrões
-                'priority_actions': priority_actions,
-                'ranking_summary': ranking[:3],  # Top 3 do ranking
-                'alerts_summary': alerts[:3]  # Top 3 alertas
-            }
-            
-        except Exception as e:
-            logger.error(f"❌ Erro ao gerar resumo executivo: {e}")
-            
-            # Fallback com dados mínimos
-            return {
-                'total_tickets': weekly_data.get('global_stats', {}).get('current_week', {}).get('total_tickets', 0),
-                'weekly_change': 0,
-                'change_percent': 0,
-                'top_supervisor': {'name': 'N/A', 'tickets': 0},
-                'supervisors_needing_attention': 0,
-                'overall_trend': 'indisponível',
-                'ai_generated_summary': 'Resumo executivo indisponível devido a erro técnico',
-                'key_insights': [],
-                'priority_actions': 0,
-                'ranking_summary': [],
-                'alerts_summary': []
-            }
-    
-    def _build_supervisor_analysis_prompt(self, supervisor_data: Dict[str, Any], weekly_data: Dict[str, Any]) -> str:
-        """
-        🔤 Constrói prompt para análise de supervisor usando prompts especializados - VERSÃO CORRIGIDA
-        """
-        try:
-            from .ai_prompts import PromptBuilder
-            from .ai_refinements import PromptOptimizer
-            
-            # Calcular ranking do supervisor
-            all_supervisors = weekly_data.get('supervisors_data', [])
-            ranking = None
-            
-            if all_supervisors:
-                sorted_supervisors = sorted(all_supervisors, key=lambda x: x['current_week']['total_tickets'], reverse=True)
-                for i, sup in enumerate(sorted_supervisors, 1):
-                    if sup['supervisor']['id'] == supervisor_data['supervisor']['id']:
-                        ranking = i
-                        break
-            
-            # Gerar prompt base
-            base_prompt = PromptBuilder.supervisor_performance_analysis(supervisor_data, weekly_data, ranking)
-            
-            # Aplicar otimizações
-            optimized_prompt = PromptOptimizer.enhance_supervisor_prompt(base_prompt, supervisor_data)
-            return optimized_prompt
-        except ImportError:
-            # Fallback básico se módulos não estiverem disponíveis
-            supervisor_name = supervisor_data['supervisor']['name']
-            current = supervisor_data['current_week']['total_tickets']
-            
-            # CORREÇÃO: Acessar dados do período anterior de forma segura
-            previous = supervisor_data.get('previous_week', {}).get('total_tickets', 0)
-            change = supervisor_data.get('comparison', {}).get('absolute_change', 0)
-            change_percent = supervisor_data.get('comparison', {}).get('percent_change', 0)
-            
-            agents = supervisor_data['current_week']['agents_performance']
-            agents_summary = []
-            for agent in agents[:3]:  # Top 3 agentes
-                agent_change = agent.get('change', 0)
-                agents_summary.append(f"{agent['agent']['name']}: {agent['current_tickets']} atendimentos ({agent_change:+d})")
-            
-            period = weekly_data['metadata']['current_week']['period_label']
-            
-            prompt = f"""
-Analise a performance do supervisor {supervisor_name} no período {period}:
-
-SUPERVISOR: {supervisor_name}
-ATENDIMENTOS: {current} (anterior: {previous})
-VARIAÇÃO: {change:+d} ({change_percent:+.1f}%)
-
-PRINCIPAIS AGENTES:
-{chr(10).join(agents_summary)}
-
-Forneça análise focada em:
-1. Avaliação da performance
-2. Análise da distribuição entre agentes
-3. Identificação de padrões
-4. Recomendações específicas
-
-Seja conciso e actionable. Máximo 150 palavras.
-"""
-            return prompt.strip()
-    
-    def _build_strategy_prompt(self, weekly_data: Dict[str, Any]) -> str:
-        """
-        🔤 Constrói prompt para recomendações estratégicas usando prompts especializados - VERSÃO CORRIGIDA
-        """
-        try:
-            from .ai_prompts import PromptBuilder
-            from .ai_refinements import PromptOptimizer
-            
-            # Gerar prompt base
-            base_prompt = PromptBuilder.strategic_recommendations(weekly_data)
-            
-            # Aplicar otimizações
-            strategic_context = {
-                'supervisors_data': weekly_data['supervisors_data'],
-                'global_stats': weekly_data['global_stats']
-            }
-            
-            optimized_prompt = PromptOptimizer.enhance_strategic_prompt(base_prompt, strategic_context)
-            return optimized_prompt
-        except ImportError:
-            # Fallback básico se módulos não estiverem disponíveis
-            supervisors = weekly_data['supervisors_data']
-            global_stats = weekly_data['global_stats']
-            
-            # Resumo dos supervisores
-            supervisors_summary = []
-            for sup in supervisors[:5]:  # Top 5
-                name = sup['supervisor']['name']
-                tickets = sup['current_week']['total_tickets']
-                change = sup.get('comparison', {}).get('absolute_change', 0)
-                supervisors_summary.append(f"{name}: {tickets} atendimentos ({change:+d})")
-            
-            # CORREÇÃO: Acessar dados globais de forma segura
-            current_total = global_stats.get('current_week', {}).get('total_tickets', 0)
-            change_abs = global_stats.get('comparison', {}).get('absolute_change', 0)
-            change_pct = global_stats.get('comparison', {}).get('percent_change', 0)
-            
-            prompt = f"""
-Com base nos dados semanais, forneça 3-5 recomendações estratégicas para a gestão:
-
-CENÁRIO GERAL:
-- Total: {current_total} atendimentos
-- Variação: {change_abs:+d} ({change_pct:+.1f}%)
-
-SUPERVISORES:
-{chr(10).join(supervisors_summary)}
-
-Foque em:
-1. Redistribuição de carga
-2. Apoio a supervisores
-3. Otimização de processos
-4. Prevenção de problemas
-
-Seja específico e prático. Uma recomendação por linha.
-"""
-            return prompt.strip()
-    
-    def _query_ollama(self, prompt: str, context: str = "") -> str:
-        """
-        🤖 Faz consulta ao Ollama com melhorias na resposta
+            evolution_analysis.append({
+                'supervisor_name': supervisor.get('supervisor_name'),
+                'trend': trend,
+                'current_total': current_total,
+                'previous_total': previous_total,
+                'agents': sorted(agents_evolution, key=lambda x: x['current_requests'], reverse=True)
+            })
         
-        Args:
-            prompt: Prompt para a IA
-            context: Contexto da consulta (para logs)
-            
-        Returns:
-            Resposta da IA melhorada
-        """
+        return {
+            'supervisors_evolution': evolution_analysis,
+            'period_summary': self._generate_period_summary(data),
+            'visual_insights': self._generate_visual_insights(evolution_analysis)
+        }
+    
+    def _analyze_strategic_conclusions(self, data: Dict[str, Any]) -> Dict[str, Any]:
+        """Bloco 4: Conclusões IA & Plano de Ação"""
+        
+        # Gera prompt estruturado para análise IA
+        analysis_prompt = self._build_strategic_analysis_prompt(data)
+        
+        # Chama IA para análise estratégica
+        ai_analysis = self._query_ollama_for_strategic_insights(analysis_prompt)
+        
+        # Gera plano de ação de 7 dias
+        action_plan = self._generate_7_day_action_plan(data)
+        
+        # Calcula resultados esperados
+        expected_results = self._calculate_expected_results(data)
+        
+        return {
+            'ai_diagnosis': ai_analysis.get('diagnosis', 'Análise em processamento'),
+            'pattern_insights': ai_analysis.get('patterns', []),
+            'action_plan_7_days': action_plan,
+            'expected_results': expected_results,
+            'strategic_recommendations': ai_analysis.get('recommendations', []),
+            'risk_assessment': self._assess_overall_risk(data)
+        }
+    
+    def _query_ollama_for_strategic_insights(self, prompt: str) -> Dict[str, Any]:
+        """Consulta Ollama para insights estratégicos"""
         try:
-            if self.debug:
-                logger.info(f"🤖 Consultando Ollama - {context}")
-            
-            # Adicionar system prompt restritivo
             payload = {
                 "model": self.model,
                 "prompt": prompt,
-                "system": "Você é supervisor de contabil. NUNCA mencione férias escolares, sazonalidade ou educação. Foque APENAS em empresa de contabilidade interna. Use APENAS dados fornecidos.",
                 "stream": False,
                 "options": {
-                    "temperature": 0.05,      # Reduzido de 0.3 para 0.05
-                    "top_p": 0.7,            # Reduzido de 0.9 para 0.7  
-                    "max_tokens": 150,       # Reduzido de 400 para 150
-                    "repeat_penalty": 1.3,   # Aumentado de 1.1 para 1.3
-                    "stop": ["ANÁLISE:", "CONTEXTO:", "DADOS:", "INSTRUÇÕES:"]
+                    "temperature": 0.3,  # Mais determinístico
+                    "top_k": 20,
+                    "top_p": 0.8
                 }
             }
             
             response = requests.post(
                 f"{self.ollama_url}/api/generate",
                 json=payload,
-                timeout=self.timeout
+                timeout=30
             )
             
             if response.status_code == 200:
                 result = response.json()
-                raw_response = result.get('response', '').strip()
+                analysis_text = result.get('response', '')
                 
-                # Aplicar melhorias na resposta
-                try:
-                    from .ai_refinements import ResponseEnhancer
-                    enhanced = ResponseEnhancer.enhance_ai_response(raw_response, context)
-                    
-                    # Log qualidade da resposta se em debug
-                    if self.debug:
-                        quality = enhanced['quality_score']
-                        confidence = enhanced['confidence_metrics']
-                        logger.info(f"✅ IA resposta - Qualidade: {quality['level']} ({quality['score']}/4), Confiança: {confidence['confidence_level']}")
-                    
-                    # Retornar resposta limpa
-                    final_response = enhanced['cleaned_response']
-                    
-                    # Se resposta for muito curta, usar resposta original
-                    if len(final_response) < 50 and len(raw_response) > len(final_response):
-                        final_response = raw_response
-                    
-                    return final_response
-                except ImportError:
-                    # Fallback se módulo de refinements não estiver disponível
-                    return raw_response
+                # Tenta extrair estrutura da resposta
+                return self._parse_ai_response(analysis_text)
             else:
-                raise Exception(f"HTTP {response.status_code}: {response.text}")
+                logger.warning(f"Ollama retornou status {response.status_code}")
+                return self._generate_fallback_insights()
                 
         except Exception as e:
-            error_msg = f"Erro na consulta Ollama ({context}): {e}"
-            logger.error(f"❌ {error_msg}")
+            logger.error(f"Erro ao consultar Ollama: {e}")
+            return self._generate_fallback_insights()
+    
+    def _build_strategic_analysis_prompt(self, data: Dict[str, Any]) -> str:
+        """Constrói prompt estruturado para análise estratégica"""
+        
+        supervisors = data.get('supervisors', [])
+        global_stats = data.get('global_stats', {})
+        
+        # Identifica padrões principais
+        critical_count = sum(1 for sup in supervisors for agent in sup.get('agents', []) 
+                           if agent.get('risk_level') == 'critical')
+        
+        improving_count = sum(1 for sup in supervisors for agent in sup.get('agents', []) 
+                            if agent.get('is_improving', False))
+        
+        total_requests = global_stats.get('total_attendances_current', 0)
+        variation = global_stats.get('variation_percent', 0)
+        
+        prompt = f"""
+Você é um especialista em gestão de equipes de contabilidade. Analise os dados abaixo e forneça insights estratégicos.
+
+DADOS OPERACIONAIS:
+- Total de solicitações: {total_requests}
+- Variação semanal: {variation:+.1f}%
+- Agentes críticos (>6 solicitações): {critical_count}
+- Agentes melhorando: {improving_count}
+- Total de supervisores: {len(supervisors)}
+
+CONTEXTO DO NEGÓCIO:
+- Cada solicitação = deficiência de conhecimento técnico
+- Meta: máximo 2 solicitações/agente/semana (autonomia)
+- Áreas técnicas problemáticas: eSocial, SPED, Report Builder, Alterdata
+
+ANALISE E RESPONDA:
+
+1. DIAGNÓSTICO (2-3 frases):
+[Análise dos padrões identificados considerando o contexto contábil]
+
+2. PADRÕES IDENTIFICADOS (3-4 itens):
+- [Padrão 1]
+- [Padrão 2]
+- [Padrão 3]
+
+3. RECOMENDAÇÕES ESTRATÉGICAS (3-4 ações):
+- [Recomendação 1]
+- [Recomendação 2]
+- [Recomendação 3]
+
+Seja específico, prático e focado em resultados mensuráveis.
+"""
+        
+        return prompt
+    
+    def _parse_ai_response(self, response_text: str) -> Dict[str, Any]:
+        """Extrai estrutura da resposta da IA"""
+        try:
+            # Parsing simples baseado em padrões
+            lines = response_text.strip().split('\n')
             
-            # Fallback melhorado
-            try:
-                from .ai_refinements import ResponseEnhancer
-                fallback = ResponseEnhancer._create_fallback_response(context)
-                return fallback['cleaned_response']
-            except ImportError:
-                return f"[Erro na análise IA: {e}]"
+            diagnosis = ""
+            patterns = []
+            recommendations = []
+            
+            current_section = None
+            
+            for line in lines:
+                line = line.strip()
+                if not line:
+                    continue
+                    
+                if "DIAGNÓSTICO" in line.upper():
+                    current_section = "diagnosis"
+                elif "PADRÕES" in line.upper() or "PADROES" in line.upper():
+                    current_section = "patterns"
+                elif "RECOMENDAÇÕES" in line.upper() or "RECOMENDACOES" in line.upper():
+                    current_section = "recommendations"
+                elif line.startswith('-') or line.startswith('•'):
+                    if current_section == "patterns":
+                        patterns.append(line[1:].strip())
+                    elif current_section == "recommendations":
+                        recommendations.append(line[1:].strip())
+                elif current_section == "diagnosis" and not line.startswith(('1.', '2.', '3.')):
+                    diagnosis += line + " "
+            
+            return {
+                'diagnosis': diagnosis.strip() or "Operação dentro da normalidade esperada.",
+                'patterns': patterns or ["Padrão de atendimentos estável", "Distribuição equilibrada entre supervisores"],
+                'recommendations': recommendations or ["Manter acompanhamento atual", "Monitorar agentes críticos semanalmente"]
+            }
+            
+        except Exception as e:
+            logger.error(f"Erro ao processar resposta IA: {e}")
+            return self._generate_fallback_insights()
     
-    def _extract_insights_from_ai_response(self, ai_response: str) -> List[str]:
-        """
-        📝 Extrai insights principais da resposta da IA
-        """
-        if not ai_response or ai_response.startswith("[Erro"):
-            return ["Análise indisponível"]
-        
-        # Dividir em sentenças e filtrar insights relevantes
-        sentences = [s.strip() for s in ai_response.split('.') if s.strip()]
-        insights = []
-        
-        for sentence in sentences[:4]:  # Máximo 4 insights
-            if len(sentence) > 20 and not sentence.startswith("["):
-                insights.append(sentence + ".")
-        
-        return insights if insights else ["Nenhum insight específico identificado"]
+    def _generate_fallback_insights(self) -> Dict[str, Any]:
+        """Gera insights básicos quando IA não está disponível"""
+        return {
+            'diagnosis': "Sistema operando normalmente. Análise IA indisponível.",
+            'patterns': [
+                "Distribuição de atendimentos dentro da normalidade",
+                "Variações semanais compatíveis com operação normal"
+            ],
+            'recommendations': [
+                "Monitorar agentes com mais de 6 solicitações semanais",
+                "Implementar treinamentos para gaps identificados",
+                "Manter acompanhamento semanal de autonomia"
+            ]
+        }
     
-    def _extract_recommendations_from_ai_response(self, ai_response: str) -> List[str]:
-        """
-        📋 Extrai recomendações da resposta da IA
-        """
-        if not ai_response or ai_response.startswith("[Erro"):
-            return ["Análise indisponível"]
+    def _generate_7_day_action_plan(self, data: Dict[str, Any]) -> List[Dict[str, str]]:
+        """Gera plano de ação específico para 7 dias"""
         
-        # Procurar por listas numeradas ou com bullets
-        lines = ai_response.split('\n')
-        recommendations = []
+        actions = []
+        supervisors = data.get('supervisors', [])
         
-        for line in lines:
-            line = line.strip()
-            if line and (line[0].isdigit() or line.startswith('-') or line.startswith('•')):
-                # Limpar numeração/bullets
-                clean_line = line.lstrip('0123456789.-• ').strip()
-                if len(clean_line) > 10:
-                    recommendations.append(clean_line)
+        # Identifica ações urgentes
+        critical_agents = []
+        for supervisor in supervisors:
+            for agent in supervisor.get('agents', []):
+                if agent.get('risk_level') == 'critical':
+                    critical_agents.append({
+                        'supervisor': supervisor.get('supervisor_name'),
+                        'agent': agent.get('agent_name'),
+                        'requests': agent.get('current_requests')
+                    })
         
-        # Se não encontrou listas, usar sentenças
-        if not recommendations:
-            sentences = [s.strip() for s in ai_response.split('.') if s.strip()]
-            recommendations = [s + "." for s in sentences[:3] if len(s) > 20]
+        if critical_agents:
+            actions.append({
+                'priority': 'URGENTE',
+                'action': f"Treinamento intensivo para {len(critical_agents)} agente(s) crítico(s)",
+                'details': f"Focar em: {critical_agents[0]['agent']} ({critical_agents[0]['requests']} casos)"
+            })
         
-        return recommendations if recommendations else ["Nenhuma recomendação específica"]
-
-
-# Função de conveniência para uso externo
-def analyze_weekly_data(weekly_data: Dict[str, Any]) -> Dict[str, Any]:
-    """
-    🔧 Função utilitária para análise de dados semanais
+        # Ações importantes
+        attention_agents = sum(1 for sup in supervisors for agent in sup.get('agents', []) 
+                             if agent.get('risk_level') == 'attention')
+        
+        if attention_agents > 0:
+            actions.append({
+                'priority': 'IMPORTANTE',
+                'action': f"Identificar gaps específicos em {attention_agents} agente(s)",
+                'details': "Analisar padrões de dúvidas e implementar treinamento pontual"
+            })
+        
+        # Monitoramento
+        total_agents = sum(len(sup.get('agents', [])) for sup in supervisors)
+        
+        actions.append({
+            'priority': 'MONITORAR',
+            'action': f"Acompanhar evolução de {total_agents} agentes ativos",
+            'details': "Verificar se medidas implementadas estão surtindo efeito"
+        })
+        
+        # Meta semanal
+        avg_autonomy = self._calculate_general_autonomy(supervisors)
+        target_autonomy = min(85, avg_autonomy + 5)
+        
+        actions.append({
+            'priority': 'META',
+            'action': f"Aumentar autonomia geral para {target_autonomy}%",
+            'details': f"Atual: {avg_autonomy}% → Meta: {target_autonomy}%"
+        })
+        
+        return actions
     
-    Args:
-        weekly_data: Dados coletados pelo DataCollector
+    def _calculate_expected_results(self, data: Dict[str, Any]) -> List[Dict[str, str]]:
+        """Calcula resultados esperados baseado em ações"""
         
-    Returns:
-        Análise completa da IA
-    """
-    analyzer = AIAnalyzer()
-    return analyzer.analyze_weekly_data(weekly_data)
-
-
-def test_ai_connection() -> Dict[str, Any]:
-    """
-    🧪 Função utilitária para testar conexão com IA
+        results = []
+        supervisors = data.get('supervisors', [])
+        
+        # Para agentes críticos
+        critical_agents = [agent for sup in supervisors for agent in sup.get('agents', []) 
+                          if agent.get('risk_level') == 'critical']
+        
+        if critical_agents:
+            current_max = max(agent.get('current_requests', 0) for agent in critical_agents)
+            target_max = max(6, current_max - 3)  # Redução de 3 casos
+            
+            results.append({
+                'type': 'agent_improvement',
+                'description': f"Agente crítico: De {current_max} para {target_max} casos (máximo)"
+            })
+        
+        # Para tempo estratégico
+        supervisors_with_low_strategic_time = [sup for sup in supervisors 
+                                             if sup.get('strategic_time_percent', 0) < 50]
+        
+        if supervisors_with_low_strategic_time:
+            current_avg = sum(sup.get('strategic_time_percent', 0) for sup in supervisors_with_low_strategic_time) / len(supervisors_with_low_strategic_time)
+            target_avg = min(70, current_avg + 10)
+            
+            results.append({
+                'type': 'strategic_time',
+                'description': f"Tempo estratégico: De {current_avg:.0f}% para {target_avg:.0f}%"
+            })
+        
+        # Para autonomia geral
+        current_autonomy = self._calculate_general_autonomy(supervisors)
+        target_autonomy = min(85, current_autonomy + 5)
+        
+        results.append({
+            'type': 'general_autonomy',
+            'description': f"Autonomia geral: De {current_autonomy}% para {target_autonomy}%"
+        })
+        
+        return results
     
-    Returns:
-        Resultado do teste de conexão
+    # Métodos auxiliares
+    
+    def _generate_visual_bar(self, value: int, max_width: int = 10) -> str:
+        """Gera barra visual ASCII baseada no valor"""
+        if value == 0:
+            return "░" * max_width
+        
+        # Escala: 1-2 = baixo, 3-6 = médio, 7+ = alto
+        if value <= 2:
+            fill_char = "▓"
+            fill_percent = 0.3
+        elif value <= 6:
+            fill_char = "█"
+            fill_percent = 0.6
+        else:
+            fill_char = "█"
+            fill_percent = 1.0
+        
+        filled = int(max_width * fill_percent)
+        empty = max_width - filled
+        
+        return fill_char * filled + "░" * empty
+    
+    def _calculate_general_autonomy(self, supervisors: List[Dict]) -> float:
+        """Calcula autonomia geral do sistema"""
+        total_agents = 0
+        autonomous_agents = 0
+        
+        for supervisor in supervisors:
+            for agent in supervisor.get('agents', []):
+                total_agents += 1
+                if agent.get('risk_level') == 'autonomous':
+                    autonomous_agents += 1
+        
+        return round((autonomous_agents / total_agents * 100), 1) if total_agents > 0 else 0
+    
+    def _generate_diagnosis(self, agent: Dict) -> str:
+        """Gera diagnóstico específico para um agente"""
+        requests = agent.get('current_requests', 0)
+        variation = agent.get('variation_percent', 0)
+        
+        if requests > 8:
+            return "Deficiência técnica grave"
+        elif requests > 6:
+            return "Gap em área específica"
+        elif variation > 100:
+            return "Nova dificuldade emergente"
+        else:
+            return "Necessita acompanhamento"
+    
+    def _generate_executive_diagnosis(self, global_stats: Dict, critical_agents: List) -> str:
+        """Gera diagnóstico executivo geral"""
+        total = global_stats.get('total_attendances_current', 0)
+        variation = global_stats.get('variation_percent', 0)
+        critical_count = len(critical_agents)
+        
+        if critical_count >= 3:
+            return "Situação crítica: múltiplos agentes em dificuldade"
+        elif variation > 25:
+            return "Deterioração operacional: aumento significativo de demandas"
+        elif total < 20:
+            return "Operação eficiente: baixo volume de solicitações"
+        else:
+            return "Operação normal: dentro dos parâmetros esperados"
+    
+    def _assess_data_quality(self, data: Dict) -> Dict[str, Any]:
+        """Avalia qualidade dos dados coletados"""
+        supervisors = data.get('supervisors', [])
+        total_supervisors = len(supervisors)
+        total_agents = sum(len(sup.get('agents', [])) for sup in supervisors)
+        
+        return {
+            'supervisors_analyzed': total_supervisors,
+            'agents_analyzed': total_agents,
+            'data_completeness': 'high' if total_agents > 5 else 'medium' if total_agents > 0 else 'low',
+            'analysis_confidence': 'high' if total_supervisors >= 2 and total_agents >= 5 else 'medium'
+        }
+    
+    def _generate_empty_analysis(self) -> Dict[str, Any]:
+        """Gera análise vazia quando não há dados"""
+        return {
+            'success': True,
+            'analysis': {
+                'block_1_radar': {'message': 'Nenhum dado de atendimento encontrado no período'},
+                'block_2_training_matrix': {'message': 'Sem dados para análise de capacitação'},
+                'block_3_productivity': {'message': 'Sem dados de produtividade disponíveis'},
+                'block_4_conclusions': {'message': 'Análise não possível sem dados'},
+                'executive_summary': 'Período sem atendimentos registrados'
+            }
+        }
+    
+    def _generate_fallback_analysis(self, data: Dict) -> Dict[str, Any]:
+        """Gera análise básica quando IA falha"""
+        supervisors = data.get('supervisors', [])
+        
+        return {
+            'block_1_radar': {
+                'total_requests': sum(sup.get('total_attendances_current', 0) for sup in supervisors),
+                'critical_alerts': [],
+                'positive_highlights': [],
+                'message': 'Análise IA indisponível - dados básicos apresentados'
+            },
+            'block_2_training_matrix': {
+                'priority_agents': [],
+                'message': 'Identificação de gaps indisponível'
+            },
+            'block_3_productivity': {
+                'supervisors_evolution': [],
+                'message': 'Análise de evolução básica'
+            },
+            'block_4_conclusions': {
+                'ai_diagnosis': 'Sistema IA temporariamente indisponível',
+                'action_plan_7_days': [
+                    {'priority': 'MONITORAR', 'action': 'Verificar agentes com alta demanda'}
+                ]
+            }
+        }
+
+# Função helper para facilitar uso
+def analyze_autonomy_data(autonomy_data: Dict[str, Any], ollama_url: str = "http://localhost:11434") -> Dict[str, Any]:
     """
-    analyzer = AIAnalyzer()
-    return analyzer.test_connection()
+    Função helper para análise de dados de autonomia
+    
+    Usage:
+        from ai_reports.ai_analyzer import analyze_autonomy_data
+        analysis = analyze_autonomy_data(data)
+    """
+    analyzer = AutonomyAIAnalyzer(ollama_url)
+    return analyzer.analyze_weekly_data(autonomy_data)
+
+if __name__ == "__main__":
+    # Teste rápido
+    print("🧪 Testando AI Analyzer...")
+    analyzer = AutonomyAIAnalyzer()
+    
+    # Testa conexão
+    connection = analyzer.test_connection()
+    print(f"🔌 Conexão Ollama: {connection['status']}")
+    
+    if connection['success']:
+        print(f"🤖 Modelos disponíveis: {connection['available_models']}")
+    else:
+        print(f"❌ Erro: {connection['error']}")

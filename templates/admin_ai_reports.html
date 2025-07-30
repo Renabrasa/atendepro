@@ -1,136 +1,120 @@
 {% extends 'base.html' %}
-{% block title %}AI Reports - Painel Admin{% endblock %}
-
-{% block head %}
-<style>
-    .status-card {
-        border-left: 4px solid #ddd;
-        padding: 15px;
-        margin-bottom: 15px;
-        border-radius: 0 8px 8px 0;
-    }
-    .status-success { border-left-color: #28a745; background-color: #f8fff8; }
-    .status-warning { border-left-color: #ffc107; background-color: #fffdf7; }
-    .status-danger { border-left-color: #dc3545; background-color: #fff8f8; }
-    
-    .test-section {
-        background: #f8f9fa;
-        border: 1px solid #dee2e6;
-        border-radius: 8px;
-        padding: 20px;
-        margin-bottom: 20px;
-    }
-    
-    .btn-test {
-        margin-right: 10px;
-        margin-bottom: 10px;
-    }
-    
-    .result-box {
-        background: #ffffff;
-        border: 1px solid #dee2e6;
-        border-radius: 4px;
-        padding: 15px;
-        margin-top: 15px;
-        max-height: 300px;
-        overflow-y: auto;
-    }
-</style>
-{% endblock %}
+{% block title %}AI Reports - Painel Administrativo{% endblock %}
 
 {% block content %}
-<div class="content-wrapper">
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <h1>🤖 AI Reports - Painel Administrativo</h1>
-        <a href="{{ url_for('admin_panel') }}" class="btn btn-secondary">
-            ← Voltar ao Admin
-        </a>
-    </div>
-
-    <!-- Status do Sistema -->
+<div class="container-fluid">
+    <!-- Header -->
     <div class="row mb-4">
-        <div class="col-md-4">
-            <div class="status-card {% if scheduler_status.enabled %}status-success{% else %}status-warning{% endif %}">
-                <h5>⏰ Scheduler</h5>
-                <p class="mb-1">
-                    <strong>Status:</strong> 
-                    {% if scheduler_status.enabled %}
-                        ✅ Habilitado
-                    {% else %}
-                        ⚠️ Desabilitado
-                    {% endif %}
-                </p>
-                {% if scheduler_status.next_execution_formatted %}
-                <p class="mb-0"><small>Próxima execução: {{ scheduler_status.next_execution_formatted }}</small></p>
-                {% endif %}
-            </div>
-        </div>
-        
-        <div class="col-md-4">
-            <div class="status-card {% if ollama_status.success %}status-success{% else %}status-danger{% endif %}">
-                <h5>🧠 Ollama IA</h5>
-                <p class="mb-1">
-                    <strong>Status:</strong> 
-                    {% if ollama_status.success %}
-                        ✅ Conectado
-                    {% else %}
-                        ❌ Desconectado
-                    {% endif %}
-                </p>
-                {% if ollama_status.success %}
-                <p class="mb-0"><small>Modelo: {{ ollama_status.target_model }}</small></p>
-                {% endif %}
-            </div>
-        </div>
-        
-        <div class="col-md-4">
-            <div class="status-card {% if smtp_status.success %}status-success{% else %}status-danger{% endif %}">
-                <h5>📧 SMTP Email</h5>
-                <p class="mb-1">
-                    <strong>Status:</strong> 
-                    {% if smtp_status.success %}
-                        ✅ Conectado
-                    {% else %}
-                        ❌ Erro de conexão
-                    {% endif %}
-                </p>
-                {% if smtp_status.success %}
-                <p class="mb-0"><small>Servidor: {{ smtp_status.smtp_server }}</small></p>
-                {% endif %}
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h2 class="mb-1">🤖 AI Reports</h2>
+                    <p class="text-muted mb-0">Sistema de Análise de Autonomia com Inteligência Artificial</p>
+                </div>
+                <div>
+                    <a href="{{ url_for('admin_panel') }}" class="btn btn-outline-secondary">
+                        <i class="fas fa-arrow-left"></i> Voltar ao Admin
+                    </a>
+                </div>
             </div>
         </div>
     </div>
 
-    <!-- Informações Gerais -->
+    <!-- Alert de Status -->
     <div class="row mb-4">
-        <div class="col-md-12">
-            <div class="card">
+        <div class="col-12">
+            <div class="alert alert-info">
+                <h5><i class="fas fa-info-circle"></i> Status do Sistema</h5>
+                <div class="row">
+                    <div class="col-md-4">
+                        <strong>📊 Data Collector:</strong> 
+                        {% if 'ok' in (system_status.data_collector or '') %}
+                            <span class="text-success">✅ Funcionando</span>
+                        {% else %}
+                            <span class="text-warning">⚠️ Verificar</span>
+                        {% endif %}
+                    </div>
+                    <div class="col-md-4">
+                        <strong>🤖 Ollama IA:</strong>
+                        {% if ollama_status.available %}
+                            <span class="text-success">✅ Conectado</span>
+                        {% else %}
+                            <span class="text-warning">⚠️ Não configurado</span>
+                        {% endif %}
+                    </div>
+                    <div class="col-md-4">
+                        <strong>📧 SMTP:</strong>
+                        {% if smtp_status.configured %}
+                            <span class="text-success">✅ Configurado</span>
+                        {% else %}
+                            <span class="text-warning">⚠️ Não configurado</span>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Stats Cards -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card bg-primary text-white">
                 <div class="card-body">
-                    <h5 class="card-title">📊 Informações do Sistema</h5>
-                    <div class="row">
-                        <div class="col-md-3">
-                            <strong>Supervisores cadastrados:</strong><br>
-                            <span class="h4 text-primary">{{ supervisors_count }}</span>
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <div class="h4 mb-0">{{ basic_stats.total_supervisors }}</div>
+                            <div>Supervisores</div>
                         </div>
-                        <div class="col-md-3">
-                            <strong>Agendamento:</strong><br>
-                            {% if scheduler_status.enabled %}
-                                Segundas às {{ scheduler_status.hour }}h
-                            {% else %}
-                                Desabilitado
-                            {% endif %}
+                        <div class="align-self-center">
+                            <i class="fas fa-users fa-2x"></i>
                         </div>
-                        <div class="col-md-3">
-                            <strong>Timezone:</strong><br>
-                            {{ scheduler_status.timezone }}
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-3">
+            <div class="card bg-success text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <div class="h4 mb-0">{{ basic_stats.total_agents }}</div>
+                            <div>Agentes Ativos</div>
                         </div>
-                        <div class="col-md-3">
-                            <strong>Status geral:</strong><br>
-                            {% if ollama_status.success and smtp_status.success %}
-                                <span class="text-success">✅ Operacional</span>
-                            {% else %}
-                                <span class="text-danger">❌ Problemas detectados</span>
-                            {% endif %}
+                        <div class="align-self-center">
+                            <i class="fas fa-user-check fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-3">
+            <div class="card bg-info text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <div class="h4 mb-0">{{ basic_stats.recent_attendances }}</div>
+                            <div>Atendimentos (7 dias)</div>
+                        </div>
+                        <div class="align-self-center">
+                            <i class="fas fa-headset fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-3">
+            <div class="card bg-warning text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <div class="h4 mb-0">v{{ basic_stats.ai_reports_version }}</div>
+                            <div>AI Reports</div>
+                        </div>
+                        <div class="align-self-center">
+                            <i class="fas fa-robot fa-2x"></i>
                         </div>
                     </div>
                 </div>
@@ -138,159 +122,373 @@
         </div>
     </div>
 
-    <!-- Testes do Sistema -->
-    <div class="test-section">
-        <h4>🧪 Testes do Sistema</h4>
-        <p class="text-muted">Execute testes para validar o funcionamento do sistema AI Reports</p>
-        
-        <div class="row">
-            <div class="col-md-6">
-                <h6>Teste Completo (sem envio de emails)</h6>
-                <p><small>Executa todo o fluxo: coleta → IA → preparação de emails</small></p>
-                <button type="button" class="btn btn-primary btn-test" onclick="executeTest(false)">
-                    🔄 Executar Teste Simulado
-                </button>
-            </div>
-            
-            <div class="col-md-6">
-                <h6>Teste com Envio Real</h6>
-                <p><small class="text-warning">⚠️ Enviará emails reais para todos os supervisores!</small></p>
-                <button type="button" class="btn btn-warning btn-test" onclick="executeTest(true)">
-                    📧 Executar Teste REAL
-                </button>
-            </div>
-        </div>
-        
-        <!-- Resultado dos testes -->
-        <div id="testResult" class="result-box" style="display: none;">
-            <h6>📋 Resultado do Teste</h6>
-            <div id="testContent"></div>
-        </div>
-        
-        <!-- Loading -->
-        <div id="testLoading" class="text-center" style="display: none;">
-            <div class="spinner-border text-primary" role="status">
-                <span class="sr-only">Executando teste...</span>
-            </div>
-            <p class="mt-2">Executando teste... isso pode levar alguns minutos.</p>
-        </div>
-    </div>
+    <!-- Main Actions -->
+    <div class="row">
+        <div class="col-lg-8">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">🚀 Ações Principais</h5>
+                </div>
+                <div class="card-body">
+                    
+                    <!-- Teste do Sistema -->
+                    <div class="mb-4">
+                        <h6>🧪 Teste do Sistema</h6>
+                        <p class="text-muted">Verifica se todos os componentes estão funcionando.</p>
+                        <button id="btnTestSystem" class="btn btn-info">
+                            <i class="fas fa-flask"></i> Executar Teste Completo
+                        </button>
+                        <div id="testResults" class="mt-3" style="display: none;"></div>
+                    </div>
 
-    <!-- Controle do Scheduler -->
-    {% if scheduler_status.enabled %}
-    <div class="test-section">
-        <h4>⏰ Controle do Scheduler</h4>
-        <p class="text-muted">Controle manual do agendamento automático</p>
-        
-        <div class="row">
-            <div class="col-md-6">
-                <h6>Status Atual</h6>
-                <p>
-                    Scheduler: <strong>{% if scheduler_status.running %}🟢 Rodando{% else %}🔴 Parado{% endif %}</strong><br>
-                    {% if scheduler_status.next_execution_formatted %}
-                    Próxima execução: <strong>{{ scheduler_status.next_execution_formatted }}</strong>
+                    <hr>
+
+                    <!-- Gerar Relatório -->
+                    <div class="mb-4">
+                        <h6>📊 Gerar Relatório de Autonomia</h6>
+                        <p class="text-muted">Analisa dados e gera insights de autonomia.</p>
+                        
+                        <form id="formGenerateReport">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        <label>Supervisor (opcional):</label>
+                                        <select class="form-control" id="supervisorFilter">
+                                            <option value="">Todos os supervisores</option>
+                                            {% for supervisor in supervisors %}
+                                            <option value="{{ supervisor.id }}">{{ supervisor.nome }}</option>
+                                            {% endfor %}
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        <label>&nbsp;</label>
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" id="sendEmail">
+                                            <label class="form-check-label" for="sendEmail">
+                                                Enviar por email
+                                            </label>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div id="emailSection" style="display: none;">
+                                <div class="form-group">
+                                    <label>Destinatários (separados por vírgula):</label>
+                                    <input type="text" class="form-control" id="recipients" 
+                                           placeholder="email1@empresa.com, email2@empresa.com">
+                                </div>
+                            </div>
+                            
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-chart-line"></i> Gerar Relatório
+                            </button>
+                        </form>
+                        
+                        <div id="reportResults" class="mt-3" style="display: none;"></div>
+                    </div>
+
+                    <hr>
+
+                    <!-- Teste de Email -->
+                    <div class="mb-4">
+                        <h6>📧 Teste de Email</h6>
+                        <p class="text-muted">Testa configuração SMTP.</p>
+                        
+                        <div class="input-group">
+                            <input type="email" class="form-control" id="testEmailRecipient" 
+                                   placeholder="seu-email@exemplo.com" value="{{ current_user.email or '' }}">
+                            <div class="input-group-append">
+                                <button class="btn btn-outline-primary" id="btnTestEmail">
+                                    <i class="fas fa-envelope"></i> Enviar Teste
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <div id="emailTestResults" class="mt-3" style="display: none;"></div>
+                    </div>
+
+                    <!-- Scheduler (se configurado) -->
+                    {% if scheduler_status.enabled %}
+                    <hr>
+                    <div class="mb-4">
+                        <h6>⏰ Agendamento Automático</h6>
+                        <p class="text-muted">{{ scheduler_status.message }}</p>
+                        
+                        <div class="alert alert-info">
+                            <strong>Próxima execução:</strong> {{ scheduler_status.next_execution_formatted }}
+                        </div>
+                        
+                        <button id="btnExecuteNow" class="btn btn-success">
+                            <i class="fas fa-bolt"></i> Executar Agora (Teste)
+                        </button>
+                        
+                        <div id="schedulerResults" class="mt-3" style="display: none;"></div>
+                    </div>
                     {% endif %}
-                </p>
-            </div>
-            
-            <div class="col-md-6">
-                <h6>Controles</h6>
-                {% if scheduler_status.running %}
-                    <button type="button" class="btn btn-danger btn-test" onclick="toggleScheduler('stop')">
-                        ⏹️ Parar Scheduler
-                    </button>
-                {% else %}
-                    <button type="button" class="btn btn-success btn-test" onclick="toggleScheduler('start')">
-                        ▶️ Iniciar Scheduler
-                    </button>
-                {% endif %}
+
+                </div>
             </div>
         </div>
+
+        <!-- Configurações e Preview -->
+        <div class="col-lg-4">
+            
+            <!-- Configuração Atual -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h6 class="mb-0">⚙️ Configuração</h6>
+                </div>
+                <div class="card-body">
+                    <small>
+                        <div class="mb-2">
+                            <strong>Ollama URL:</strong><br>
+                            <code>{{ ollama_status.url }}</code>
+                        </div>
+                        <div class="mb-2">
+                            <strong>Modelo IA:</strong><br>
+                            <code>{{ ollama_status.model }}</code>
+                        </div>
+                        <div class="mb-2">
+                            <strong>SMTP:</strong><br>
+                            {{ smtp_status.email }}
+                        </div>
+                        {% if scheduler_status.enabled %}
+                        <div class="mb-2">
+                            <strong>Agendamento:</strong><br>
+                            Segunda-feira às {{ scheduler_status.hour }}h
+                        </div>
+                        {% endif %}
+                    </small>
+                </div>
+            </div>
+
+            <!-- Preview -->
+            <div class="card">
+                <div class="card-header">
+                    <h6 class="mb-0">👀 Preview de Dados</h6>
+                </div>
+                <div class="card-body">
+                    <div class="form-group">
+                        <label>Supervisor:</label>
+                        <select class="form-control" id="previewSupervisor">
+                            <option value="">Escolha um supervisor...</option>
+                            {% for supervisor in supervisors %}
+                            <option value="{{ supervisor.id }}">{{ supervisor.nome }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    
+                    <div id="previewResults" style="display: none;">
+                        <!-- Dados carregados via JavaScript -->
+                    </div>
+                </div>
+            </div>
+
+        </div>
     </div>
-    {% endif %}
 </div>
 
+<!-- JavaScript -->
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script>
-function executeTest(sendEmails) {
-    const testResult = document.getElementById('testResult');
-    const testContent = document.getElementById('testContent');
-    const testLoading = document.getElementById('testLoading');
+$(document).ready(function() {
     
-    // Mostrar loading
-    testResult.style.display = 'none';
-    testLoading.style.display = 'block';
-    
-    // Preparar dados
-    const formData = new FormData();
-    formData.append('send_emails', sendEmails ? 'true' : 'false');
-    
-    fetch('/admin/ai-reports/test-execution', {
-        method: 'POST',
-        body: formData
-    })
-    .then(response => response.json())
-    .then(data => {
-        testLoading.style.display = 'none';
-        testResult.style.display = 'block';
-        
-        if (data.success) {
-            const action = data.action === 'test_with_emails' ? 'TESTE REAL' : 'TESTE SIMULADO';
-            testContent.innerHTML = `
-                <div class="alert alert-success">
-                    <h6>✅ ${action} CONCLUÍDO COM SUCESSO!</h6>
-                    <hr>
-                    <strong>📊 Resultados:</strong><br>
-                    • Período analisado: ${data.period}<br>
-                    • Supervisores analisados: ${data.supervisors_analyzed}<br>
-                    • Total de atendimentos: ${data.total_tickets}<br>
-                    • Insights gerados: ${data.insights_generated}<br>
-                    ${data.emails_sent !== undefined ? 
-                        `• Emails enviados: ${data.emails_sent}<br>• Falhas de email: ${data.email_failures}` :
-                        `• Emails preparados: ${data.emails_prepared}`
-                    }
-                </div>
-            `;
-        } else {
-            testContent.innerHTML = `
-                <div class="alert alert-danger">
-                    <h6>❌ ERRO NO TESTE</h6>
-                    <p>${data.error}</p>
-                </div>
-            `;
-        }
-    })
-    .catch(error => {
-        testLoading.style.display = 'none';
-        testResult.style.display = 'block';
-        testContent.innerHTML = `
-            <div class="alert alert-danger">
-                <h6>❌ ERRO DE CONEXÃO</h6>
-                <p>${error.message}</p>
-            </div>
-        `;
+    // Toggle email section
+    $('#sendEmail').change(function() {
+        $('#emailSection').toggle($(this).is(':checked'));
     });
-}
 
-function toggleScheduler(action) {
-    const formData = new FormData();
-    formData.append('action', action);
-    
-    fetch('/admin/ai-reports/toggle-scheduler', {
-        method: 'POST',
-        body: formData
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.success) {
-            alert(`✅ ${data.message}`);
-            location.reload();
-        } else {
-            alert(`❌ Erro: ${data.error}`);
-        }
-    })
-    .catch(error => {
-        alert(`❌ Erro de conexão: ${error.message}`);
+    // Teste do sistema
+    $('#btnTestSystem').click(function() {
+        const btn = $(this);
+        const resultsDiv = $('#testResults');
+        
+        btn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> Testando...');
+        resultsDiv.show().html('<div class="alert alert-info">Executando testes...</div>');
+        
+        $.get('/admin/ai-reports/test')
+            .done(function(data) {
+                if (data.success) {
+                    resultsDiv.html(`
+                        <div class="alert alert-success">
+                            <h6><i class="fas fa-check"></i> Teste Concluído!</h6>
+                            <ul class="mb-0">
+                                <li><strong>Supervisores:</strong> ${data.sample_data.supervisors_analyzed}</li>
+                                <li><strong>Agentes:</strong> ${data.sample_data.total_agents}</li>
+                                <li><strong>Período:</strong> ${data.sample_data.period_analyzed}</li>
+                                <li><strong>Solicitações:</strong> ${data.sample_data.total_requests}</li>
+                            </ul>
+                        </div>
+                    `);
+                } else {
+                    resultsDiv.html(`
+                        <div class="alert alert-danger">
+                            <h6><i class="fas fa-exclamation-triangle"></i> Erro</h6>
+                            <p class="mb-0">${data.error}</p>
+                        </div>
+                    `);
+                }
+            })
+            .fail(function(xhr) {
+                const error = xhr.responseJSON ? xhr.responseJSON.error : 'Erro de conexão';
+                resultsDiv.html(`
+                    <div class="alert alert-danger">
+                        <h6><i class="fas fa-exclamation-triangle"></i> Falha</h6>
+                        <p class="mb-0">${error}</p>
+                    </div>
+                `);
+            })
+            .always(function() {
+                btn.prop('disabled', false).html('<i class="fas fa-flask"></i> Executar Teste Completo');
+            });
     });
-}
+
+    // Geração de relatório
+    $('#formGenerateReport').submit(function(e) {
+        e.preventDefault();
+        
+        const formData = {
+            supervisor_id: $('#supervisorFilter').val(),
+            send_email: $('#sendEmail').is(':checked'),
+            recipients: $('#sendEmail').is(':checked') ? 
+                $('#recipients').val().split(',').map(email => email.trim()).filter(email => email) : []
+        };
+        
+        const submitBtn = $(this).find('button[type="submit"]');
+        const resultsDiv = $('#reportResults');
+        
+        submitBtn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> Gerando...');
+        resultsDiv.show().html('<div class="alert alert-info">Analisando dados...</div>');
+        
+        $.ajax({
+            url: '/admin/ai-reports/generate',
+            method: 'POST',
+            contentType: 'application/json',
+            data: JSON.stringify(formData)
+        })
+        .done(function(data) {
+            if (data.success) {
+                resultsDiv.html(`
+                    <div class="alert alert-success">
+                        <h6><i class="fas fa-check-circle"></i> Relatório Gerado!</h6>
+                        <ul class="mb-0">
+                            <li><strong>Supervisores:</strong> ${data.supervisors_analyzed}</li>
+                            <li><strong>Agentes:</strong> ${data.total_agents}</li>
+                            <li><strong>Período:</strong> ${data.period}</li>
+                            ${data.email_sent ? '<li><strong>Email:</strong> Enviado ✅</li>' : ''}
+                        </ul>
+                    </div>
+                `);
+            } else {
+                resultsDiv.html(`
+                    <div class="alert alert-danger">
+                        <h6><i class="fas fa-exclamation-triangle"></i> Erro</h6>
+                        <p class="mb-0">${data.error}</p>
+                    </div>
+                `);
+            }
+        })
+        .fail(function(xhr) {
+            const error = xhr.responseJSON ? xhr.responseJSON.error : 'Erro de conexão';
+            resultsDiv.html(`
+                <div class="alert alert-danger">
+                    <h6><i class="fas fa-exclamation-triangle"></i> Falha</h6>
+                    <p class="mb-0">${error}</p>
+                </div>
+            `);
+        })
+        .always(function() {
+            submitBtn.prop('disabled', false).html('<i class="fas fa-chart-line"></i> Gerar Relatório');
+        });
+    });
+
+    // Teste de email
+    $('#btnTestEmail').click(function() {
+        const btn = $(this);
+        const email = $('#testEmailRecipient').val();
+        const resultsDiv = $('#emailTestResults');
+        
+        if (!email) {
+            alert('Informe um email para teste.');
+            return;
+        }
+        
+        btn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> Enviando...');
+        resultsDiv.show().html('<div class="alert alert-info">Enviando...</div>');
+        
+        $.ajax({
+            url: '/admin/ai-reports/send-test-email',
+            method: 'POST',
+            contentType: 'application/json',
+            data: JSON.stringify({ recipient: email })
+        })
+        .done(function(data) {
+            if (data.success) {
+                resultsDiv.html(`
+                    <div class="alert alert-success">
+                        <i class="fas fa-check"></i> Email enviado para <strong>${email}</strong>!
+                    </div>
+                `);
+            } else {
+                resultsDiv.html(`
+                    <div class="alert alert-danger">
+                        <i class="fas fa-exclamation-triangle"></i> ${data.error}
+                    </div>
+                `);
+            }
+        })
+        .fail(function(xhr) {
+            const error = xhr.responseJSON ? xhr.responseJSON.error : 'Erro de conexão';
+            resultsDiv.html(`
+                <div class="alert alert-danger">
+                    <i class="fas fa-exclamation-triangle"></i> ${error}
+                </div>
+            `);
+        })
+        .always(function() {
+            btn.prop('disabled', false).html('<i class="fas fa-envelope"></i> Enviar Teste');
+        });
+    });
+
+    // Preview de supervisor
+    $('#previewSupervisor').change(function() {
+        const supervisorId = $(this).val();
+        const resultsDiv = $('#previewResults');
+        
+        if (!supervisorId) {
+            resultsDiv.hide();
+            return;
+        }
+        
+        resultsDiv.show().html('<div class="text-center"><i class="fas fa-spinner fa-spin"></i> Carregando...</div>');
+        
+        $.get(`/admin/ai-reports/preview/${supervisorId}`)
+            .done(function(data) {
+                if (data.success) {
+                    resultsDiv.html(`
+                        <div class="alert alert-info">
+                            <h6>${data.supervisor.nome}</h6>
+                            <hr>
+                            <small>
+                                <div><strong>Última semana:</strong> ${data.preview_data.atendimentos_ultima_semana}</div>
+                                <div><strong>Agentes ativos:</strong> ${data.preview_data.agentes_ativos}</div>
+                                <div><strong>Total histórico:</strong> ${data.preview_data.total_historico}</div>
+                            </small>
+                        </div>
+                    `);
+                } else {
+                    resultsDiv.html(`<div class="alert alert-warning">${data.error}</div>`);
+                }
+            })
+            .fail(function() {
+                resultsDiv.html(`<div class="alert alert-danger">Erro ao carregar preview</div>`);
+            });
+    });
+
+});
 </script>
+
 {% endblock %}

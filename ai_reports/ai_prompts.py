@@ -12,7 +12,7 @@ class PromptBuilder:
     """
     🔤 Construtor de prompts especializados para análise IA
     
-    Gera prompts para análise de produtividade e demanda de atendimentos em contabilidade
+    Gera prompts ultra-específicos para análise de produtividade em contabilidade
     """
     
     @staticmethod
@@ -28,39 +28,29 @@ class PromptBuilder:
         period = weekly_data['metadata']['current_week']['period_label']
         
         prompt = f"""
-Você é um analista de produtividade de empresa de contabilidade.
+INSTRUÇÕES OBRIGATÓRIAS:
+- Use APENAS os números fornecidos abaixo
+- NÃO mencione: férias, escola, sazonalidade, clientes externos
+- NÃO invente números diferentes dos fornecidos
+- Foque APENAS em empresa de contabilidade interna
+- Máximo 80 palavras
 
-DADOS REAIS DO SISTEMA:
-- Período atual: {period}
-- Total de atendimentos prestados por supervisores: {current_tickets}
-- Período anterior: {previous_tickets} atendimentos
-- Variação real: {change:+d} atendimentos ({change_percent:+.1f}%)
-- Supervisores ativos: {active_supervisors}
+DADOS REAIS:
+Período: {period}
+Atendimentos prestados por supervisores: {current_tickets}
+Período anterior: {previous_tickets}
+Variação: {change:+d} ({change_percent:+.1f}%)
+Supervisores: {active_supervisors}
 
-CONTEXTO:
-- Cada atendimento = supervisor ajudou agente/funcionário com caso complexo
-- Aumento = agentes precisaram mais suporte (possível sobrecarga ou casos complexos)
-- Redução = agentes mais autônomos ou menor demanda de clientes
+ANÁLISE OBRIGATÓRIA (use template abaixo):
 
-ANÁLISE SOLICITADA:
+SITUAÇÃO: Supervisores prestaram {current_tickets} atendimentos, {change:+d} que o período anterior.
 
-1. INTERPRETAÇÃO DOS NÚMEROS REAIS
-   - {change_percent:+.1f}% significa que supervisores prestaram {change:+d} atendimentos a mais/menos
-   - Indica maior/menor dependência dos agentes?
+CAUSA: {"Agentes precisaram mais suporte técnico" if change > 0 else "Agentes mais autônomos ou menor demanda"}
 
-2. POSSÍVEIS CAUSAS OPERACIONAIS
-   - Se aumentou: agentes com dificuldades ou casos mais complexos?
-   - Se reduziu: agentes mais capacitados ou menor demanda?
+IMPACTO: {"Supervisores com mais trabalho" if change > 0 else "Supervisores com menos trabalho"}
 
-3. IMPACTO NA PRODUTIVIDADE
-   - Como isso afeta a eficiência geral da contabilidade?
-   - Supervisores sobrecarregados ou com capacidade ociosa?
-
-4. RECOMENDAÇÕES PRÁTICAS
-   - Ações para otimizar a demanda de atendimentos
-   - Como equilibrar autonomia vs suporte necessário
-
-REGRAS: Use APENAS os números fornecidos. Máximo 120 palavras. Foque em produtividade da contabilidade.
+AÇÃO: {"Monitorar sobrecarga e treinar agentes" if change > 0 else "Verificar se agentes estão ociosos"}
 """
         return prompt.strip()
     
@@ -78,60 +68,57 @@ REGRAS: Use APENAS os números fornecidos. Máximo 120 palavras. Foque em produt
         change_percent = supervisor_data['comparison']['percent_change']
         
         agents = supervisor_data['current_week']['agents_performance']
-        agents_count = len(agents)
         
-        ranking_text = f"(#{ranking_position} no ranking)" if ranking_position else ""
+        ranking_text = f"(#{ranking_position})" if ranking_position else ""
+        
+        # Identificar agente com maior variação
+        max_increase_agent = None
+        max_decrease_agent = None
+        max_increase = 0
+        max_decrease = 0
+        
+        for agent in agents:
+            agent_change_percent = (agent['change'] / agent['previous_tickets'] * 100) if agent['previous_tickets'] > 0 else 0
+            if agent_change_percent > max_increase:
+                max_increase = agent_change_percent
+                max_increase_agent = agent
+            if agent_change_percent < max_decrease:
+                max_decrease = agent_change_percent
+                max_decrease_agent = agent
         
         prompt = f"""
-Você é um gestor de contabilidade analisando produtividade individual.
+INSTRUÇÕES CRÍTICAS:
+- Use APENAS os dados fornecidos
+- NÃO mencione férias, escola, sazonalidade
+- Cite nomes dos agentes
+- Máximo 90 palavras
+- NÃO invente números
 
 DADOS REAIS DO SUPERVISOR {supervisor} {ranking_text}:
-- Período: {weekly_data['metadata']['current_week']['period_label']}
-- Atendimentos prestados agora: {current}
-- Atendimentos prestados antes: {previous}
-- Variação real: {change:+d} atendimentos ({change_percent:+.1f}%)
-- Agentes/funcionários atendidos: {agents_count}
+Atendimentos prestados: {current} (anterior: {previous})
+Variação: {change:+d} ({change_percent:+.1f}%)
 
-DETALHAMENTO POR AGENTE (quem mais solicitou atendimento):
+AGENTES (atendimentos solicitados):
 """
         
-        # Adicionar dados dos agentes com foco em variação individual
-        for i, agent in enumerate(agents[:5], 1):
-            agent_name = agent['agent']['name']
-            current_requests = agent['current_tickets']
-            previous_requests = agent['previous_tickets']
-            agent_change = agent['change']
-            
-            # Calcular porcentagem individual
-            if previous_requests > 0:
-                agent_percent = (agent_change / previous_requests) * 100
-                prompt += f"• {agent_name}: {current_requests} atendimentos (anterior: {previous_requests}) = {agent_change:+d} ({agent_percent:+.1f}%)\n"
-            else:
-                prompt += f"• {agent_name}: {current_requests} atendimentos (anterior: {previous_requests}) = {agent_change:+d}\n"
+        for agent in agents[:3]:  # Top 3 para economizar espaço
+            name = agent['agent']['name']
+            curr = agent['current_tickets']
+            prev = agent['previous_tickets']
+            ch = agent['change']
+            percent = (ch / prev * 100) if prev > 0 else 0
+            prompt += f"{name}: {curr} (anterior: {prev}) = {ch:+d} ({percent:+.1f}%)\n"
         
         prompt += f"""
-ANÁLISE INDIVIDUAL SOLICITADA:
+ANÁLISE OBRIGATÓRIA (template fixo):
 
-1. PERFORMANCE DO SUPERVISOR {supervisor}
-   - {current} atendimentos prestados representa sobrecarga ou demanda normal?
-   - Variação de {change_percent:+.1f}% indica que agentes precisaram mais/menos suporte
+SUPERVISOR: {supervisor} prestou {current} atendimentos ({change:+d}).
 
-2. ANÁLISE POR AGENTE (foque nos números acima)
-   - Qual agente mais solicitou atendimento e por quê?
-   - Quais agentes tiveram maior variação percentual?
-   - Algum agente demonstra necessidade de treinamento urgente?
+AGENTE DESTAQUE: {max_increase_agent['agent']['name'] if max_increase_agent and max_increase > 20 else "Nenhum destaque significativo"} {"solicitou mais atendimentos" if max_increase_agent and max_increase > 20 else ""}.
 
-3. IDENTIFICAÇÃO DE PADRÕES
-   - Agentes com aumento >30%: precisam capacitação?
-   - Agentes com redução >30%: estão mais autônomos ou ociosos?
-   - Distribuição equilibrada entre a equipe?
+AGENTE EVOLUÇÃO: {max_decrease_agent['agent']['name'] if max_decrease_agent and max_decrease < -20 else "Nenhuma evolução significativa"} {"reduziu solicitações" if max_decrease_agent and max_decrease < -20 else ""}.
 
-4. RECOMENDAÇÕES ESPECÍFICAS
-   - Quais agentes treinar prioritariamente?
-   - Como redistribuir demanda entre agentes?
-   - Ações para próxima semana
-
-REGRAS: Use APENAS os números reais fornecidos. Cite nomes dos agentes. Máximo 110 palavras.
+RECOMENDAÇÃO: {"Treinar " + max_increase_agent['agent']['name'] if max_increase_agent and max_increase > 30 else "Monitorar evolução da equipe"}.
 """
         return prompt.strip()
     
@@ -143,59 +130,37 @@ REGRAS: Use APENAS os números reais fornecidos. Cite nomes dos agentes. Máximo
         supervisors = weekly_data['supervisors_data']
         global_stats = weekly_data['global_stats']
         
-        # Análise dos supervisores
-        total_supervisors = len(supervisors)
-        overloaded = [s for s in supervisors if s['current_week']['total_tickets'] >= 50]
-        high_demand_increase = [s for s in supervisors if s['comparison']['percent_change'] >= 25]
-        demand_decrease = [s for s in supervisors if s['comparison']['percent_change'] <= -25]
-        
-        # Top supervisor por volume
+        # Encontrar supervisor com mais atendimentos
         top_supervisor = max(supervisors, key=lambda x: x['current_week']['total_tickets']) if supervisors else None
         
+        # Contar supervisores sobrecarregados
+        overloaded_count = len([s for s in supervisors if s['current_week']['total_tickets'] >= 40])
+        
         prompt = f"""
-Você é diretor de contabilidade preparando relatório para diretoria.
+INSTRUÇÕES CRÍTICAS:
+- Máximo 100 palavras
+- Use APENAS dados fornecidos
+- NÃO mencione férias, escola, sazonalidade
+- Foque em ações práticas
 
-DADOS EXECUTIVOS REAIS:
-- Período: {weekly_data['metadata']['current_week']['period_label']}
-- Total de atendimentos prestados por supervisores: {global_stats['current_week']['total_tickets']}
-- Variação geral: {global_stats['comparison']['absolute_change']:+d} ({global_stats['comparison']['percent_change']:+.1f}%)
-- Supervisores monitorados: {total_supervisors}
-
-DISTRIBUIÇÃO DE CARGA ATUAL:
-- Supervisores com alta demanda (≥50 atendimentos): {len(overloaded)}
-- Supervisores com aumento significativo (+25%): {len(high_demand_increase)}
-- Supervisores com redução significativa (-25%): {len(demand_decrease)}
+DADOS EXECUTIVOS:
+Total atendimentos: {global_stats['current_week']['total_tickets']}
+Variação: {global_stats['comparison']['absolute_change']:+d} ({global_stats['comparison']['percent_change']:+.1f}%)
+Supervisores: {len(supervisors)}
+Sobrecarregados (≥40 atendimentos): {overloaded_count}
 """
         
         if top_supervisor:
-            top_change = top_supervisor['comparison']['absolute_change']
-            top_percent = top_supervisor['comparison']['percent_change']
-            prompt += f"• Maior volume: {top_supervisor['supervisor']['name']} prestou {top_supervisor['current_week']['total_tickets']} atendimentos ({top_change:+d}, {top_percent:+.1f}%)\n"
+            prompt += f"Maior volume: {top_supervisor['supervisor']['name']} ({top_supervisor['current_week']['total_tickets']} atendimentos)\n"
         
         prompt += f"""
-RECOMENDAÇÕES ESTRATÉGICAS PARA DIRETORIA:
+RECOMENDAÇÕES OBRIGATÓRIAS (template fixo):
 
-1. GESTÃO DE PRODUTIVIDADE
-   - Como balancear demanda de atendimentos entre supervisores?
-   - Redistribuição de agentes entre equipes sobrecarregadas?
-
-2. CAPACITAÇÃO URGENTE
-   - Agentes que mais demandam atendimento precisam treinamento?
-   - Temas técnicos que geram mais solicitações de suporte?
-
-3. OTIMIZAÇÃO OPERACIONAL
-   - Como reduzir dependência dos agentes nos supervisores?
-   - Ferramentas para aumentar autonomia dos funcionários?
-
-4. MONITORAMENTO DE EFICIÊNCIA
-   - KPIs para detectar sobrecarga de supervisores precocemente?
-   - Métricas de evolução da autonomia dos agentes?
-
-5. PLANEJAMENTO DE RECURSOS
-   - Necessidade de contratação ou redistribuição?
-   - Investimento em treinamento vs contratação de pessoal?
-
-REGRAS: Foque em decisões executivas baseadas nos números reais. Máximo 140 palavras.
+1. CAPACITAÇÃO: Treinar agentes que mais demandam atendimento
+2. REDISTRIBUIÇÃO: Balancear carga entre supervisores{"s sobrecarregados" if overloaded_count > 0 else ""}  
+3. MONITORAMENTO: Acompanhar evolução semanal dos agentes
+4. EFICIÊNCIA: Criar processos para reduzir dependência
+5. RECURSOS: {"Considerar reforço para supervisores com >40 atendimentos" if overloaded_count > 0 else "Manter estrutura atual"}
 """
         return prompt.strip()
     
@@ -211,54 +176,24 @@ REGRAS: Foque em decisões executivas baseadas nos números reais. Máximo 140 p
         change = weekly_data['global_stats']['comparison']['absolute_change']
         change_percent = weekly_data['global_stats']['comparison']['percent_change']
         
-        # Análise dos supervisores
-        if supervisors_analysis:
-            top_performer = max(supervisors_analysis, key=lambda x: x['key_metrics']['current_tickets'])
-            high_variance = [s for s in supervisors_analysis if 
-                           abs(s['key_metrics']['change_percent']) >= 30]
-        else:
-            top_performer = None
-            high_variance = []
-        
         prompt = f"""
-Você é CEO/diretor apresentando resultados para conselho administrativo.
+INSTRUÇÕES EXECUTIVAS:
+- Máximo 80 palavras
+- Use APENAS números fornecidos
+- NÃO mencione férias, escola, sazonalidade
+- Linguagem para diretoria
 
-RESUMO EXECUTIVO - PRODUTIVIDADE CONTÁBIL ({period}):
+RESUMO EXECUTIVO - {period}:
 
-NÚMEROS PRINCIPAIS:
-- Total de atendimentos prestados: {total_tickets}
-- Variação operacional: {change:+d} ({change_percent:+.1f}%)
-- Supervisores monitorados: {len(supervisors_analysis)}
-- Situações que requerem atenção: {len(high_variance)}
-"""
-        
-        if top_performer:
-            prompt += f"• Supervisor com maior demanda: {top_performer['supervisor_name']} ({top_performer['key_metrics']['current_tickets']} atendimentos)\n"
-        
-        prompt += f"""
-APRESENTAÇÃO PARA CONSELHO:
+PRODUTIVIDADE: {total_tickets} atendimentos prestados por supervisores ({change:+d}, {change_percent:+.1f}%).
 
-1. SITUAÇÃO OPERACIONAL
-   - Status da produtividade na contabilidade
-   - Eficiência dos supervisores vs demanda dos agentes
+SITUAÇÃO: {"Supervisores com mais demanda" if change > 0 else "Supervisores com menos demanda"}.
 
-2. PONTOS CRÍTICOS
-   - Supervisores sobrecarregados que impactam produtividade
-   - Agentes com alta dependência (precisam desenvolvimento urgente)
+CAUSA: {"Agentes precisando mais suporte" if change > 0 else "Agentes mais autônomos"}.
 
-3. TENDÊNCIAS OBSERVADAS
-   - Padrões na demanda por suporte técnico
-   - Evolução da autonomia dos funcionários
+AÇÃO: {"Investir em treinamento dos agentes" if change > 0 else "Monitorar produtividade dos agentes"}.
 
-4. DECISÕES ESTRATÉGICAS
-   - Investimentos necessários em capacitação
-   - Necessidade de contratação ou redistribuição
-
-5. METAS PRÓXIMO PERÍODO
-   - Objetivos de redução da dependência
-   - KPIs para monitorar eficiência
-
-REGRAS: Linguagem executiva para conselho. Use apenas números reais. Máximo 120 palavras.
+STATUS: {"Atenção para sobrecarga" if total_tickets > 200 else "Operação normal"}.
 """
         return prompt.strip()
     
@@ -266,55 +201,32 @@ REGRAS: Linguagem executiva para conselho. Use apenas números reais. Máximo 12
     def agent_workload_analysis(agents_data: List[Dict[str, Any]], 
                                supervisor_name: str) -> str:
         """
-        👥 Prompt para análise detalhada dos agentes
+        👥 Prompt para análise dos agentes
         """
         if not agents_data:
-            return "Nenhum atendimento registrado para agentes."
-        
-        total_tickets = sum(agent['current_tickets'] for agent in agents_data)
+            return "Nenhum agente com atendimentos registrados."
         
         prompt = f"""
-Você é coordenador de RH analisando produtividade individual dos agentes.
+INSTRUÇÕES:
+- Máximo 70 palavras
+- Cite nomes dos agentes
+- Use APENAS dados fornecidos
 
-ANÁLISE DA EQUIPE DO SUPERVISOR {supervisor_name}:
-- Total de agentes: {len(agents_data)}
-- Total de atendimentos solicitados: {total_tickets}
-
-PERFORMANCE INDIVIDUAL (comparação semanal):
+AGENTES DO SUPERVISOR {supervisor_name}:
 """
         
-        for agent in agents_data:
+        for agent in agents_data[:3]:
             name = agent['agent']['name']
             current = agent['current_tickets']
-            previous = agent['previous_tickets']
-            change = agent.get('change', 0)
-            
-            if previous > 0:
-                percent_change = (change / previous) * 100
-                prompt += f"• {name}: {current} atendimentos (anterior: {previous}) = {change:+d} ({percent_change:+.1f}%)\n"
+            change = agent['change']
+            if agent['previous_tickets'] > 0:
+                percent = (change / agent['previous_tickets'] * 100)
+                prompt += f"{name}: {current} atendimentos ({change:+d}, {percent:+.1f}%)\n"
             else:
-                prompt += f"• {name}: {current} atendimentos (anterior: {previous}) = {change:+d}\n"
+                prompt += f"{name}: {current} atendimentos ({change:+d})\n"
         
         prompt += f"""
-ANÁLISE INDIVIDUAL SOLICITADA:
-
-1. IDENTIFICAÇÃO DE NECESSIDADES
-   - Quais agentes tiveram maior aumento percentual (precisam treinamento)?
-   - Quais agentes tiveram redução significativa (mais autônomos ou ociosos)?
-
-2. DISTRIBUIÇÃO DE PRODUTIVIDADE
-   - A demanda está concentrada em poucos agentes?
-   - Algum agente demonstra sobrecarga de trabalho?
-
-3. OPORTUNIDADES DE DESENVOLVIMENTO
-   - Agentes prontos para assumir casos mais complexos?
-   - Necessidades específicas de capacitação técnica?
-
-4. RECOMENDAÇÕES PRÁTICAS
-   - Redistribuição de responsabilidades entre agentes?
-   - Plano de treinamento individualizado?
-
-REGRAS: Cite nomes dos agentes nos insights. Use números reais. Máximo 90 palavras.
+RECOMENDAÇÃO: {"Treinar agentes com maior aumento" if any(a['change'] > 5 for a in agents_data) else "Monitorar evolução"}.
 """
         return prompt.strip()
     
@@ -327,88 +239,40 @@ REGRAS: Cite nomes dos agentes nos insights. Use números reais. Máximo 90 pala
         supervisor = supervisor_data['supervisor']['name']
         change_percent = supervisor_data['comparison']['percent_change']
         current_tickets = supervisor_data['current_week']['total_tickets']
-        agents = supervisor_data['current_week']['agents_performance']
-        
-        # Identificar anomalias reais
-        anomalies = []
-        
-        if abs(change_percent) >= 60:
-            anomalies.append(f"Supervisor {supervisor}: variação extrema de {change_percent:+.1f}% nos atendimentos")
-        
-        if current_tickets >= 60:
-            anomalies.append(f"Supervisor {supervisor}: volume muito alto ({current_tickets} atendimentos)")
-        
-        for agent in agents:
-            agent_change_percent = (agent['change'] / agent['previous_tickets'] * 100) if agent['previous_tickets'] > 0 else 0
-            if abs(agent_change_percent) >= 100:
-                anomalies.append(f"Agente {agent['agent']['name']}: variação de {agent_change_percent:+.1f}% nos atendimentos")
-            if agent['current_tickets'] >= 25:
-                anomalies.append(f"Agente {agent['agent']['name']}: {agent['current_tickets']} atendimentos (possível sobrecarga)")
         
         prompt = f"""
-Você é analista de qualidade investigando padrões atípicos na produtividade.
+INSTRUÇÕES:
+- Máximo 60 palavras
+- Use APENAS dados fornecidos
 
-ANOMALIAS DETECTADAS: {len(anomalies)}
-"""
-        
-        for i, anomaly in enumerate(anomalies, 1):
-            prompt += f"{i}. {anomaly}\n"
-        
-        prompt += f"""
-INVESTIGAÇÃO NECESSÁRIA:
+ANOMALIA DETECTADA:
+Supervisor {supervisor}: {current_tickets} atendimentos ({change_percent:+.1f}%).
 
-1. CAUSAS PROVÁVEIS
-   - Picos de demanda de clientes específicos?
-   - Agentes enfrentando dificuldades técnicas incomuns?
-   - Mudanças nos processos que afetaram produtividade?
-
-2. IMPACTO OPERACIONAL
-   - Risco de burnout ou sobrecarga?
-   - Qualidade dos atendimentos comprometida?
-   - Gargalos na operação?
-
-3. AÇÕES CORRETIVAS IMEDIATAS
-   - Redistribuição emergencial de carga?
-   - Suporte adicional urgente?
-   - Pausar novos casos complexos?
-
-4. PREVENÇÃO FUTURA
-   - Monitoramento mais frequente?
-   - Ajustes nos processos de distribuição?
-   - Treinamentos preventivos?
-
-REGRAS: Foque em causas operacionais reais. Máximo 100 palavras.
+AÇÃO: {"Investigar sobrecarga urgente" if current_tickets > 50 else "Monitorar evolução normal"}.
 """
         return prompt.strip()
     
     @staticmethod
     def custom_insight_prompt(context: str, data_summary: str, question: str) -> str:
         """
-        🎨 Prompt personalizado para insights específicos
+        🎨 Prompt personalizado
         """
         prompt = f"""
-Você é consultor de produtividade em contabilidade.
-
 CONTEXTO: {context}
 DADOS: {data_summary}
 PERGUNTA: {question}
 
-ANÁLISE: Resposta baseada em números reais, máximo 70 palavras, foque em produtividade.
+RESPOSTA (máximo 50 palavras): Use apenas dados fornecidos.
 """
         return prompt.strip()
 
 
-# Funções de conveniência para uso direto
+# Funções de conveniência
 def get_global_analysis_prompt(global_stats: Dict[str, Any], weekly_data: Dict[str, Any]) -> str:
-    """🔧 Função utilitária para prompt de análise global"""
     return PromptBuilder.global_trend_analysis(global_stats, weekly_data)
 
-
 def get_supervisor_analysis_prompt(supervisor_data: Dict[str, Any], weekly_data: Dict[str, Any], ranking: Optional[int] = None) -> str:
-    """🔧 Função utilitária para prompt de análise de supervisor"""
     return PromptBuilder.supervisor_performance_analysis(supervisor_data, weekly_data, ranking)
 
-
 def get_strategic_prompt(weekly_data: Dict[str, Any]) -> str:
-    """🔧 Função utilitária para prompt estratégico"""
     return PromptBuilder.strategic_recommendations(weekly_data)

@@ -459,10 +459,11 @@ Seja específico e prático. Uma recomendação por linha.
                 "prompt": prompt,
                 "stream": False,
                 "options": {
-                    "temperature": 0.3,  # Resposta mais determinística
-                    "top_p": 0.9,
-                    "max_tokens": 400,  # Aumentado para respostas mais completas
-                    "repeat_penalty": 1.1  # Evitar repetições
+                    "temperature": 0.1,        # ⬇️ Reduzido de 0.3 para 0.1 (mais determinístico)
+                    "top_p": 0.8,             # ⬇️ Reduzido de 0.9 para 0.8 (menos criativo)
+                    "max_tokens": 200,        # ⬇️ Reduzido de 400 para 200 (respostas menores)
+                    "repeat_penalty": 1.2,    # ⬆️ Aumentado de 1.1 para 1.2 (evita repetições)
+                    "stop": ["ANÁLISE:", "CONTEXTO:", "DADOS:"]  # 🆕 Para parar em certas palavras
                 }
             }
             

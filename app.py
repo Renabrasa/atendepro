@@ -2446,7 +2446,10 @@ def admin_test_ai_reports():
         # Passo 2: Análise IA
         app.logger.info('Executando análise IA...')
         ai_analysis = analyze_weekly_data(weekly_data)
-        insights_count = len(ai_analysis['global_analysis'].get('insights', []))
+        
+        # CORRIGIDO: Usar intelligent_insights ao invés de global_analysis
+        intelligent_insights = ai_analysis.get('intelligent_insights', {})
+        insights_count = len(intelligent_insights.get('performance_alerts', [])) + len(intelligent_insights.get('concentration_patterns', []))
         
         # Passo 3: Envio de emails
         send_emails = request.json.get('send_emails', False) if request.is_json else request.form.get('send_emails') == 'true'
@@ -2463,7 +2466,9 @@ def admin_test_ai_reports():
                 'insights_generated': insights_count,
                 'emails_sent': email_results['successful_sends'],
                 'email_failures': email_results['failed_sends'],
-                'period': weekly_data['metadata']['current_week']['period_label']
+                'period': weekly_data['metadata']['current_week']['period_label'],
+                'alerts_detected': len(intelligent_insights.get('performance_alerts', [])),
+                'patterns_identified': len(intelligent_insights.get('concentration_patterns', []))
             }
         else:
             # Apenas preparar emails sem enviar
@@ -2475,7 +2480,9 @@ def admin_test_ai_reports():
                 'total_tickets': total_tickets,
                 'insights_generated': insights_count,
                 'emails_prepared': supervisors_count,
-                'period': weekly_data['metadata']['current_week']['period_label']
+                'period': weekly_data['metadata']['current_week']['period_label'],
+                'alerts_detected': len(intelligent_insights.get('performance_alerts', [])),
+                'patterns_identified': len(intelligent_insights.get('concentration_patterns', []))
             }
         
         app.logger.info(f'Teste AI Reports concluído: {result}')
@@ -2692,88 +2699,135 @@ def send_custom_email(sender, email_destino, subject, html_content, text_content
 
 
 def create_custom_email_html(data):
-   """Cria HTML do email usando dados reais"""
-   insights_html = ''.join([f'<li style="margin-bottom: 8px; color: #444;">{rec}</li>' 
-                           for rec in data['recommendations']])
-   
-   agents_html = ''.join([
-       f'<div style="background: white; padding: 12px; margin: 6px 0; border-radius: 6px; border-left: 4px solid #667eea;">'
-       f'<strong>{agent["agent"]["name"]}</strong>: {agent["current_tickets"]} atendimentos '
-       f'({agent["change"]:+d})</div>'
-       for agent in data['agents_performance']
-   ])
-   
-   return f"""
-   <!DOCTYPE html>
-   <html>
-   <head>
-       <meta charset="UTF-8">
-       <title>Relatório AI - {data['supervisor_name']}</title>
-   </head>
-   <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
-       
-       <div style="background: linear-gradient(135deg, #667eea, #764ba2); color: white; padding: 30px; border-radius: 12px; text-align: center; margin-bottom: 30px;">
-           <h1 style="margin: 0; font-size: 24px;">🤖 Relatório AI - TESTE</h1>
-           <p style="margin: 10px 0 0 0; opacity: 0.9;">Análise Personalizada de Performance</p>
-       </div>
-       
-       <div style="background: #f8f9fa; padding: 20px; border-radius: 8px; margin-bottom: 20px;">
-           <h2 style="color: #2c3e50; margin-top: 0;">👤 {data['supervisor_name']}</h2>
-           <p style="color: #6c757d; margin: 0;">Período: {data['period_label']} | Gerado: {data['generated_at']}</p>
-       </div>
-       
-       <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 15px; margin-bottom: 30px;">
-           <div style="background: white; padding: 20px; border-radius: 8px; text-align: center; border: 2px solid #e1e5e9;">
-               <div style="font-size: 32px; font-weight: bold; color: #667eea; margin-bottom: 5px;">{data['total_tickets']}</div>
-               <div style="color: #6c757d; font-size: 14px;">Atendimentos</div>
-           </div>
-           <div style="background: white; padding: 20px; border-radius: 8px; text-align: center; border: 2px solid #e1e5e9;">
-               <div style="font-size: 20px; font-weight: bold; color: #36d1dc; margin-bottom: 5px;">{data['change_text']}</div>
-               <div style="color: #6c757d; font-size: 14px;">Variação</div>
-           </div>
-           <div style="background: white; padding: 20px; border-radius: 8px; text-align: center; border: 2px solid #e1e5e9;">
-               <div style="font-size: 32px; font-weight: bold; color: #f093fb; margin-bottom: 5px;">{data['agents_count']}</div>
-               <div style="color: #6c757d; font-size: 14px;">Agentes</div>
-           </div>
-       </div>
-       
-       <div style="background: white; padding: 25px; border-radius: 8px; border: 2px solid #e1e5e9; margin-bottom: 20px;">
-           <h3 style="color: #2c3e50; margin-top: 0;">🧠 Análise Geral IA</h3>
-           <p style="color: #555; margin-bottom: 20px;">{data['global_analysis']}</p>
-           
-           <h3 style="color: #2c3e50; margin-top: 0;">👤 Análise Específica</h3>
-           <p style="color: #555; margin-bottom: 20px;">{data['supervisor_analysis']}</p>
-           
-           <h3 style="color: #2c3e50; margin-top: 0;">🎯 Recomendações IA</h3>
-           <ul style="padding-left: 20px; margin: 15px 0;">
-               {insights_html}
-           </ul>
-       </div>
-       
-       <div style="background: white; padding: 25px; border-radius: 8px; border: 2px solid #e1e5e9; margin-bottom: 20px;">
-           <h3 style="color: #2c3e50; margin-top: 0;">👥 Equipe</h3>
-           {agents_html}
-       </div>
-       
-       <div style="background: #2c3e50; color: white; padding: 20px; border-radius: 8px; text-align: center;">
-           <p style="margin: 0; font-size: 14px; opacity: 0.8;">
-               🧪 EMAIL DE TESTE - Relatório gerado pela IA {data['ai_model']}<br>
-               AtendePro - Sistema AI Reports
-           </p>
-       </div>
-       
-   </body>
-   </html>
-   """
+    """Cria HTML do email usando dados reais"""
+    insights_html = ''.join([f'<li style="margin-bottom: 8px; color: #444;">{rec}</li>' 
+                            for rec in data['recommendations']])
+    
+    agents_html = ''.join([
+        f'<div style="background: white; padding: 12px; margin: 6px 0; border-radius: 6px; border-left: 4px solid #667eea;">'
+        f'<strong>{agent["agent"]["name"]}</strong>: {agent["current_tickets"]} atendimentos '
+        f'({agent["change"]:+d})</div>'
+        for agent in data['agents_performance']
+    ])
+    
+    # CORRIGIDO: Usar executive_dashboard ao invés de global_analysis
+    executive_dashboard = data.get('executive_dashboard', {})
+    dashboard_summary = f"Dashboard mostra {executive_dashboard.get('total_tickets', 0)} atendimentos totais no sistema"
+    
+    # Adicionar alertas se disponíveis
+    alerts_html = ''
+    alerts = executive_dashboard.get('alerts', [])
+    if alerts:
+        alerts_list = ''.join([f'<li style="color: #e74c3c; margin-bottom: 5px;">⚠️ {alert}</li>' for alert in alerts[:3]])
+        alerts_html = f'<h4 style="color: #e74c3c; margin: 15px 0 5px 0;">Alertas:</h4><ul style="margin: 0; padding-left: 20px;">{alerts_list}</ul>'
+    
+    # Adicionar ranking se disponível
+    ranking_html = ''
+    ranking = executive_dashboard.get('ranking', [])
+    if ranking:
+        ranking_list = ''.join([f'<li style="color: #27ae60; margin-bottom: 5px;">🏆 {rank}</li>' for rank in ranking[:3]])
+        ranking_html = f'<h4 style="color: #27ae60; margin: 15px 0 5px 0;">Top Supervisores:</h4><ul style="margin: 0; padding-left: 20px;">{ranking_list}</ul>'
+    
+    return f"""
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <meta charset="UTF-8">
+        <title>Relatório AI - {data['supervisor_name']}</title>
+    </head>
+    <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
+        
+        <div style="background: linear-gradient(135deg, #667eea, #764ba2); color: white; padding: 30px; border-radius: 12px; text-align: center; margin-bottom: 30px;">
+            <h1 style="margin: 0; font-size: 24px;">🤖 Relatório AI - TESTE</h1>
+            <p style="margin: 10px 0 0 0; opacity: 0.9;">Análise Personalizada de Performance</p>
+        </div>
+        
+        <div style="background: #f8f9fa; padding: 20px; border-radius: 8px; margin-bottom: 20px;">
+            <h2 style="color: #2c3e50; margin-top: 0;">👤 {data['supervisor_name']}</h2>
+            <p style="color: #6c757d; margin: 0;">Período: {data['period_label']} | Gerado: {data['generated_at']}</p>
+        </div>
+        
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 15px; margin-bottom: 30px;">
+            <div style="background: white; padding: 20px; border-radius: 8px; text-align: center; border: 2px solid #e1e5e9;">
+                <div style="font-size: 32px; font-weight: bold; color: #667eea; margin-bottom: 5px;">{data['total_tickets']}</div>
+                <div style="color: #6c757d; font-size: 14px;">Atendimentos</div>
+            </div>
+            <div style="background: white; padding: 20px; border-radius: 8px; text-align: center; border: 2px solid #e1e5e9;">
+                <div style="font-size: 20px; font-weight: bold; color: #36d1dc; margin-bottom: 5px;">{data['change_text']}</div>
+                <div style="color: #6c757d; font-size: 14px;">Variação</div>
+            </div>
+            <div style="background: white; padding: 20px; border-radius: 8px; text-align: center; border: 2px solid #e1e5e9;">
+                <div style="font-size: 32px; font-weight: bold; color: #f093fb; margin-bottom: 5px;">{data['agents_count']}</div>
+                <div style="color: #6c757d; font-size: 14px;">Agentes</div>
+            </div>
+        </div>
+        
+        <div style="background: white; padding: 25px; border-radius: 8px; border: 2px solid #e1e5e9; margin-bottom: 20px;">
+            <h3 style="color: #2c3e50; margin-top: 0;">📊 Dashboard Executivo</h3>
+            <p style="color: #555; margin-bottom: 15px;">{dashboard_summary}</p>
+            {ranking_html}
+            {alerts_html}
+            
+            <h3 style="color: #2c3e50; margin-top: 25px;">👤 Análise Conversacional</h3>
+            <div style="background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%); border: 1px solid #7dd3fc; border-radius: 8px; padding: 20px; margin: 15px 0;">
+                <p style="color: #0c4a6e; margin: 0; font-style: italic; font-size: 16px; line-height: 1.6;">{data['supervisor_analysis']}</p>
+            </div>
+            
+            <h3 style="color: #2c3e50; margin-top: 20px;">🎯 Recomendações IA</h3>
+            <ul style="padding-left: 20px; margin: 15px 0;">
+                {insights_html}
+            </ul>
+        </div>
+        
+        <div style="background: white; padding: 25px; border-radius: 8px; border: 2px solid #e1e5e9; margin-bottom: 20px;">
+            <h3 style="color: #2c3e50; margin-top: 0;">👥 Equipe</h3>
+            {agents_html}
+        </div>
+        
+        <div style="background: #2c3e50; color: white; padding: 20px; border-radius: 8px; text-align: center;">
+            <p style="margin: 0; font-size: 14px; opacity: 0.8;">
+                🧪 EMAIL DE TESTE - Relatório gerado pela IA {data['ai_model']}<br>
+                AtendePro - Sistema AI Reports
+            </p>
+        </div>
+        
+    </body>
+    </html>
+    """
 
 
 def create_custom_email_text(data):
-   """Cria versão texto do email"""
-   recommendations_text = '\n'.join([f'• {rec}' for rec in data['recommendations']])
-   agents_text = '\n'.join([f'• {agent["agent"]["name"]}: {agent["current_tickets"]} atendimentos ({agent["change"]:+d})' 
-                           for agent in data['agents_performance']])
-   
-   return f"""
+    """Cria versão texto do email"""
+    recommendations_text = '\n'.join([f'• {rec}' for rec in data['recommendations']])
+    agents_text = '\n'.join([f'• {agent["agent"]["name"]}: {agent["current_tickets"]} atendimentos ({agent["change"]:+d})' 
+                            for agent in data['agents_performance']])
+    
+    # CORRIGIDO: Usar executive_dashboard ao invés de global_analysis
+    executive_dashboard = data.get('executive_dashboard', {})
+    dashboard_text = f"Dashboard Executivo: {executive_dashboard.get('total_tickets', 0)} atendimentos totais no sistema"
+    
+    # Adicionar ranking se disponível
+    ranking_text = ""
+    ranking = executive_dashboard.get('ranking', [])
+    if ranking:
+        ranking_list = '\n'.join([f'• {rank}' for rank in ranking[:3]])
+        ranking_text = f"\n\n🏆 TOP SUPERVISORES:\n{ranking_list}"
+    
+    # Adicionar alertas se disponíveis  
+    alerts_text = ""
+    alerts = executive_dashboard.get('alerts', [])
+    if alerts:
+        alerts_list = '\n'.join([f'• ⚠️ {alert}' for alert in alerts[:3]])
+        alerts_text = f"\n\n⚠️ ALERTAS DE PERFORMANCE:\n{alerts_list}"
+    
+    # Adicionar padrões identificados se disponíveis
+    patterns_text = ""
+    patterns = executive_dashboard.get('patterns', [])
+    if patterns:
+        patterns_list = '\n'.join([f'• 🎯 {pattern}' for pattern in patterns[:3]])
+        patterns_text = f"\n\n🎯 PADRÕES IDENTIFICADOS:\n{patterns_list}"
+    
+    return f"""
 🧪 TESTE - RELATÓRIO AI - {data['supervisor_name']}
 Período: {data['period_label']} | Gerado: {data['generated_at']}
 
@@ -2782,10 +2836,10 @@ Período: {data['period_label']} | Gerado: {data['generated_at']}
 - Variação: {data['change_text']}
 - Agentes na equipe: {data['agents_count']}
 
-🧠 ANÁLISE IA GERAL:
-{data['global_analysis']}
+📈 DASHBOARD EXECUTIVO:
+{dashboard_text}{ranking_text}{alerts_text}{patterns_text}
 
-👤 ANÁLISE ESPECÍFICA:
+💬 ANÁLISE CONVERSACIONAL:
 {data['supervisor_analysis']}
 
 🎯 RECOMENDAÇÕES:

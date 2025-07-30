@@ -666,6 +666,131 @@ Seja específico, prático e focado em resultados mensuráveis.
         return recommendations[:4]  # Máximo 4 recomendações
         
         
+    def _get_status_description(self, agent: Dict) -> str:
+        """Gera descrição detalhada do status do agente"""
+        risk_level = agent.get('risk_level', 'autonomous')
+        current_requests = agent.get('current_requests', 0)
+        variation = agent.get('variation_percent', 0)
+        
+        if risk_level == 'critical':
+            return f"Crítico: {current_requests} casos ({variation:+.0f}%)"
+        elif risk_level == 'attention':
+            return f"Atenção: {current_requests} casos ({variation:+.0f}%)"
+        elif agent.get('is_improving'):
+            return f"Melhorando: {current_requests} casos ({variation:+.0f}%)"
+        else:
+            return f"Autônomo: {current_requests} casos ({variation:+.0f}%)"
+
+    def _generate_period_summary(self, data: Dict[str, Any]) -> Dict[str, Any]:
+        """Gera resumo consolidado do período"""
+        supervisors = data.get('supervisors', [])
+        global_stats = data.get('global_stats', {})
+        
+        total_agents = sum(len(sup.get('agents', [])) for sup in supervisors)
+        critical_agents = sum(1 for sup in supervisors for agent in sup.get('agents', []) 
+                            if agent.get('risk_level') == 'critical')
+        autonomous_agents = sum(1 for sup in supervisors for agent in sup.get('agents', []) 
+                            if agent.get('risk_level') == 'autonomous')
+        
+        return {
+            'total_supervisors': len(supervisors),
+            'total_agents': total_agents,
+            'critical_agents': critical_agents,
+            'autonomous_agents': autonomous_agents,
+            'autonomy_rate': round((autonomous_agents / total_agents * 100), 1) if total_agents > 0 else 0,
+            'total_requests': global_stats.get('total_attendances_current', 0),
+            'variation_percent': global_stats.get('variation_percent', 0)
+        }
+
+    def _generate_visual_insights(self, evolution_analysis: List[Dict]) -> List[str]:
+        """Gera insights visuais baseados na análise de evolução"""
+        insights = []
+        
+        # Analisa tendências
+        improving_supervisors = len([sup for sup in evolution_analysis if '📉' in sup.get('trend', '')])
+        deteriorating_supervisors = len([sup for sup in evolution_analysis if '📈' in sup.get('trend', '')])
+        
+        if improving_supervisors > 0:
+            insights.append(f"{improving_supervisors} supervisor(es) com tendência de melhoria")
+        
+        if deteriorating_supervisors > 0:
+            insights.append(f"{deteriorating_supervisors} supervisor(es) com tendência de deterioração")
+        
+        # Analisa distribuição de agentes
+        total_critical = sum(len([agent for agent in sup.get('agents', []) if '🔴' in agent.get('status', '')]) 
+                            for sup in evolution_analysis)
+        
+        if total_critical > 0:
+            insights.append(f"{total_critical} agente(s) em situação crítica")
+        
+        # Insight geral
+        if not insights:
+            insights.append("Situação operacional estável")
+        
+        return insights
+
+    def _assess_overall_risk(self, data: Dict[str, Any]) -> str:
+        """Avalia risco geral do sistema"""
+        supervisors = data.get('supervisors', [])
+        
+        critical_count = sum(1 for sup in supervisors for agent in sup.get('agents', []) 
+                            if agent.get('risk_level') == 'critical')
+        
+        total_agents = sum(len(sup.get('agents', [])) for sup in supervisors)
+        
+        if total_agents == 0:
+            return "Sem dados para avaliação"
+        
+        critical_percentage = (critical_count / total_agents) * 100
+        
+        if critical_percentage >= 30:
+            return "Risco alto: mais de 30% dos agentes em situação crítica"
+        elif critical_percentage >= 15:
+            return "Risco médio: percentual significativo de agentes críticos"
+        elif critical_percentage > 0:
+            return "Risco baixo: poucos agentes em situação crítica"
+        else:
+            return "Risco mínimo: nenhum agente em situação crítica"
+
+    def _generate_executive_summary(self, data: Dict[str, Any]) -> str:
+        """Gera resumo executivo da análise"""
+        supervisors = data.get('supervisors', [])
+        global_stats = data.get('global_stats', {})
+        
+        total_requests = global_stats.get('total_attendances_current', 0)
+        variation = global_stats.get('variation_percent', 0)
+        autonomy_rate = self._calculate_general_autonomy(supervisors)
+        
+        if total_requests == 0:
+            return "Período sem atendimentos registrados - equipe operando de forma autônoma"
+        
+        summary = f"Período com {total_requests} solicitações "
+        
+        if variation > 15:
+            summary += f"(aumento de {variation:+.1f}%). "
+        elif variation < -15:
+            summary += f"(redução de {variation:+.1f}%). "
+        else:
+            summary += f"(variação de {variation:+.1f}%). "
+        
+        summary += f"Taxa de autonomia atual: {autonomy_rate}%. "
+        
+        critical_count = sum(1 for sup in supervisors for agent in sup.get('agents', []) 
+                            if agent.get('risk_level') == 'critical')
+        
+        if critical_count > 0:
+            summary += f"Atenção: {critical_count} agente(s) em situação crítica."
+        else:
+            summary += "Equipe operando dentro da normalidade."
+        
+        return summary   
+        
+        
+               
+        
+        
+        
+ ######################## FIM DA CLASSE AutonomyAIAnalyzer ########################       
         
     # Função helper para facilitar uso
 def analyze_autonomy_data(autonomy_data: Dict[str, Any], ollama_url: str = "http://localhost:11434") -> Dict[str, Any]:

@@ -2966,6 +2966,182 @@ def ai_reports_execute_now():
             'error': str(e)
         }), 500
 
+# ADICIONAR ESTAS ROTAS NO SEU app.py
+
+@app.route('/admin/ai-reports/preview-email', methods=['GET'])
+@login_required
+def ai_reports_preview_email():
+    """Preview do layout do email como será enviado no Gmail"""
+    if not current_user.pode_acessar_admin():
+        flash('Acesso negado.', 'danger')
+        return redirect(url_for('dashboard'))
+    
+    try:
+        # Coletar dados reais para preview
+        from ai_reports.data_collector import collect_autonomy_data
+        from ai_reports.ai_analyzer import analyze_autonomy_data
+        from ai_reports.email_sender import AutonomyEmailSender
+        
+        # Coleta dados reais
+        autonomy_data = collect_autonomy_data()
+        
+        # Análise IA
+        analysis_result = analyze_autonomy_data(autonomy_data)
+        
+        # Preparar dados para template (mesmo processo do email)
+        from datetime import datetime
+        template_data = {
+            'report_title': 'Relatório de Autonomia Semanal - PREVIEW',
+            'period_start': analysis_result.get('raw_data', {}).get('periodo_atual', {}).get('inicio', '23/07/2025'),
+            'period_end': analysis_result.get('raw_data', {}).get('periodo_atual', {}).get('fim', '29/07/2025'),
+            'generation_date': datetime.now().strftime('%d/%m/%Y às %H:%M'),
+            'supervisor_name': 'PREVIEW',
+            
+            # Dados dos blocos
+            'radar': analysis_result.get('analysis', {}).get('block_1_radar', {}),
+            'matrix': analysis_result.get('analysis', {}).get('block_2_training_matrix', {}),
+            'productivity': analysis_result.get('analysis', {}).get('block_3_productivity', {}),
+            'conclusions': analysis_result.get('analysis', {}).get('block_4_conclusions', {}),
+            
+            # Metadados
+            'ai_model_used': analysis_result.get('analysis', {}).get('ai_model_used', 'llama3.2:3b'),
+            'analysis_timestamp': analysis_result.get('analysis', {}).get('analysis_timestamp', datetime.now().isoformat())
+        }
+        
+        # Renderiza o template usando o mesmo processo do email
+        from jinja2 import Template
+        
+        # Carrega o template HTML
+        with open('/opt/apps/atendpro/ai_reports/templates/weekly_report.html', 'r', encoding='utf-8') as f:
+            template_content = f.read()
+        
+        template = Template(template_content)
+        html_content = template.render(**template_data)
+        
+        # Adiciona estilo específico para preview
+        preview_style = """
+        <div style="background: #f0f0f0; padding: 20px; font-family: Arial, sans-serif;">
+            <div style="background: #fff3cd; border: 1px solid #ffeaa7; padding: 15px; margin-bottom: 20px; border-radius: 8px;">
+                <h3 style="margin: 0 0 10px 0; color: #856404;">📧 PREVIEW DO EMAIL</h3>
+                <p style="margin: 0; color: #856404; font-size: 14px;">
+                    Este é o preview de como o email aparecerá no <strong>Gmail</strong>. 
+                    Layout otimizado para clientes de email.
+                </p>
+            </div>
+        """
+        
+        preview_footer = """
+            <div style="background: #d1ecf1; border: 1px solid #bee5eb; padding: 15px; margin-top: 20px; border-radius: 8px;">
+                <h4 style="margin: 0 0 10px 0; color: #0c5460;">✅ Preview Concluído</h4>
+                <p style="margin: 0; color: #0c5460; font-size: 13px;">
+                    Este layout foi otimizado para Gmail e outros clientes de email. 
+                    Se estiver satisfeito, pode enviar o teste real.
+                </p>
+            </div>
+        </div>
+        """
+        
+        final_html = preview_style + html_content + preview_footer
+        
+        # Retorna HTML direto para visualização
+        return final_html
+        
+    except Exception as e:
+        app.logger.error(f"Erro no preview do email: {e}")
+        return f"""
+        <div style="padding: 20px; background: #f8d7da; border: 1px solid #f5c6cb; border-radius: 8px; margin: 20px;">
+            <h3 style="color: #721c24;">❌ Erro no Preview</h3>
+            <p style="color: #721c24;">Erro ao gerar preview: {str(e)}</p>
+            <p style="color: #721c24; font-size: 12px;">Verifique se o sistema AI Reports está configurado corretamente.</p>
+        </div>
+        """
+
+@app.route('/admin/ai-reports/preview-comparison', methods=['GET'])
+@login_required 
+def ai_reports_preview_comparison():
+    """Comparação lado a lado: Design vs Gmail"""
+    if not current_user.pode_acessar_admin():
+        return redirect(url_for('dashboard'))
+    
+    return render_template_string("""
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <title>Preview Comparison - AI Reports</title>
+        <style>
+            body { font-family: Arial, sans-serif; margin: 0; padding: 20px; background: #f5f5f5; }
+            .header { text-align: center; margin-bottom: 30px; }
+            .comparison { display: flex; gap: 20px; }
+            .preview-column { flex: 1; }
+            .preview-title { 
+                background: #343a40; color: white; padding: 15px; 
+                text-align: center; font-weight: bold; margin-bottom: 10px;
+            }
+            .preview-frame { 
+                width: 100%; height: 800px; border: 2px solid #dee2e6; 
+                background: white; border-radius: 8px;
+            }
+            .controls { 
+                text-align: center; margin: 20px 0; 
+                background: white; padding: 20px; border-radius: 8px;
+            }
+            .btn { 
+                padding: 10px 20px; margin: 5px; background: #007bff; 
+                color: white; text-decoration: none; border-radius: 5px;
+            }
+            .btn:hover { background: #0056b3; }
+            @media (max-width: 768px) {
+                .comparison { flex-direction: column; }
+            }
+        </style>
+    </head>
+    <body>
+        <div class="header">
+            <h1>📧 Preview Comparison - AI Reports</h1>
+            <p>Compare o design original vs como aparecerá no Gmail</p>
+        </div>
+        
+        <div class="controls">
+            <a href="/admin/ai-reports/preview-email" target="_blank" class="btn">📧 Ver Gmail Preview</a>
+            <a href="/admin/ai-reports" class="btn">🔙 Voltar ao Painel</a>
+            <button onclick="location.reload()" class="btn">🔄 Atualizar</button>
+        </div>
+        
+        <div class="comparison">
+            <div class="preview-column">
+                <div class="preview-title">🎨 Design Original (Navegador)</div>
+                <iframe src="/admin/ai-reports/preview-email" class="preview-frame"></iframe>
+            </div>
+            <div class="preview-column">
+                <div class="preview-title">📧 Como aparece no Gmail</div>
+                <div style="padding: 20px; background: white; border-radius: 8px; height: 760px; overflow-y: auto;">
+                    <p style="text-align: center; color: #666; margin-top: 200px;">
+                        <strong>📧 Simulação Gmail</strong><br><br>
+                        Para ver exatamente como aparece no Gmail:<br><br>
+                        1. Clique em "Ver Gmail Preview" acima<br>
+                        2. Ou envie um teste real para seu email<br>
+                        3. Abra no Gmail para ver o resultado final
+                    </p>
+                </div>
+            </div>
+        </div>
+        
+        <div style="text-align: center; margin-top: 30px; padding: 20px; background: white; border-radius: 8px;">
+            <h3>🎯 Como Testar Completamente</h3>
+            <ol style="text-align: left; display: inline-block;">
+                <li><strong>Preview acima</strong> - Ver o layout geral</li>
+                <li><strong>Teste de email real</strong> - Enviar para seu Gmail</li>
+                <li><strong>Abrir no Gmail</strong> - Verificar renderização final</li>
+                <li><strong>Testar responsivo</strong> - Ver no celular também</li>
+            </ol>
+        </div>
+    </body>
+    </html>
+    """)
+
+
+
+
 # ========================================
 # 🤖 FIM DO SISTEMA AI REPORTS COMPLETO
 # ========================================

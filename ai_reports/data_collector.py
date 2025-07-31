@@ -239,21 +239,21 @@ class AutonomyDataCollector:
    def _classify_agent_risk(self, current_count, variation):
        """Classifica risco do agente baseado em volume e variação"""
        
-       if current_count > 6:
+       if current_count > 15:
            return {
                'level': 'critical',
                'status': '🔴 CRÍTICO',
                'autonomy_status': 'Não consegue trabalhar sozinho',
                'action': 'Treinamento intensivo urgente'
            }
-       elif current_count >= 3 and (variation > 50 or current_count >= 5):
+       elif current_count >= 6 and (variation > 50 or current_count >= 14):
            return {
                'level': 'attention',
                'status': '🟡 ATENÇÃO',
                'autonomy_status': 'Gap específico de conhecimento',
                'action': 'Identificar padrão e treinar pontualmente'
            }
-       elif current_count <= 2:
+       elif current_count <= 5:
            return {
                'level': 'autonomous',
                'status': '🟢 AUTÔNOMO',
@@ -272,7 +272,7 @@ class AutonomyDataCollector:
        """Identifica prováveis gaps técnicos baseado em padrões"""
        gaps = []
        
-       if current_count > 8:
+       if current_count > 14:
            gaps.append("Deficiência geral grave - múltiplas áreas")
        elif current_count > 6:
            gaps.append("Gap em área técnica específica")

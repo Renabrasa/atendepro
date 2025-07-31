@@ -321,7 +321,7 @@ DADOS OPERACIONAIS:
 CONTEXTO DO NEGÓCIO:
 - Cada solicitação = deficiência de conhecimento técnico
 - Meta: máximo 2 solicitações/agente/semana (autonomia)
-- Áreas técnicas problemáticas: eSocial, SPED, Report Builder, Alterdata
+- Áreas técnicas problemáticas: eSocial, SPED, Report Builder, Alterdata, Tecnologia, Windows,
 
 ANALISE E RESPONDA:
 
@@ -539,9 +539,9 @@ Seja específico, prático e focado em resultados mensuráveis.
         requests = agent.get('current_requests', 0)
         variation = agent.get('variation_percent', 0)
         
-        if requests > 8:
+        if requests > 20:
             return "Deficiência técnica grave"
-        elif requests > 6:
+        elif requests > 14:
             return "Gap em área específica"
         elif variation > 100:
             return "Nova dificuldade emergente"

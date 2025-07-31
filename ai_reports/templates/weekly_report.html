@@ -3,680 +3,559 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AtendePro - Relatório Semanal AI</title>
+    <title>{{ report_title }}</title>
     <style>
-        /* Reset e base */
-        * {
+        /* Reset e Base */
+        body { 
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             margin: 0;
             padding: 0;
-            box-sizing: border-box;
-        }
-        
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #f5f7fa;
+            color: #2c3e50;
             line-height: 1.6;
-            color: #333;
-            background-color: #f5f7fa;
         }
         
-        /* Container principal */
-        .email-container {
-            max-width: 600px;
+        .container {
+            max-width: 700px;
             margin: 0 auto;
-            background-color: #ffffff;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-            border-radius: 8px;
-            overflow: hidden;
+            background: #ffffff;
+            box-shadow: 0 0 20px rgba(0,0,0,0.08);
         }
         
-        /* Header com gradiente corporativo */
+        /* Header Corporativo */
         .header {
-            background: linear-gradient(135deg, #003366 0%, #004080 100%);
+            background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
             color: white;
-            padding: 30px 20px;
+            padding: 40px 30px;
             text-align: center;
-            position: relative;
+            border-bottom: 4px solid #3498db;
         }
         
-        .header::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><pattern id="grid" width="10" height="10" patternUnits="userSpaceOnUse"><path d="M 10 0 L 0 0 0 10" fill="none" stroke="rgba(255,255,255,0.1)" stroke-width="0.5"/></pattern></defs><rect width="100" height="100" fill="url(%23grid)"/></svg>');
-            opacity: 0.3;
+        .header h1 {
+            margin: 0 0 10px 0;
+            font-size: 24px;
+            font-weight: 600;
+            letter-spacing: -0.5px;
         }
         
-        .header-content {
-            position: relative;
-            z-index: 1;
-        }
-        
-        .logo {
-            font-size: 28px;
-            font-weight: bold;
-            margin-bottom: 8px;
-            letter-spacing: 1px;
-        }
-        
-        .subtitle {
-            font-size: 16px;
+        .header .subtitle {
+            font-size: 14px;
             opacity: 0.9;
+            margin: 0;
             font-weight: 300;
         }
         
-        .ai-badge {
-            display: inline-block;
-            background: rgba(255, 255, 255, 0.2);
-            padding: 4px 12px;
-            border-radius: 20px;
-            font-size: 12px;
-            margin-top: 10px;
-            backdrop-filter: blur(10px);
+        .header .period {
+            font-size: 13px;
+            opacity: 0.8;
+            margin: 8px 0 0 0;
+            border-top: 1px solid rgba(255,255,255,0.2);
+            padding-top: 8px;
         }
         
-        /* Seção de período */
-        .period-section {
-            background: linear-gradient(to right, #f8fafc, #e2e8f0);
-            padding: 20px;
-            border-left: 4px solid #003366;
-        }
-        
-        .period-title {
-            font-size: 18px;
-            font-weight: 600;
-            color: #003366;
-            margin-bottom: 8px;
-        }
-        
-        .period-dates {
-            font-size: 14px;
-            color: #64748b;
-        }
-        
-        /* Cards de métricas */
-        .metrics-grid {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 15px;
-            padding: 25px 20px;
-            background: #ffffff;
-        }
-        
-        .metric-card {
-            flex: 1;
-            min-width: 150px;
-            background: linear-gradient(135deg, #f8fafc 0%, #ffffff 100%);
-            border: 1px solid #e2e8f0;
-            border-radius: 8px;
-            padding: 20px;
-            text-align: center;
-            transition: transform 0.2s ease;
-        }
-        
-        .metric-card:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-        }
-        
-        .metric-value {
-            font-size: 32px;
-            font-weight: bold;
-            color: #003366;
-            margin-bottom: 5px;
-        }
-        
-        .metric-label {
-            font-size: 12px;
-            color: #64748b;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-        }
-        
-        .metric-change {
-            font-size: 14px;
-            margin-top: 8px;
-            font-weight: 600;
-        }
-        
-        .change-positive {
-            color: #059669;
-        }
-        
-        .change-negative {
-            color: #dc2626;
-        }
-        
-        .change-neutral {
-            color: #64748b;
-        }
-        
-        /* Seções principais */
+        /* Seções Principais */
         .section {
-            margin: 0;
-            border-top: 1px solid #e2e8f0;
+            padding: 30px;
+            border-bottom: 1px solid #ecf0f1;
         }
         
-        .section-header {
-            background: linear-gradient(to right, #f1f5f9, #ffffff);
-            padding: 20px;
-            border-left: 4px solid #3b82f6;
+        .section:last-child {
+            border-bottom: none;
         }
         
         .section-title {
             font-size: 18px;
             font-weight: 600;
-            color: #1e293b;
+            color: #2c3e50;
+            margin: 0 0 20px 0;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #3498db;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        /* Métricas Dashboard */
+        .metrics-row {
+            display: flex;
+            justify-content: space-between;
+            gap: 15px;
+            margin: 25px 0;
+        }
+        
+        .metric {
+            flex: 1;
+            text-align: center;
+            padding: 20px 15px;
+            background: #f8f9fa;
+            border-radius: 6px;
+            border-left: 4px solid #3498db;
+        }
+        
+        .metric-value {
+            font-size: 28px;
+            font-weight: 700;
+            color: #2c3e50;
             margin-bottom: 5px;
-            display: flex;
-            align-items: center;
-            gap: 10px;
+            line-height: 1;
         }
         
-        .section-icon {
-            width: 24px;
-            height: 24px;
-            background: #3b82f6;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: white;
+        .metric-label {
             font-size: 12px;
+            color: #7f8c8d;
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
         }
         
-        .section-description {
-            font-size: 14px;
-            color: #64748b;
-        }
-        
-        .section-content {
-            padding: 25px 20px;
-        }
-        
-        /* Análise IA */
-        .ai-analysis {
-            background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
-            border: 1px solid #bfdbfe;
-            border-radius: 8px;
-            padding: 20px;
-            margin-bottom: 20px;
-            position: relative;
-        }
-        
-        .ai-analysis::before {
-            content: '🤖';
-            position: absolute;
-            top: -10px;
-            left: 20px;
-            background: #3b82f6;
-            color: white;
-            width: 24px;
-            height: 24px;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 12px;
-        }
-        
-        .ai-text {
-            font-size: 15px;
-            line-height: 1.7;
-            color: #1e40af;
+        .metric-change {
+            font-size: 11px;
+            font-weight: 600;
             margin-top: 5px;
         }
         
-        /* Lista de agentes */
-        .agents-list {
-            background: #f8fafc;
-            border-radius: 8px;
-            overflow: hidden;
+        .metric-change.positive { color: #27ae60; }
+        .metric-change.negative { color: #e74c3c; }
+        .metric-change.neutral { color: #95a5a6; }
+        
+        /* Status Cards */
+        .status-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin: 20px 0;
+        }
+        
+        .status-card {
+            padding: 20px;
+            border-radius: 6px;
+            border-left: 4px solid #95a5a6;
+        }
+        
+        .status-card.critical {
+            background: #fdf2f2;
+            border-left-color: #e74c3c;
+        }
+        
+        .status-card.warning {
+            background: #fefdf2;
+            border-left-color: #f39c12;
+        }
+        
+        .status-card.success {
+            background: #f2fdf5;
+            border-left-color: #27ae60;
+        }
+        
+        .status-card h4 {
+            margin: 0 0 10px 0;
+            font-size: 14px;
+            font-weight: 600;
+        }
+        
+        .status-card.critical h4 { color: #c0392b; }
+        .status-card.warning h4 { color: #d68910; }
+        .status-card.success h4 { color: #229954; }
+        
+        .status-card p {
+            margin: 0;
+            font-size: 13px;
+            color: #5d6d7e;
+            line-height: 1.4;
+        }
+        
+        /* Lista de Agentes */
+        .agent-list {
+            list-style: none;
+            padding: 0;
+            margin: 20px 0;
         }
         
         .agent-item {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            padding: 15px 20px;
-            border-bottom: 1px solid #e2e8f0;
-            transition: background-color 0.2s ease;
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 6px;
+            padding: 18px;
+            margin-bottom: 12px;
+            border-left: 4px solid #95a5a6;
+            transition: all 0.2s ease;
         }
         
-        .agent-item:last-child {
-            border-bottom: none;
-        }
-        
-        .agent-item:hover {
-            background-color: #f1f5f9;
-        }
-        
-        .agent-info {
-            flex: 1;
-        }
+        .agent-item.critical { border-left-color: #e74c3c; }
+        .agent-item.attention { border-left-color: #f39c12; }
+        .agent-item.autonomous { border-left-color: #27ae60; }
         
         .agent-name {
             font-weight: 600;
-            color: #1e293b;
-            margin-bottom: 3px;
-        }
-        
-        .agent-status {
-            font-size: 12px;
-            color: #64748b;
-        }
-        
-        .agent-metrics {
-            text-align: right;
-        }
-        
-        .agent-tickets {
-            font-size: 18px;
-            font-weight: bold;
-            color: #003366;
-        }
-        
-        .agent-change {
-            font-size: 12px;
-            margin-top: 2px;
-        }
-        
-        /* Status badges */
-        .status-badge {
-            display: inline-block;
-            padding: 4px 8px;
-            border-radius: 12px;
-            font-size: 11px;
-            font-weight: 600;
-            text-transform: uppercase;
-            letter-spacing: 0.3px;
-        }
-        
-        .status-success {
-            background: #dcfce7;
-            color: #166534;
-        }
-        
-        .status-warning {
-            background: #fef3c7;
-            color: #92400e;
-        }
-        
-        .status-info {
-            background: #dbeafe;
-            color: #1e40af;
-        }
-        
-        .status-neutral {
-            background: #f1f5f9;
-            color: #475569;
-        }
-        
-        /* Recomendações */
-        .recommendations {
-            background: #ffffff;
-        }
-        
-        .recommendation-item {
-            display: flex;
-            align-items: flex-start;
-            gap: 15px;
-            padding: 15px 0;
-            border-bottom: 1px solid #f1f5f9;
-        }
-        
-        .recommendation-item:last-child {
-            border-bottom: none;
-        }
-        
-        .recommendation-icon {
-            width: 32px;
-            height: 32px;
-            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: white;
+            color: #2c3e50;
             font-size: 14px;
-            flex-shrink: 0;
+            margin-bottom: 5px;
         }
         
-        .recommendation-content {
-            flex: 1;
+        .agent-stats {
+            font-size: 13px;
+            color: #5d6d7e;
+            margin-bottom: 8px;
         }
         
-        .recommendation-text {
-            font-size: 15px;
-            color: #1e293b;
-            line-height: 1.6;
-        }
-        
-        .recommendation-priority {
+        .agent-action {
             font-size: 12px;
-            color: #059669;
-            font-weight: 600;
-            margin-top: 5px;
+            color: #7f8c8d;
+            font-style: italic;
         }
+        
+        /* Plano de Ação */
+        .action-plan {
+            background: #f7f9fc;
+            border: 1px solid #d0d7de;
+            border-radius: 6px;
+            padding: 25px;
+            margin: 20px 0;
+        }
+        
+        .action-item {
+            padding: 15px;
+            margin-bottom: 15px;
+            background: white;
+            border-radius: 6px;
+            border-left: 3px solid #95a5a6;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+        }
+        
+        .action-item:last-child { margin-bottom: 0; }
+        
+        .action-priority {
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 8px;
+        }
+        
+        .action-priority.urgente { color: #e74c3c; }
+        .action-priority.importante { color: #f39c12; }
+        .action-priority.monitorar { color: #3498db; }
+        .action-priority.meta { color: #27ae60; }
+        
+        .action-title {
+            font-weight: 600;
+            color: #2c3e50;
+            font-size: 14px;
+            margin-bottom: 5px;
+        }
+        
+        .action-details {
+            font-size: 13px;
+            color: #5d6d7e;
+            line-height: 1.4;
+        }
+        
+        /* Tabela de Evolução */
+        .evolution-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+            font-size: 13px;
+        }
+        
+        .evolution-table th {
+            background: #f8f9fa;
+            padding: 12px 8px;
+            text-align: left;
+            font-weight: 600;
+            color: #2c3e50;
+            border-bottom: 2px solid #dee2e6;
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        .evolution-table td {
+            padding: 12px 8px;
+            border-bottom: 1px solid #dee2e6;
+            color: #5d6d7e;
+        }
+        
+        .evolution-table tr:hover {
+            background: #f8f9fa;
+        }
+        
+        /* Progress Bar */
+        .progress-bar {
+            background: #ecf0f1;
+            height: 8px;
+            border-radius: 4px;
+            overflow: hidden;
+            margin: 5px 0;
+        }
+        
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #3498db, #2980b9);
+            transition: width 0.3s ease;
+        }
+        
+        .progress-fill.critical { background: linear-gradient(90deg, #e74c3c, #c0392b); }
+        .progress-fill.warning { background: linear-gradient(90deg, #f39c12, #d68910); }
+        .progress-fill.success { background: linear-gradient(90deg, #27ae60, #229954); }
         
         /* Footer */
         .footer {
-            background: #1e293b;
-            color: #94a3b8;
-            padding: 25px 20px;
+            background: #2c3e50;
+            color: #bdc3c7;
+            padding: 25px 30px;
             text-align: center;
+            font-size: 12px;
         }
         
-        .footer-text {
-            font-size: 14px;
+        .footer p {
+            margin: 5px 0;
+        }
+        
+        .footer .company {
+            color: white;
+            font-weight: 600;
             margin-bottom: 10px;
         }
         
-        .footer-info {
-            font-size: 12px;
-            opacity: 0.7;
-        }
-        
-        .generated-info {
-            background: #f8fafc;
-            border: 1px solid #e2e8f0;
-            border-radius: 6px;
-            padding: 15px;
-            margin-top: 15px;
-            font-size: 12px;
-            color: #64748b;
-        }
-        
-        /* Responsivo */
+        /* Responsividade */
         @media (max-width: 600px) {
-            .email-container {
-                margin: 0;
-                border-radius: 0;
-            }
+            .container { margin: 0; }
+            .section { padding: 20px; }
+            .header { padding: 30px 20px; }
             
-            .metrics-grid {
+            .metrics-row {
                 flex-direction: column;
-            }
-            
-            .metric-card {
-                min-width: 100%;
-            }
-            
-            .agent-item {
-                flex-direction: column;
-                align-items: flex-start;
                 gap: 10px;
             }
             
-            .agent-metrics {
-                text-align: left;
-                width: 100%;
-            }
-        }
-
-        /* Dashboard Executivo */
-        .dashboard-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 20px;
-            margin-bottom: 20px;
-        }
-
-        .dashboard-metrics {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            padding: 25px;
-            border-radius: 12px;
-            text-align: center;
-        }
-
-        .metric-large .metric-number {
-            display: block;
-            font-size: 48px;
-            font-weight: bold;
-            line-height: 1;
-        }
-
-        .metric-large .metric-label {
-            display: block;
-            font-size: 14px;
-            opacity: 0.9;
-            margin-top: 5px;
-        }
-
-        .metric-large .metric-change {
-            display: block;
-            font-size: 18px;
-            font-weight: 600;
-            margin-top: 10px;
-        }
-
-        .dashboard-ranking, .dashboard-alerts, .dashboard-patterns {
-            background: #f8fafc;
-            padding: 20px;
-            border-radius: 8px;
-            border-left: 4px solid #3b82f6;
-        }
-
-        .ranking-list, .alerts-list, .patterns-list {
-            list-style: none;
-            padding: 0;
-            margin: 10px 0 0 0;
-        }
-
-        .ranking-list li, .alerts-list li, .patterns-list li {
-            padding: 8px 0;
-            border-bottom: 1px solid #e2e8f0;
-            font-size: 14px;
-        }
-
-        .conversational-analysis {
-            background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
-            border: 1px solid #7dd3fc;
-            border-radius: 12px;
-            padding: 25px;
-        }
-
-        .consultant-message {
-            font-size: 16px;
-            line-height: 1.7;
-            color: #0c4a6e;
-            font-style: italic;
-        }
-
-        @media (max-width: 600px) {
-            .dashboard-grid {
+            .status-grid {
                 grid-template-columns: 1fr;
+                gap: 10px;
+            }
+            
+            .evolution-table {
+                font-size: 11px;
+            }
+            
+            .evolution-table th,
+            .evolution-table td {
+                padding: 8px 5px;
             }
         }
-
+        
+        /* Utilities */
+        .text-center { text-align: center; }
+        .text-muted { color: #7f8c8d; }
+        .text-small { font-size: 12px; }
+        .mb-15 { margin-bottom: 15px; }
+        .mt-15 { margin-top: 15px; }
     </style>
 </head>
 <body>
-    <div class="email-container">
-        <!-- Header -->
+    <div class="container">
+        <!-- Header Corporativo -->
         <div class="header">
-            <div class="header-content">
-                <div class="logo">AtendePro AI</div>
-                <div class="subtitle">Relatório Semanal Inteligente</div>
-                <div class="ai-badge">🤖 Powered by AI</div>
-            </div>
+            <h1>📊 Relatório de Autonomia Semanal</h1>
+            <p class="subtitle">AtendePro AI Relatórios - Análise Inteligente de Performance</p>
+            <p class="period">Período: {{ period_start }} - {{ period_end }} | Gerado em: {{ generation_date }}</p>
         </div>
-        
-        <!-- Período -->
-        <div class="period-section">
-            <div class="period-title">📅 Período Analisado</div>
-            <div class="period-dates">{{ period_label }}</div>
-        </div>
-        
-        <!-- Métricas Principais -->
-        <div class="metrics-grid">
-            <div class="metric-card">
-                <div class="metric-value">{{ total_tickets }}</div>
-                <div class="metric-label">Atendimentos</div>
-                <div class="metric-change change-{{ trend_class }}">
-                    {{ change_text }}
-                </div>
-            </div>
+
+        <!-- Seção 1: Dashboard Executivo -->
+        <div class="section">
+            <h2 class="section-title">📈 Dashboard Executivo</h2>
             
-            <div class="metric-card">
-                <div class="metric-value">{{ agents_count }}</div>
-                <div class="metric-label">Agentes Ativos</div>
-                <div class="metric-change change-neutral">
-                    {{ ranking_text }}
+            <div class="metrics-row">
+                <div class="metric">
+                    <div class="metric-value">{{ radar.total_requests }}</div>
+                    <div class="metric-label">Solicitações</div>
+                    <div class="metric-change {{ 'positive' if radar.variation_requests < 0 else 'negative' if radar.variation_requests > 0 else 'neutral' }}">
+                        {{ '{:+.1f}'.format(radar.variation_requests) }}%
+                    </div>
+                </div>
+                <div class="metric">
+                    <div class="metric-value">{{ radar.general_autonomy }}%</div>
+                    <div class="metric-label">Autonomia</div>
+                    <div class="metric-change neutral">Geral</div>
+                </div>
+                <div class="metric">
+                    <div class="metric-value">#{{ radar.supervisor_ranking }}</div>
+                    <div class="metric-label">Posição</div>
+                    <div class="metric-change neutral">Ranking</div>
                 </div>
             </div>
+
+            <div class="text-center mb-15">
+                <strong>{{ radar.executive_diagnosis }}</strong>
+            </div>
+
+            {% if radar.critical_alerts or radar.positive_highlights %}
+            <div class="status-grid">
+                {% if radar.critical_alerts %}
+                {% for alert in radar.critical_alerts %}
+                <div class="status-card critical">
+                    <h4>🔴 {{ alert.agent }}</h4>
+                    <p>{{ alert.requests }} casos ({{ '{:+.0f}'.format(alert.variation) }}%)<br>
+                    {{ alert.diagnosis }}</p>
+                </div>
+                {% endfor %}
+                {% endif %}
+                
+                {% if radar.positive_highlights %}
+                {% for highlight in radar.positive_highlights %}
+                <div class="status-card success">
+                    <h4>🟢 {{ highlight.agent }}</h4>
+                    <p>{{ highlight.requests }} casos ({{ '{:+.0f}'.format(highlight.variation) }}%)<br>
+                    {{ highlight.recognition }}</p>
+                </div>
+                {% endfor %}
+                {% endif %}
+            </div>
+            {% endif %}
         </div>
-        
-                <div class="section">
-            <div class="section-header">
-                <div class="section-title">
-                    <div class="section-icon">📊</div>
-                    Dashboard Executivo
-                </div>
-                <div class="section-description">Métricas automáticas do sistema</div>
-            </div>
-            <div class="section-content">
-                <div class="dashboard-grid">
-                    <div class="dashboard-metrics">
-                        <div class="metric-large">
-                            <span class="metric-number">{{ executive_dashboard.total_tickets }}</span>
-                            <span class="metric-label">Total de Atendimentos</span>
-                            <span class="metric-change change-{{ trend_class }}">
-                                {{ executive_dashboard.variation_percent:+.1f }}%
-                            </span>
-                        </div>
-                    </div>
-                    
-                    <div class="dashboard-ranking">
-                        <h4>🏆 Top Supervisores</h4>
-                        <ul class="ranking-list">
-                            {% for rank in executive_dashboard.ranking %}
-                            <li>{{ rank }}</li>
-                            {% endfor %}
-                        </ul>
-                    </div>
-                    
-                    {% if executive_dashboard.alerts %}
-                    <div class="dashboard-alerts">
-                        <h4>⚠️ Atenção Necessária</h4>
-                        <ul class="alerts-list">
-                            {% for alert in executive_dashboard.alerts %}
-                            <li>{{ alert }}</li>
-                            {% endfor %}
-                        </ul>
-                    </div>
-                    {% endif %}
-                    
-                    {% if executive_dashboard.patterns %}
-                    <div class="dashboard-patterns">
-                        <h4>🎯 Padrões Identificados</h4>
-                        <ul class="patterns-list">
-                            {% for pattern in executive_dashboard.patterns %}
-                            <li>{{ pattern }}</li>
-                            {% endfor %}
-                        </ul>
-                    </div>
-                    {% endif %}
-                </div>
-            </div>
-        </div>
-        
-        <!-- Performance da Equipe -->
+
+        <!-- Seção 2: Matriz de Capacitação -->
         <div class="section">
-            <div class="section-header">
-                <div class="section-title">
-                    <div class="section-icon">👥</div>
-                    Performance da Sua Equipe
-                </div>
-                <div class="section-description">Análise individual dos agentes</div>
-            </div>
-            <div class="section-content">
-                <div class="agents-list">
-                    {% for agent in agents_performance %}
-                    <div class="agent-item">
-                        <div class="agent-info">
-                            <div class="agent-name">{{ agent.agent_name }}</div>
-                            <div class="agent-status">
-                                <span class="status-badge status-{{ agent.status }}">
-                                    {{ agent.performance_level }}
-                                </span>
-                                {% if agent.needs_attention %}
-                                <span class="status-badge status-warning">Atenção</span>
-                                {% endif %}
-                            </div>
-                        </div>
-                        <div class="agent-metrics">
-                            <div class="agent-tickets">{{ agent.current_tickets }}</div>
-                            <div class="agent-change change-{{ 'positive' if agent.change > 0 else 'negative' if agent.change < 0 else 'neutral' }}">
-                                {{ '+' if agent.change > 0 else '' }}{{ agent.change }} vs anterior
-                            </div>
-                        </div>
-                    </div>
+            <h2 class="section-title">🎯 Matriz de Capacitação</h2>
+            
+            {% if matrix.priority_agents %}
+            <h3 style="font-size: 16px; color: #2c3e50; margin-bottom: 15px;">Agentes Prioritários</h3>
+            <ul class="agent-list">
+            {% for agent in matrix.priority_agents[:5] %}
+                <li class="agent-item {{ agent.risk_level }}">
+                    <div class="agent-name">{{ agent.agent }} ({{ agent.supervisor }})</div>
+                    <div class="agent-stats">{{ agent.requests }} casos → Gap: {{ agent.gaps[0] if agent.gaps else 'A identificar' }}</div>
+                    <div class="agent-action">Ação: {{ agent.action }}</div>
+                </li>
+            {% endfor %}
+            </ul>
+            {% endif %}
+
+            {% if matrix.time_distribution %}
+            <h3 style="font-size: 16px; color: #2c3e50; margin: 25px 0 15px 0;">Distribuição do Tempo</h3>
+            <table class="evolution-table">
+                <thead>
+                    <tr>
+                        <th>Supervisor</th>
+                        <th>Agente</th>
+                        <th>Tempo</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                {% for supervisor in matrix.time_distribution %}
+                    {% for agent in supervisor.agents_time %}
+                    <tr>
+                        <td>{{ supervisor.supervisor }}</td>
+                        <td>{{ agent.agent }}</td>
+                        <td>{{ agent.time_percent }}%</td>
+                        <td>{{ agent.status }}</td>
+                    </tr>
                     {% endfor %}
-                </div>
-            </div>
+                    <tr style="background: #f0f9ff; font-weight: 600;">
+                        <td colspan="3">Disponível para estratégia</td>
+                        <td>{{ supervisor.strategic_time }}%</td>
+                    </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+            {% endif %}
         </div>
-        
-        <!-- Análise Específica do Supervisor -->
-        <!-- LOCALIZAR e ALTERAR: -->
+
+        <!-- Seção 3: Evolução de Performance -->
         <div class="section">
-            <div class="section-header">
-                <div class="section-title">
-                    <div class="section-icon">👤</div>
-                    Análise Personalizada
+            <h2 class="section-title">📊 Evolução de Performance</h2>
+            
+            {% if productivity.supervisors_evolution %}
+            {% for supervisor in productivity.supervisors_evolution %}
+            <div style="margin-bottom: 25px; padding: 20px; background: #f8f9fa; border-radius: 6px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                    <strong style="color: #2c3e50;">{{ supervisor.supervisor_name }}</strong>
+                    <span style="font-size: 13px; color: #7f8c8d;">{{ supervisor.trend }}</span>
                 </div>
-                <div class="section-description">Insights específicos da sua equipe</div>
-            </div>
-            <div class="section-content">
-                <div class="conversational-analysis">
-                    <div class="consultant-message">
-                        {{ supervisor_analysis }}
-                    </div>
+                
+                <div style="display: flex; gap: 20px; margin-bottom: 15px; font-size: 13px;">
+                    <span>Atual: <strong>{{ supervisor.current_total }}</strong></span>
+                    <span>Anterior: <strong>{{ supervisor.previous_total }}</strong></span>
                 </div>
-            </div>
-        </div>
-        
-        <!-- Recomendações IA -->
-        <div class="section">
-            <div class="section-header">
-                <div class="section-title">
-                    <div class="section-icon">🎯</div>
-                    Recomendações Inteligentes
-                </div>
-                <div class="section-description">Ações sugeridas pela IA para próxima semana</div>
-            </div>
-            <div class="section-content">
-                <div class="recommendations">
-                    {% for recommendation in recommendations %}
-                    <div class="recommendation-item">
-                        <div class="recommendation-icon">{{ loop.index }}</div>
-                        <div class="recommendation-content">
-                            <div class="recommendation-text">{{ recommendation }}</div>
-                            <div class="recommendation-priority">Prioridade: {{ 'Alta' if loop.index <= 2 else 'Média' }}</div>
-                        </div>
-                    </div>
+                
+                {% if supervisor.agents %}
+                <table style="width: 100%; font-size: 12px;">
+                    <thead>
+                        <tr style="color: #7f8c8d;">
+                            <th style="text-align: left; padding: 5px 0;">Agente</th>
+                            <th style="text-align: center; padding: 5px 0;">Casos</th>
+                            <th style="text-align: center; padding: 5px 0;">Variação</th>
+                            <th style="text-align: center; padding: 5px 0;">Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                    {% for agent in supervisor.agents[:3] %}
+                        <tr>
+                            <td style="padding: 8px 0;">{{ agent.agent_name }}</td>
+                            <td style="text-align: center; padding: 8px 0;">{{ agent.current_requests }}</td>
+                            <td style="text-align: center; padding: 8px 0;">{{ '{:+.0f}'.format(agent.variation) }}%</td>
+                            <td style="text-align: center; padding: 8px 0;">{{ agent.status }}</td>
+                        </tr>
                     {% endfor %}
-                </div>
+                    </tbody>
+                </table>
+                {% endif %}
             </div>
+            {% endfor %}
+            {% endif %}
         </div>
-        
-        <!-- Footer -->
+
+        <!-- Seção 4: Plano de Ação -->
+        <div class="section">
+            <h2 class="section-title">🚀 Conclusões IA & Plano de Ação</h2>
+            
+            <div style="padding: 20px; background: #f7f9fc; border-radius: 6px; margin-bottom: 20px; border-left: 4px solid #3498db;">
+                <strong style="color: #2c3e50;">{{ conclusions.ai_diagnosis }}</strong>
+            </div>
+
+            {% if conclusions.pattern_insights %}
+            <h3 style="font-size: 16px; color: #2c3e50; margin-bottom: 15px;">Padrões Identificados</h3>
+            <ul style="color: #5d6d7e; font-size: 14px; line-height: 1.6;">
+            {% for pattern in conclusions.pattern_insights %}
+                <li style="margin-bottom: 8px;">{{ pattern }}</li>
+            {% endfor %}
+            </ul>
+            {% endif %}
+
+            {% if conclusions.action_plan_7_days %}
+            <h3 style="font-size: 16px; color: #2c3e50; margin: 25px 0 15px 0;">Plano de Ação (7 dias)</h3>
+            <div class="action-plan">
+            {% for action in conclusions.action_plan_7_days %}
+                <div class="action-item">
+                    <div class="action-priority {{ action.priority.lower() }}">{{ action.priority }}</div>
+                    <div class="action-title">{{ action.action }}</div>
+                    {% if action.details %}
+                    <div class="action-details">{{ action.details }}</div>
+                    {% endif %}
+                </div>
+            {% endfor %}
+            </div>
+            {% endif %}
+
+            {% if conclusions.expected_results %}
+            <h3 style="font-size: 16px; color: #2c3e50; margin-bottom: 15px;">Resultados Esperados</h3>
+            <ul style="color: #5d6d7e; font-size: 14px; line-height: 1.6;">
+            {% for result in conclusions.expected_results %}
+                <li style="margin-bottom: 8px;"><strong>{{ result.description }}</strong></li>
+            {% endfor %}
+            </ul>
+            {% endif %}
+        </div>
+
+        <!-- Footer Corporativo -->
         <div class="footer">
-            <div class="footer-text">
-                <strong>AtendePro AI Reports</strong> - Gestão Inteligente de Atendimentos
-            </div>
-            <div class="footer-info">
-                Este relatório foi gerado automaticamente pela IA em {{ generated_at }}
-            </div>
-            
-            <div class="generated-info">
-                <strong>Tecnologia:</strong> Análise gerada por Inteligência Artificial<br>
-                <strong>Dados:</strong> Baseado em {{ data_source_info }}<br>
-                <strong>Próximo relatório:</strong> {{ next_report_date }}
-            </div>
+            <p class="company">AtendePro AI Reports</p>
+            <p>Relatório gerado automaticamente pelo sistema de análise inteligente</p>
+            <p>🤖 Modelo IA: {{ ai_model_used }} | ⏰ {{ analysis_timestamp[:19] }}</p>
+            <p style="margin-top: 15px; font-size: 11px; opacity: 0.8;">
+                Este relatório contém informações confidenciais destinadas exclusivamente ao destinatário.
+            </p>
         </div>
     </div>
 </body>

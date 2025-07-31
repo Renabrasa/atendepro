@@ -3169,6 +3169,108 @@ def ai_reports_preview_comparison():
 # 🤖 FIM DO SISTEMA AI REPORTS COMPLETO
 # ========================================
 
+##### ROTAS DE DEBUG DE EMAIL #####
+
+@app.route('/admin/ai-reports/debug-config')
+@login_required
+def debug_scheduler_config():
+    """Debug das configurações do scheduler"""
+    if not current_user.pode_acessar_admin():
+        return jsonify({'error': 'Acesso negado'}), 403
+    
+    try:
+        from config import Config
+        import os
+        from datetime import datetime
+        
+        debug_info = {
+            'current_time': datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
+            'current_weekday': datetime.now().weekday(),  # 0=Monday
+            'config_reports_enabled': getattr(Config, 'REPORTS_ENABLED', 'NOT SET'),
+            'config_day_of_week': getattr(Config, 'REPORTS_DAY_OF_WEEK', 'NOT SET'),
+            'config_hour': getattr(Config, 'REPORTS_HOUR', 'NOT SET'),
+            'config_timezone': getattr(Config, 'REPORTS_TIMEZONE', 'NOT SET'),
+            'env_reports_enabled': os.getenv('REPORTS_ENABLED'),
+            'env_day_of_week': os.getenv('REPORTS_DAY_OF_WEEK'),
+            'env_hour': os.getenv('REPORTS_HOUR'),
+            'scheduler_running': False  # Vamos verificar
+        }
+        
+        # Tentar verificar se scheduler existe
+        try:
+            from ai_reports.scheduler import ReportScheduler
+            scheduler = ReportScheduler()
+            debug_info['scheduler_enabled'] = scheduler.enabled
+            debug_info['scheduler_running'] = True
+        except Exception as e:
+            debug_info['scheduler_error'] = str(e)
+        
+        return jsonify(debug_info)
+        
+    except Exception as e:
+        return jsonify({'error': str(e)})
+
+
+@app.route('/admin/ai-reports/run-now', methods=['GET','POST'])
+@login_required
+def run_reports_now():
+    """Executa relatórios manualmente AGORA"""
+    if not current_user.pode_acessar_admin():
+        return jsonify({'error': 'Acesso negado'}), 403
+    
+    try:
+        # Executar o processo completo
+        from ai_reports.data_collector import collect_autonomy_data
+        from ai_reports.ai_analyzer import analyze_autonomy_data
+        from ai_reports.email_sender import AutonomyEmailSender
+        
+        # 1. Coletar dados
+        data = collect_autonomy_data()
+        
+        # 2. Analisar com IA
+        analysis = analyze_autonomy_data(data)
+        
+        # 3. Configurar email
+        smtp_config = {
+            'server': 'cloud21.mailgrid.net.br',
+            'port': 587,
+            'email': 'smtp@timeismoney.tec.br',
+            'password': 'PKUxxOx0HD0s',
+            'sender_name': 'AtendePro AI Reports'
+        }
+        
+        # 4. Enviar para todos supervisores
+        sender = AutonomyEmailSender(smtp_config)
+        results = []
+        
+        supervisors = User.query.filter(User.tipo.in_(['supervisor', 'coordenadora'])).all()
+        
+        for supervisor in supervisors:
+            if supervisor.email:  # Se tem email
+                result = sender.send_weekly_report(
+                    analysis_data=analysis,
+                    recipients=[supervisor.email],
+                    supervisor_name=supervisor.nome
+                )
+                results.append({
+                    'supervisor': supervisor.nome,
+                    'email': supervisor.email,
+                    'success': result.get('success', False),
+                    'status': result.get('status', 'Erro')
+                })
+        
+        return jsonify({
+            'success': True,
+            'message': 'Relatórios executados manualmente',
+            'results': results
+        })
+        
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        })
+
 if __name__ == '__main__':
     app.run(debug=True)
 

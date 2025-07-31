@@ -39,7 +39,7 @@ def get_config_value(attr_name: str, default_value: Any) -> Any:
 
 # Configurações com fallback
 REPORTS_ENABLED = get_config_value('REPORTS_ENABLED', True)
-REPORTS_DAY_OF_WEEK = get_config_value('REPORTS_DAY_OF_WEEK', 0)  # 0=Monday
+REPORTS_DAY_OF_WEEK = get_config_value('REPORTS_DAY_OF_WEEK', 3)  # 0=Monday
 REPORTS_HOUR = get_config_value('REPORTS_HOUR', 9)
 REPORTS_TIMEZONE = get_config_value('REPORTS_TIMEZONE', 'America/Sao_Paulo')
 AI_REPORTS_DEBUG = get_config_value('AI_REPORTS_DEBUG', True)

@@ -17,7 +17,7 @@ class AutonomyAIAnalyzer:
     
     def __init__(self, ollama_url: str = "http://localhost:11434"):
         self.ollama_url = ollama_url
-        self.model = "llama3.2:3b"  # Modelo padrão (pode ser configurado)
+        self.model = "Qwen2.5:7b"  # Modelo padrão (pode ser configurado)
         
     def test_connection(self) -> Dict[str, Any]:
         """Testa conexão com Ollama"""

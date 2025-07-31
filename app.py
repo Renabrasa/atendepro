@@ -3011,9 +3011,33 @@ def ai_reports_preview_email():
         # Renderiza o template usando o mesmo processo do email
         from jinja2 import Template
         
-        # Carrega o template HTML
-        with open('/opt/apps/atendpro/ai_reports/templates/weekly_report.html', 'r', encoding='utf-8') as f:
-            template_content = f.read()
+        # Carrega o template HTML do local correto
+        import os
+        from flask import current_app
+        
+        # Tenta encontrar o template em diferentes locais
+        possible_paths = [
+            os.path.join(current_app.root_path, 'templates', 'weekly_report.html'),
+            os.path.join(current_app.root_path, 'ai_reports', 'templates', 'weekly_report.html'),
+            '/opt/apps/atendpro/templates/weekly_report.html',
+            'templates/weekly_report.html'
+        ]
+        
+        template_content = None
+        template_path = None
+        
+        for path in possible_paths:
+            if os.path.exists(path):
+                template_path = path
+                with open(path, 'r', encoding='utf-8') as f:
+                    template_content = f.read()
+                break
+        
+        if not template_content:
+            # Se não encontrar o arquivo, usa o template do email_sender.py
+            from ai_reports.email_sender import AutonomyEmailSender
+            sender = AutonomyEmailSender({'server': 'test', 'port': 587, 'email': 'test', 'password': 'test'})
+            template_content = sender._create_html_version(template_data)
         
         template = Template(template_content)
         html_content = template.render(**template_data)
@@ -3138,7 +3162,6 @@ def ai_reports_preview_comparison():
     </body>
     </html>
     """)
-
 
 
 

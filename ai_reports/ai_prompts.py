@@ -521,9 +521,9 @@ CONTEXTO OPERACIONAL CONTÁBIL:
 - Meta operacional = máximo 6 solicitações/agente/semana
 
 CLASSIFICAÇÃO DE AUTONOMIA:
-🟢 AUTÔNOMO (0-5 solicitações/semana): Trabalha independente
-🟡 ATENÇÃO (6-14 solicitações/semana): Gap específico de conhecimento  
-🔴 CRÍTICO (>15 solicitações/semana): Não consegue trabalhar sozinho
+🟢 AUTÔNOMO (0-12 solicitações/semana): Trabalha independente
+🟡 ATENÇÃO (13-19 solicitações/semana): Gap específico de conhecimento  
+🔴 CRÍTICO (>20 solicitações/semana): Não consegue trabalhar sozinho
 
 ÁREAS TÉCNICAS COMUNS:
 - eSocial: Sistema de obrigações trabalhistas

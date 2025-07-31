@@ -61,16 +61,23 @@ class AutonomyDataCollector:
            raise
    
    def _get_7_days_periods(self, target_date):
-       """Calcula últimos 7 dias vs penúltimos 7 dias, excluindo o dia atual"""
-       # Últimos 7 dias (até ontem - não incluir hoje)
-       fim_atual = (target_date - timedelta(days=1)).replace(hour=23, minute=59, second=59, microsecond=999999)
-       inicio_atual = fim_atual - timedelta(days=6)
-       
-       # Penúltimos 7 dias
-       fim_anterior = inicio_atual - timedelta(days=1)
-       inicio_anterior = fim_anterior - timedelta(days=6)
-       
-       return (inicio_atual, fim_atual), (inicio_anterior, fim_anterior)
+    """Calcula últimos 7 dias vs penúltimos 7 dias, incluindo ontem"""
+    # Período atual: últimos 7 dias incluindo ontem
+    fim_atual = (target_date - timedelta(days=1)).replace(hour=23, minute=59, second=59, microsecond=999999)
+    inicio_atual = fim_atual - timedelta(days=6)  # 7 dias no total
+    inicio_atual = inicio_atual.replace(hour=0, minute=0, second=0, microsecond=0)
+    
+    # Período anterior: 7 dias anteriores
+    fim_anterior = inicio_atual - timedelta(days=1)
+    fim_anterior = fim_anterior.replace(hour=23, minute=59, second=59, microsecond=999999)
+    inicio_anterior = fim_anterior - timedelta(days=6)
+    inicio_anterior = inicio_anterior.replace(hour=0, minute=0, second=0, microsecond=0)
+    
+    # DEBUG: imprimir datas para conferir
+    print(f"🔍 DEBUG - Período atual: {inicio_atual.strftime('%d/%m/%Y')} até {fim_atual.strftime('%d/%m/%Y')}")
+    print(f"🔍 DEBUG - Período anterior: {inicio_anterior.strftime('%d/%m/%Y')} até {fim_anterior.strftime('%d/%m/%Y')}")
+    
+    return (inicio_atual, fim_atual), (inicio_anterior, fim_anterior)
    
    def _collect_supervisors_data(self, periodo_atual, periodo_anterior):
        """Coleta dados detalhados de todos os supervisores"""
@@ -191,44 +198,44 @@ class AutonomyDataCollector:
     } for agent_id, count in agents_count.items() if agent_id in agents_info}
    
    def _calculate_agents_analysis(self, agents_atual, agents_anterior):
-       """Calcula análise detalhada de cada agente"""
-       agents_analysis = []
-       
-       # Combina agentes de ambos os períodos
-       all_agent_ids = set(agents_atual.keys()) | set(agents_anterior.keys())
-       
-       for agent_id in all_agent_ids:
-           current_count = agents_atual.get(agent_id, {}).get('count', 0)
-           previous_count = agents_anterior.get(agent_id, {}).get('count', 0)
-           
-           # Informações do agente (prioriza período atual)
-           agent_info = agents_atual.get(agent_id) or agents_anterior.get(agent_id)
-           
-           # Calcula variação
-           variation = self._calculate_variation(current_count, previous_count)
-           
-           # Classifica risco
-           risk_classification = self._classify_agent_risk(current_count, variation)
-           
-           # Identifica gaps prováveis
-           probable_gaps = self._identify_probable_gaps(current_count, variation)
-           
-           agents_analysis.append({
-               'agent_id': agent_id,
-               'agent_name': agent_info['name'],
-               'current_requests': current_count,
-               'previous_requests': previous_count,
-               'variation_percent': variation,
-               'risk_level': risk_classification['level'],
-               'risk_status': risk_classification['status'],
-               'autonomy_status': risk_classification['autonomy_status'],
-               'probable_gaps': probable_gaps,
-               'recommended_action': risk_classification['action'],
-               'is_new_agent': previous_count == 0 and current_count > 0,
-               'is_improving': current_count < previous_count and previous_count > 0
-           })
-       
-       return sorted(agents_analysis, key=lambda x: x['current_requests'], reverse=True)
+    """Calcula análise detalhada de cada agente"""
+    agents_analysis = []
+    
+    # Combina agentes de ambos os períodos
+    all_agent_ids = set(agents_atual.keys()) | set(agents_anterior.keys())
+    
+    for agent_id in all_agent_ids:
+        current_count = agents_atual.get(agent_id, {}).get('count', 0)
+        previous_count = agents_anterior.get(agent_id, {}).get('count', 0)
+        
+        # FILTRO NOVO: Pular agentes com 0 casos em AMBOS os períodos
+        if current_count == 0 and previous_count == 0:
+            continue  # Pula agentes inativos (férias/afastados)
+        
+        # Informações do agente (prioriza período atual)
+        agent_info = agents_atual.get(agent_id) or agents_anterior.get(agent_id)
+        
+        # Resto do código continua igual...
+        variation = self._calculate_variation(current_count, previous_count)
+        risk_classification = self._classify_agent_risk(current_count, variation)
+        probable_gaps = self._identify_probable_gaps(current_count, variation)
+        
+        agents_analysis.append({
+            'agent_id': agent_id,
+            'agent_name': agent_info['name'],
+            'current_requests': current_count,
+            'previous_requests': previous_count,
+            'variation_percent': variation,
+            'risk_level': risk_classification['level'],
+            'risk_status': risk_classification['status'],
+            'autonomy_status': risk_classification['autonomy_status'],
+            'probable_gaps': probable_gaps,
+            'recommended_action': risk_classification['action'],
+            'is_new_agent': previous_count == 0 and current_count > 0,
+            'is_improving': current_count < previous_count and previous_count > 0
+        })
+    
+    return sorted(agents_analysis, key=lambda x: x['current_requests'], reverse=True)
    
    def _calculate_variation(self, current, previous):
        """Calcula variação percentual"""
@@ -239,21 +246,21 @@ class AutonomyDataCollector:
    def _classify_agent_risk(self, current_count, variation):
        """Classifica risco do agente baseado em volume e variação"""
        
-       if current_count > 15:
+       if current_count > 20:
            return {
                'level': 'critical',
                'status': '🔴 CRÍTICO',
                'autonomy_status': 'Não consegue trabalhar sozinho',
                'action': 'Treinamento intensivo urgente'
            }
-       elif current_count >= 6 and (variation > 50 or current_count >= 14):
+       elif current_count >= 15 and (variation > 50 or current_count >= 18):
            return {
                'level': 'attention',
                'status': '🟡 ATENÇÃO',
                'autonomy_status': 'Gap específico de conhecimento',
                'action': 'Identificar padrão e treinar pontualmente'
            }
-       elif current_count <= 5:
+       elif current_count <= 12:
            return {
                'level': 'autonomous',
                'status': '🟢 AUTÔNOMO',
@@ -272,17 +279,17 @@ class AutonomyDataCollector:
        """Identifica prováveis gaps técnicos baseado em padrões"""
        gaps = []
        
-       if current_count > 14:
+       if current_count > 22:
            gaps.append("Deficiência geral grave - múltiplas áreas")
-       elif current_count > 6:
+       elif current_count > 18:
            gaps.append("Gap em área técnica específica")
        elif variation > 100:
            gaps.append("Nova dificuldade emergente")
-       elif 3 <= current_count <= 6:
+       elif 3 <= current_count <= 18:
            gaps.append("Dificuldade pontual específica")
        
        # Gaps específicos baseados em volume
-       if current_count > 4:
+       if current_count > 15:
            probable_areas = [
                "eSocial vs Alterdata",
                "SPED - Validação",
@@ -306,11 +313,11 @@ class AutonomyDataCollector:
        
        # Tempo estratégico (inverso do volume de atendimentos)
        # Supervisor com muitos atendimentos tem pouco tempo estratégico
-       if total_atual <= 10:
+       if total_atual <= 40:
            strategic_time = 85
-       elif total_atual <= 20:
+       elif total_atual <= 70:
            strategic_time = 70
-       elif total_atual <= 35:
+       elif total_atual <= 100:
            strategic_time = 50
        else:
            strategic_time = 25

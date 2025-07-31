@@ -275,7 +275,7 @@ class AutonomyAIAnalyzer:
             response = requests.post(
                 f"{self.ollama_url}/api/generate",
                 json=payload,
-                timeout=30
+                timeout=120
             )
             
             if response.status_code == 200:
